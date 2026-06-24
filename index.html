@@ -964,7 +964,7 @@ async function loadFinances(){
       const d=await res.json();
       _finances=d.entries||[];
       if(d.updated)document.getElementById('finances-updated').textContent='Saved: '+fmt(d.updated);
-      const COST_VERSION=2;
+      const COST_VERSION=3;
       if(d.costTracking&&d.costTracking.length&&d.costsVersion>=COST_VERSION){
         _costTracking=d.costTracking;
         _weeklyIncome=d.weeklyIncome??2469.54;
@@ -978,7 +978,7 @@ async function loadFinances(){
   }catch(e){console.warn('Finances load failed',e)}
 }
 async function saveCostTracking(){
-  try{await fetch('/api/finances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save_costs',items:_costTracking,weeklyIncome:_weeklyIncome,version:2})})}catch(e){console.warn('Cost tracking save failed',e)}
+  try{await fetch('/api/finances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save_costs',items:_costTracking,weeklyIncome:_weeklyIncome,version:3})})}catch(e){console.warn('Cost tracking save failed',e)}
 }
 async function saveFinances(){
   try{await fetch('/api/finances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',entries:_finances})});document.getElementById('finances-updated').textContent='Saved: '+fmt(new Date().toISOString())}catch(e){console.warn('Finances save failed',e)}
@@ -1031,11 +1031,11 @@ const _defaultCosts=[
   {name:'Rent 6/286 Espl',owner:'Thomas Flood',monthly:620,annual:7440,sixMonth:null,cycle:'Monthly',category:'Rent',catColor:'#8dcec3',status:'active',payment:'Transfer to Commbank',payColor:'#ffc53d',renewal:'2028-04-03',url:null},
   {name:'Car Finance Costs',owner:'Thomas Flood',monthly:566.42,annual:6797.04,sixMonth:null,cycle:'Monthly',category:'Car',catColor:'#ffaa7d',status:'active',payment:'Subscription & Bills NAB',payColor:'#0091ff',renewal:'2026-06-30',url:'https://self-service.taureancapital.com.au'},
   {name:'Money sent to Rankify account',owner:'Thomas Flood',monthly:479,annual:5748,sixMonth:null,cycle:'Monthly',category:'Investment',catColor:'#e9c162',status:'active',payment:'Rankify Transfer',payColor:'#30a46c',renewal:'2026-07-12',url:null},
-  {name:'AHM Health Insurance',owner:'Thomas Flood',monthly:176,annual:1910.76,sixMonth:null,cycle:'Monthly',category:'Health',catColor:'#b6b6ff',status:'active',payment:'Qantas CC',payColor:'#e5484d',renewal:'2026-07-22',url:null},
+  {name:'AHM Health Insurance',owner:'Thomas Flood',monthly:175.62,annual:2107.44,sixMonth:null,cycle:'Monthly',category:'Health',catColor:'#b6b6ff',status:'active',payment:'Qantas CC',payColor:'#e5484d',renewal:'2026-07-22',url:null},
   {name:'P3 Membership',owner:'Thomas Flood',monthly:153.96,annual:1847.52,sixMonth:null,cycle:'Weekly',category:'Health',catColor:'#b6b6ff',status:'active',payment:'Qantas CC',payColor:'#e5484d',renewal:'2026-06-29',url:null},
   {name:'Car Insurance',owner:'Thomas Flood',monthly:125.87,annual:1510.44,sixMonth:null,cycle:'Monthly',category:'Utilities',catColor:'#92ceac',status:'active',payment:'Qantas CC',payColor:'#e5484d',renewal:'2026-07-22',url:null},
   {name:'Vodafone Plan',owner:'Thomas Flood',monthly:81.51,annual:978.12,sixMonth:null,cycle:'Monthly',category:'Entertainment',catColor:'#96c7f2',status:'active',payment:'Qantas CC',payColor:'#e5484d',renewal:'2026-07-15',url:null},
-  {name:'Snapfitness Gym',owner:'Thomas Flood',monthly:78.30,annual:939.60,sixMonth:null,cycle:'Fortnightly',category:'Health',catColor:'#b6b6ff',status:'active',payment:'Subscription & Bills NAB',payColor:'#0091ff',renewal:'2026-03-16',url:null},
+  {name:'Anytime Fitness',owner:'Thomas Flood',monthly:117,annual:1404,sixMonth:null,cycle:'Weekly',category:'Health',catColor:'#b6b6ff',status:'active',payment:'Subscription & Bills NAB',payColor:'#0091ff',renewal:'2026-03-16',url:null},
   {name:'Car Registration',owner:'Thomas Flood',monthly:null,annual:873.20,sixMonth:436.60,cycle:'6 Monthly',category:'Utilities',catColor:'#92ceac',status:'active',payment:'Manual Payment',payColor:'#b6b6ff',renewal:'2026-10-17',url:null},
   {name:'Internet',owner:'Thomas Flood',monthly:35,annual:420,sixMonth:null,cycle:'Monthly',category:'Utilities',catColor:'#92ceac',status:'active',payment:'Transfer to Commbank',payColor:'#ffc53d',renewal:'2026-07-22',url:null},
   {name:'Express VPN',owner:'Thomas Flood',monthly:21.99,annual:263.88,sixMonth:null,cycle:'Monthly',category:'Entertainment',catColor:'#96c7f2',status:'active',payment:'Qantas CC',payColor:'#e5484d',renewal:'2026-06-24',url:'https://portal.expressvpn.com/my-subscriptions'},
