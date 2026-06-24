@@ -1473,26 +1473,52 @@ function renderWhoop(){
     html+='<div style="margin-bottom:18px;font-size:0.8rem;color:var(--text-muted)">Connected as <span style="color:#fff;font-weight:600">'+profile.first_name+' '+profile.last_name+'</span></div>';
   }
 
-  // Key metrics
-  html+='<div class="metrics-grid" style="margin-bottom:20px">';
-  html+='<div class="card metric-tile"><div class="metric-value" style="color:'+recCol(recScore)+'">'+(recScore!=null?recScore+'%':'—')+'</div><div class="metric-label">Recovery</div></div>';
-  html+='<div class="card metric-tile"><div class="metric-value">'+(hrv!=null?Math.round(hrv):'—')+'</div><div class="metric-label">HRV (ms)</div></div>';
-  html+='<div class="card metric-tile"><div class="metric-value">'+(rhr!=null?rhr:'—')+'</div><div class="metric-label">Resting HR</div></div>';
-  html+='<div class="card metric-tile"><div class="metric-value teal">'+(strain!=null?strain.toFixed(1):'—')+'</div><div class="metric-label">Day Strain</div></div>';
-  html+='<div class="card metric-tile"><div class="metric-value">'+(sleepHrs||'—')+'h</div><div class="metric-label">Sleep</div></div>';
-  html+='<div class="card metric-tile"><div class="metric-value" style="color:'+(sleepScore>=85?'var(--teal)':sleepScore>=70?'var(--amber)':'var(--red-soft)')+'">'+(sleepScore!=null?sleepScore+'%':'—')+'</div><div class="metric-label">Sleep Score</div></div>';
-  html+='</div>';
+  // Body data
+  const bodyData=_whoopData.body||{};
+  const maxHR=bodyData.max_heart_rate;
 
-  // Recovery trend (last 14 days)
-  html+='<div class="finance-grid" style="margin-bottom:16px">';
-  html+='<div class="card"><div class="card-header"><span class="card-title">Recovery Trend</span></div>';
+  // Weekly goals — count workouts by sport this week
+  const weekStart=new Date(Date.now()-((new Date().getDay()||7)-1)*86400000).toISOString().split('T')[0];
+  const weekWorkouts=workouts.filter(w=>w.start&&w.start.split('T')[0]>=weekStart);
+  const sportCount={weightlifting:0,sauna:0,running:0,tennis:0};
+  weekWorkouts.forEach(w=>{if(sportCount.hasOwnProperty(w.sport_name))sportCount[w.sport_name]++});
+  const goals=[{sport:'Weightlifting',icon:'🏋️',done:sportCount.weightlifting,target:3},{sport:'Sauna',icon:'🧖',done:sportCount.sauna,target:3},{sport:'Running',icon:'🏃',done:sportCount.running,target:2},{sport:'Tennis',icon:'🎾',done:sportCount.tennis,target:2}];
+
+  html+='<div style="margin-bottom:18px"><div style="font-size:0.78rem;font-weight:700;color:#fff;margin-bottom:10px">Goals This Week</div>';
+  html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px">';
+  goals.forEach(g=>{
+    const pct=Math.min(g.done/g.target,1);
+    const col=pct>=1?'var(--teal)':pct>=0.5?'var(--amber)':'var(--text-faint)';
+    html+='<div class="card" style="padding:12px;text-align:center">';
+    html+='<div style="font-size:1.2rem;margin-bottom:4px">'+g.icon+'</div>';
+    html+='<div style="font-size:0.9rem;font-weight:700;color:'+col+'">'+g.done+'/'+g.target+'</div>';
+    html+='<div style="font-size:0.6rem;color:var(--text-muted);margin-top:2px">'+g.sport+'</div>';
+    html+='<div style="margin-top:6px;height:3px;border-radius:2px;background:rgba(255,255,255,0.06);overflow:hidden"><div style="height:100%;width:'+(pct*100)+'%;background:'+col+';border-radius:2px"></div></div>';
+    html+='</div>';
+  });
+  html+='</div></div>';
+
+  // Key metrics — clickable to expand trend charts
+  html+='<div class="metrics-grid" style="margin-bottom:8px">';
+  html+='<div class="card metric-tile" onclick="toggleTrend(\'recovery\')" style="cursor:pointer"><div class="metric-value" style="color:'+recCol(recScore)+'">'+(recScore!=null?recScore+'%':'—')+'</div><div class="metric-label">Recovery</div></div>';
+  html+='<div class="card metric-tile" onclick="toggleTrend(\'hrv\')" style="cursor:pointer"><div class="metric-value">'+(hrv!=null?Math.round(hrv):'—')+'</div><div class="metric-label">HRV (ms)</div></div>';
+  html+='<div class="card metric-tile"><div class="metric-value">'+(rhr!=null?rhr:'—')+'</div><div class="metric-label">Resting HR</div></div>';
+  html+='<div class="card metric-tile" onclick="toggleTrend(\'strain\')" style="cursor:pointer"><div class="metric-value teal">'+(strain!=null?strain.toFixed(1):'—')+'</div><div class="metric-label">Day Strain</div></div>';
+  html+='<div class="card metric-tile" onclick="toggleTrend(\'sleep\')" style="cursor:pointer"><div class="metric-value">'+(sleepHrs||'—')+'h</div><div class="metric-label">Sleep</div></div>';
+  html+='<div class="card metric-tile"><div class="metric-value" style="color:'+(sleepScore>=85?'var(--teal)':sleepScore>=70?'var(--amber)':'var(--red-soft)')+'">'+(sleepScore!=null?sleepScore+'%':'—')+'</div><div class="metric-label">Sleep Score</div></div>';
+  if(maxHR)html+='<div class="card metric-tile"><div class="metric-value">'+(maxHR||'—')+'</div><div class="metric-label">Max HR</div></div>';
+  html+='</div>';
+  html+='<div style="font-size:0.5rem;color:var(--text-faint);margin-bottom:16px;text-align:center">Tap a metric to view trend</div>';
+
+  // Expandable trend charts
+  html+='<div id="trend-recovery" style="display:none;margin-bottom:16px">';
+  html+='<div class="card"><div class="card-header"><span class="card-title">Recovery Trend (14 days)</span></div>';
   const recLast14=recovery.slice(0,14).reverse();
   if(recLast14.length){
     html+='<div style="display:flex;align-items:flex-end;gap:4px;height:100px">';
     recLast14.forEach(r=>{
       const s=r.score?.recovery_score||0;
       const h=Math.max(s,3);
-      const d=r.cycle_id?'':'';
       const day=r.created_at?new Date(r.created_at).toLocaleDateString('en-AU',{weekday:'short'}).substring(0,2):'';
       html+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">';
       html+='<div style="font-size:0.5rem;color:'+recCol(s)+';font-weight:600">'+s+'</div>';
@@ -1501,11 +1527,30 @@ function renderWhoop(){
       html+='</div>';
     });
     html+='</div>';
-  } else html+='<div style="font-size:0.75rem;color:var(--text-faint)">No recovery data yet</div>';
-  html+='</div>';
+  } else html+='<div style="font-size:0.75rem;color:var(--text-faint)">No data yet</div>';
+  html+='</div></div>';
 
-  // Sleep trend
-  html+='<div class="card"><div class="card-header"><span class="card-title">Sleep Duration</span></div>';
+  html+='<div id="trend-hrv" style="display:none;margin-bottom:16px">';
+  html+='<div class="card"><div class="card-header"><span class="card-title">HRV Trend (14 days)</span></div>';
+  if(recLast14.length){
+    const maxHRV=Math.max(...recLast14.map(r=>r.score?.hrv_rmssd_milli||0),1);
+    html+='<div style="display:flex;align-items:flex-end;gap:4px;height:100px">';
+    recLast14.forEach(r=>{
+      const v=r.score?.hrv_rmssd_milli||0;
+      const h=Math.round((v/maxHRV)*90)||2;
+      const day=r.created_at?new Date(r.created_at).toLocaleDateString('en-AU',{weekday:'short'}).substring(0,2):'';
+      html+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">';
+      html+='<div style="font-size:0.5rem;color:var(--teal);font-weight:600">'+Math.round(v)+'</div>';
+      html+='<div style="width:100%;height:'+h+'px;background:var(--teal);border-radius:2px 2px 0 0;opacity:0.7"></div>';
+      html+='<div style="font-size:0.45rem;color:var(--text-faint)">'+day+'</div>';
+      html+='</div>';
+    });
+    html+='</div>';
+  } else html+='<div style="font-size:0.75rem;color:var(--text-faint)">No data yet</div>';
+  html+='</div></div>';
+
+  html+='<div id="trend-sleep" style="display:none;margin-bottom:16px">';
+  html+='<div class="card"><div class="card-header"><span class="card-title">Sleep Duration (14 days)</span></div>';
   const sleepLast14=sleepData.slice(0,14).reverse();
   if(sleepLast14.length){
     const maxSleep=Math.max(...sleepLast14.map(s=>s.score?.stage_summary?.total_in_bed_time_milli||0),1);
@@ -1521,11 +1566,11 @@ function renderWhoop(){
       html+='</div>';
     });
     html+='</div>';
-  } else html+='<div style="font-size:0.75rem;color:var(--text-faint)">No sleep data yet</div>';
+  } else html+='<div style="font-size:0.75rem;color:var(--text-faint)">No data yet</div>';
   html+='</div></div>';
 
-  // Strain trend
-  html+='<div class="card" style="margin-bottom:16px"><div class="card-header"><span class="card-title">Strain (Last 14 Days)</span></div>';
+  html+='<div id="trend-strain" style="display:none;margin-bottom:16px">';
+  html+='<div class="card"><div class="card-header"><span class="card-title">Strain (14 days)</span></div>';
   const cycleLast14=cycles.slice(0,14).reverse();
   if(cycleLast14.length){
     html+='<div style="display:flex;align-items:flex-end;gap:4px;height:80px">';
@@ -1539,8 +1584,8 @@ function renderWhoop(){
       html+='</div>';
     });
     html+='</div>';
-  } else html+='<div style="font-size:0.75rem;color:var(--text-faint)">No cycle data yet</div>';
-  html+='</div>';
+  } else html+='<div style="font-size:0.75rem;color:var(--text-faint)">No data yet</div>';
+  html+='</div></div>';
 
   // Recent workouts
   if(workouts.length){
@@ -1582,8 +1627,10 @@ function renderWhoop(){
 
         // Compact stats
         html+='<div style="display:flex;gap:6px;flex-wrap:wrap">';
+        if(dur)html+='<div style="padding:3px 7px;border-radius:4px;background:rgba(255,255,255,0.04);font-size:0.6rem"><span style="color:#fff;font-weight:700">'+dur+'</span> <span style="color:var(--text-faint)">min</span></div>';
         if(cals)html+='<div style="padding:3px 7px;border-radius:4px;background:rgba(255,255,255,0.04);font-size:0.6rem"><span style="color:var(--amber);font-weight:700">'+cals+'</span> <span style="color:var(--text-faint)">cal</span></div>';
-        if(sc?.average_heart_rate)html+='<div style="padding:3px 7px;border-radius:4px;background:rgba(255,255,255,0.04);font-size:0.6rem"><span style="color:var(--red-soft);font-weight:700">'+sc.average_heart_rate+'</span> <span style="color:var(--text-faint)">bpm</span></div>';
+        if(sc?.average_heart_rate)html+='<div style="padding:3px 7px;border-radius:4px;background:rgba(255,255,255,0.04);font-size:0.6rem"><span style="color:var(--red-soft);font-weight:700">'+sc.average_heart_rate+'</span> <span style="color:var(--text-faint)">avg bpm</span></div>';
+        if(sc?.max_heart_rate)html+='<div style="padding:3px 7px;border-radius:4px;background:rgba(255,255,255,0.04);font-size:0.6rem"><span style="color:var(--red-soft);font-weight:700">'+sc.max_heart_rate+'</span> <span style="color:var(--text-faint)">max bpm</span></div>';
         if(sc?.distance_meter)html+='<div style="padding:3px 7px;border-radius:4px;background:rgba(255,255,255,0.04);font-size:0.6rem"><span style="color:var(--teal);font-weight:700">'+((sc.distance_meter/1000).toFixed(1))+'km</span></div>';
         html+='</div>';
 
@@ -1616,7 +1663,7 @@ function renderWhoop(){
         html+='<div onclick="showWhoopWorkoutDetail(\''+w.id+'\')" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.04);cursor:pointer">';
         html+='<div style="font-size:1rem">'+icon+'</div>';
         html+='<div style="flex:1;min-width:0"><div style="font-size:0.78rem;font-weight:600;color:#fff">'+sport+'</div>';
-        html+='<div style="font-size:0.58rem;color:var(--text-muted)">'+(w.start?fmtShort(w.start):'')+(dur?' · '+dur+' min':'')+'</div></div>';
+        html+='<div style="font-size:0.58rem;color:var(--text-muted)">'+(w.start?fmtShort(w.start):'')+(dur?' · '+dur+' min':'')+(sc?.average_heart_rate?' · '+sc.average_heart_rate+' bpm':'')+'</div></div>';
         if(sc?.strain)html+='<div style="font-size:0.7rem;font-weight:700;color:var(--teal);min-width:30px;text-align:right">'+sc.strain.toFixed(1)+'</div>';
         if(cals)html+='<div style="font-size:0.65rem;color:var(--amber);min-width:40px;text-align:right">'+cals+' cal</div>';
         html+='</div>';
@@ -1760,6 +1807,13 @@ function renderWhoop(){
   }
 
   el.innerHTML=html;
+}
+
+function toggleTrend(key){
+  const el=document.getElementById('trend-'+key);if(!el)return;
+  const vis=el.style.display!=='none';
+  document.querySelectorAll('[id^="trend-"]').forEach(e=>e.style.display='none');
+  if(!vis)el.style.display='block';
 }
 
 function showWhoopWorkoutDetail(workoutId){
