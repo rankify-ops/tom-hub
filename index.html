@@ -1070,9 +1070,12 @@ function renderFinances(){
   const totalMonthly=activeDerived.reduce((s,d)=>s+d.monthly,0);
   const totalWeekly=activeDerived.reduce((s,d)=>s+d.weekly,0);
   const totalAnnual=activeDerived.reduce((s,d)=>s+d.annual,0);
-  const weeklyNet=weeklyIncome-totalWeekly;
-  const monthlyNet=monthlyIncome-totalMonthly;
-  const annualNet=annualIncome-totalAnnual;
+  const weeklyLiving=350;
+  const monthlyLiving=weeklyLiving*52/12;
+  const annualLiving=weeklyLiving*52;
+  const weeklyNet=weeklyIncome-totalWeekly-weeklyLiving;
+  const monthlyNet=monthlyIncome-totalMonthly-monthlyLiving;
+  const annualNet=annualIncome-totalAnnual-annualLiving;
   const fmt2=n=>n.toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2});
 
   let costHtml='<div class="card" style="margin-bottom:20px;padding:20px">';
@@ -1085,6 +1088,12 @@ function renderFinances(){
   costHtml+='<div class="metric-tile" style="padding:10px"><div class="metric-value" style="font-size:0.95rem;color:var(--red-soft)">$'+fmt2(totalMonthly)+'</div><div class="metric-label">Monthly Costs</div></div>';
   costHtml+='<div class="metric-tile" style="padding:10px"><div class="metric-value" style="font-size:0.95rem;color:var(--amber)">$'+fmt2(totalAnnual)+'</div><div class="metric-label">Annual Costs</div></div>';
   costHtml+='<div class="metric-tile" style="padding:10px"><div class="metric-value" style="font-size:0.95rem">'+activeItems.length+' <span style="color:var(--text-faint);font-size:0.7rem">/ '+_costTracking.filter(c=>c.status==='paused').length+' paused</span></div><div class="metric-label">Subscriptions</div></div>';
+
+  costHtml+='<div class="metric-tile" style="padding:10px;grid-column:span 4;border-top:1px solid rgba(255,255,255,0.06);margin-top:4px;padding-top:12px"><div style="display:flex;justify-content:center;gap:24px">';
+  costHtml+='<div style="text-align:center"><div style="font-size:0.85rem;font-weight:600;color:var(--amber)">$'+fmt2(weeklyLiving)+'</div><div style="font-size:0.55rem;color:var(--text-faint);margin-top:2px">Living /week</div></div>';
+  costHtml+='<div style="text-align:center"><div style="font-size:0.85rem;font-weight:600;color:var(--amber)">$'+fmt2(monthlyLiving)+'</div><div style="font-size:0.55rem;color:var(--text-faint);margin-top:2px">Living /month</div></div>';
+  costHtml+='<div style="text-align:center"><div style="font-size:0.85rem;font-weight:600;color:var(--amber)">$'+fmt2(annualLiving)+'</div><div style="font-size:0.55rem;color:var(--text-faint);margin-top:2px">Living /year</div></div>';
+  costHtml+='</div><div style="font-size:0.5rem;color:var(--text-faint);text-align:center;margin-top:4px">Food, fuel & essentials estimate</div></div>';
 
   costHtml+='<div class="metric-tile" style="padding:10px;grid-column:span 4;border-top:1px solid rgba(255,255,255,0.06);margin-top:4px;padding-top:12px"><div style="display:flex;justify-content:center;gap:24px">';
   costHtml+='<div style="text-align:center"><div style="font-size:0.95rem;font-weight:700;color:'+(weeklyNet>=0?'var(--teal)':'var(--red-soft)')+'">$'+fmt2(weeklyNet)+'</div><div style="font-size:0.55rem;color:var(--text-faint);margin-top:2px">Surplus /week</div></div>';
