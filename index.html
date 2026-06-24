@@ -1506,7 +1506,6 @@ function renderWhoop(){
   html+='<div class="card metric-tile" onclick="toggleTrend(\'strain\')" style="cursor:pointer"><div class="metric-value teal">'+(strain!=null?strain.toFixed(1):'—')+'</div><div class="metric-label">Day Strain</div></div>';
   html+='<div class="card metric-tile" onclick="toggleTrend(\'sleep\')" style="cursor:pointer"><div class="metric-value">'+(sleepHrs||'—')+'h</div><div class="metric-label">Sleep</div></div>';
   html+='<div class="card metric-tile"><div class="metric-value" style="color:'+(sleepScore>=85?'var(--teal)':sleepScore>=70?'var(--amber)':'var(--red-soft)')+'">'+(sleepScore!=null?sleepScore+'%':'—')+'</div><div class="metric-label">Sleep Score</div></div>';
-  if(maxHR)html+='<div class="card metric-tile"><div class="metric-value">'+(maxHR||'—')+'</div><div class="metric-label">Max HR</div></div>';
   html+='</div>';
   html+='<div style="font-size:0.5rem;color:var(--text-faint);margin-bottom:16px;text-align:center">Tap a metric to view trend</div>';
 
