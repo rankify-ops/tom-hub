@@ -1,6 +1,6 @@
 async function kvSet(key, value) {
-  const url = process.env.STORAGE_REST_API_URL;
-  const token = process.env.STORAGE_REST_API_TOKEN;
+  const url = process.env.KV_REST_API_URL;
+  const token = process.env.KV_REST_API_TOKEN;
   if (!url || !token) throw new Error('KV not configured');
   await fetch(url, {
     method: 'POST',
