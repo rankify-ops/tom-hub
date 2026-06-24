@@ -1200,7 +1200,7 @@ function renderFinances(){
   costHtml+='<div class="card" style="margin-top:16px;padding:20px">';
   costHtml+='<div class="card-header" style="margin-bottom:12px"><span class="card-title">All Subscriptions</span><span style="font-size:0.6rem;color:var(--text-faint);margin-left:8px">'+_costTracking.length+' items</span></div>';
   costHtml+='<div style="overflow-x:auto">';
-  costHtml+='<table class="data-table" style="width:100%"><thead><tr>';
+  costHtml+='<table class="data-table" style="min-width:900px;width:100%"><thead><tr>';
   costHtml+='<th>Name</th><th>Category</th><th>Billing Cycle</th><th style="text-align:right">Weekly</th><th style="text-align:right">Monthly</th><th style="text-align:right">6 Monthly</th><th style="text-align:right">Annual</th><th>Renewal</th><th>Payment Method</th><th>Login</th>';
   costHtml+='</tr></thead><tbody>';
   _costTracking.forEach(c=>{
