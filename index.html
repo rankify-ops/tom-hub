@@ -1050,6 +1050,15 @@ let _weeklyIncome=2469.54;
 
 function fmtDate(d){if(!d)return'–';const p=d.split('-');return p[2]+'/'+p[1]+'/'+p[0].slice(2);}
 
+function deriveCosts(c){
+  let m=c.monthly;
+  if(!m&&c.annual)m=c.annual/12;
+  if(!m&&c.sixMonth)m=c.sixMonth/6;
+  if(!m&&c.weekly)m=c.weekly*52/12;
+  if(!m)m=0;
+  return{weekly:+(m*12/52).toFixed(2),monthly:+m.toFixed(2),sixMonth:+(m*6).toFixed(2),annual:+(m*12).toFixed(2)};
+}
+
 function renderFinances(){
   const el=document.getElementById('finances-content');if(!el)return;
 
@@ -1057,9 +1066,10 @@ function renderFinances(){
   const monthlyIncome=weeklyIncome*52/12;
   const annualIncome=weeklyIncome*52;
   const activeItems=_costTracking.filter(c=>c.status==='active');
-  const totalMonthly=activeItems.reduce((s,c)=>s+(c.monthly||0),0);
-  const totalWeekly=totalMonthly*12/52;
-  const totalAnnual=activeItems.reduce((s,c)=>s+(c.annual||0),0);
+  const activeDerived=activeItems.map(c=>deriveCosts(c));
+  const totalMonthly=activeDerived.reduce((s,d)=>s+d.monthly,0);
+  const totalWeekly=activeDerived.reduce((s,d)=>s+d.weekly,0);
+  const totalAnnual=activeDerived.reduce((s,d)=>s+d.annual,0);
   const weeklyNet=weeklyIncome-totalWeekly;
   const monthlyNet=monthlyIncome-totalMonthly;
   const annualNet=annualIncome-totalAnnual;
@@ -1085,20 +1095,22 @@ function renderFinances(){
 
   costHtml+='<div style="overflow-x:auto">';
   costHtml+='<table class="data-table" style="width:100%"><thead><tr>';
-  costHtml+='<th>Name</th><th>Account Owner</th><th>Category</th><th>Billing Cycle</th><th style="text-align:right">Annual Cost</th><th style="text-align:right">6 Monthly Cost</th><th style="text-align:right">Monthly Cost</th><th>Renewal Date</th><th>Payment Method</th><th>Login URL</th>';
+  costHtml+='<th>Name</th><th>Account Owner</th><th>Category</th><th>Billing Cycle</th><th style="text-align:right">Annual</th><th style="text-align:right">6 Monthly</th><th style="text-align:right">Monthly</th><th style="text-align:right">Weekly</th><th>Renewal Date</th><th>Payment Method</th><th>Login URL</th>';
   costHtml+='</tr></thead><tbody>';
 
   _costTracking.forEach(c=>{
     const isPaused=c.status==='paused';
     const rowStyle=isPaused?'opacity:0.5':'';
+    const d=deriveCosts(c);
     costHtml+='<tr style="'+rowStyle+'">';
     costHtml+='<td style="color:#fff;font-weight:600;white-space:nowrap">'+c.name+(isPaused?' <span style="color:var(--text-faint);font-weight:400;font-size:0.55rem">(PAUSED)</span>':'')+'</td>';
     costHtml+='<td>'+c.owner+'</td>';
     costHtml+='<td>'+(c.category?'<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.65rem;background:'+c.catColor+'22;color:'+c.catColor+';border:1px solid '+c.catColor+'44">'+c.category+'</span>':'–')+'</td>';
     costHtml+='<td>'+(c.cycle==='Weekly'?'<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.65rem;background:#FF408122;color:#FF4081;border:1px solid #FF408144">'+c.cycle+'</span>':'<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.65rem;background:#7C4DFF22;color:#7C4DFF;border:1px solid #7C4DFF44">'+c.cycle+'</span>')+'</td>';
-    costHtml+='<td style="text-align:right;font-weight:600">$'+(c.annual||0).toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td>';
-    costHtml+='<td style="text-align:right">'+(c.sixMonth?'$'+c.sixMonth.toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2}):'–')+'</td>';
-    costHtml+='<td style="text-align:right;font-weight:600">'+(c.monthly?'$'+c.monthly.toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2}):'–')+'</td>';
+    costHtml+='<td style="text-align:right;font-weight:600">$'+fmt2(d.annual)+'</td>';
+    costHtml+='<td style="text-align:right">$'+fmt2(d.sixMonth)+'</td>';
+    costHtml+='<td style="text-align:right;font-weight:600">$'+fmt2(d.monthly)+'</td>';
+    costHtml+='<td style="text-align:right">$'+fmt2(d.weekly)+'</td>';
     costHtml+='<td style="white-space:nowrap">'+fmtDate(c.renewal)+'</td>';
     costHtml+='<td><span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.65rem;background:'+c.payColor+'22;color:'+c.payColor+';border:1px solid '+c.payColor+'44;white-space:nowrap">'+c.payment+'</span></td>';
     costHtml+='<td>'+(c.url?'<a href="'+c.url+'" target="_blank" style="color:var(--teal);font-size:0.65rem;text-decoration:none" title="'+c.url+'">🔗</a>':'–')+'</td>';
