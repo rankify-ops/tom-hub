@@ -244,6 +244,7 @@ select.form-input{cursor:pointer;background:#1a1a1a}
       <div class="nav-item" data-tab="notes"><span class="nav-icon">✎</span><span>Notes</span></div>
       <div class="nav-item" data-tab="goals"><span class="nav-icon">⊕</span><span>Goals</span></div>
       <div class="nav-item" data-tab="finances"><span class="nav-icon">◇</span><span>Finances</span></div>
+      <div class="nav-item" data-tab="training"><span class="nav-icon">◎</span><span>Training</span></div>
     </nav>
     <div class="sidebar-links">
       <div class="sidebar-links-title">Quick Links</div>
@@ -272,6 +273,7 @@ select.form-input{cursor:pointer;background:#1a1a1a}
             <span class="quick-link" onclick="switchTab('notes')">✎ Notes</span>
             <span class="quick-link" onclick="switchTab('goals')">⊕ Goals</span>
             <span class="quick-link" onclick="switchTab('finances')">◇ Finances</span>
+            <span class="quick-link" onclick="switchTab('training')">◎ Training</span>
           </div>
         </div>
         <div class="card">
@@ -328,7 +330,56 @@ select.form-input{cursor:pointer;background:#1a1a1a}
       </div>
       <div id="finances-content"></div>
     </div>
+    <!-- ═══ TRAINING TAB ═══ -->
+    <div class="tab-panel" id="tab-training">
+      <div class="section-header">
+        <h2>Training</h2>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div class="updated" id="training-updated"></div>
+          <button class="btn" onclick="showTrainingModal()">+ Log Session</button>
+        </div>
+      </div>
+      <div id="training-content"></div>
+    </div>
   </main>
+</div>
+
+<!-- ═══ TRAINING MODAL ═══ -->
+<div class="modal-overlay" id="training-modal">
+  <div class="modal-backdrop" onclick="closeModal('training-modal')"></div>
+  <div class="modal-card">
+    <div class="modal-title" id="training-modal-title">Log Session</div>
+    <input type="hidden" id="training-edit-id">
+    <div class="form-group"><label class="form-label">Date</label><input type="date" id="training-date" class="form-input"></div>
+    <div class="form-group"><label class="form-label">Type</label>
+      <select id="training-type" class="form-input">
+        <option value="Gym">Gym</option>
+        <option value="Run">Run</option>
+        <option value="Swim">Swim</option>
+        <option value="Cycle">Cycle</option>
+        <option value="HIIT">HIIT</option>
+        <option value="Yoga">Yoga</option>
+        <option value="Sport">Sport</option>
+        <option value="Walk">Walk</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Duration (minutes)</label><input type="number" id="training-duration" class="form-input" placeholder="45"></div>
+    <div class="form-group"><label class="form-label">Exercises / Notes</label><textarea id="training-notes" class="form-input" placeholder="e.g. Bench 80kg x8, Squats 100kg x5..."></textarea></div>
+    <div class="form-group"><label class="form-label">Rating</label>
+      <select id="training-rating" class="form-input">
+        <option value="5">⭐⭐⭐⭐⭐ Great</option>
+        <option value="4">⭐⭐⭐⭐ Good</option>
+        <option value="3" selected>⭐⭐⭐ OK</option>
+        <option value="2">⭐⭐ Tough</option>
+        <option value="1">⭐ Bad day</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn" onclick="saveTraining()" style="flex:1">Save</button>
+      <button class="btn btn-ghost" onclick="closeModal('training-modal')">Cancel</button>
+    </div>
+  </div>
 </div>
 
 <!-- ═══ NOTE MODAL ═══ -->
@@ -481,10 +532,11 @@ let _checklists=[];
 let _notes=[];
 let _goals=[];
 let _finances=[];
+let _training=[];
 
 // ─── Load All Data ───
 async function loadAll(){
-  await Promise.all([loadChecklists(),loadNotes(),loadGoals(),loadFinances()]);
+  await Promise.all([loadChecklists(),loadNotes(),loadGoals(),loadFinances(),loadTraining()]);
   renderOverview();
 }
 
@@ -921,6 +973,175 @@ function renderFinances(){
 }
 
 // ════════════════════════════════════════
+// TRAINING
+// ════════════════════════════════════════
+async function loadTraining(){
+  try{
+    const res=await fetch('/api/training?t='+Date.now());
+    if(res.ok){const d=await res.json();_training=d.sessions||[];if(d.updated)document.getElementById('training-updated').textContent='Saved: '+fmt(d.updated);renderTraining()}
+  }catch(e){console.warn('Training load failed',e)}
+}
+async function saveTrainingData(){
+  try{await fetch('/api/training',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',sessions:_training})});document.getElementById('training-updated').textContent='Saved: '+fmt(new Date().toISOString())}catch(e){console.warn('Training save failed',e)}
+}
+function showTrainingModal(id){
+  if(id){
+    const s=_training.find(t=>t.id===id);if(!s)return;
+    document.getElementById('training-modal-title').textContent='Edit Session';
+    document.getElementById('training-edit-id').value=id;
+    document.getElementById('training-date').value=s.date;
+    document.getElementById('training-type').value=s.type;
+    document.getElementById('training-duration').value=s.duration;
+    document.getElementById('training-notes').value=s.notes||'';
+    document.getElementById('training-rating').value=s.rating||3;
+  } else {
+    document.getElementById('training-modal-title').textContent='Log Session';
+    document.getElementById('training-edit-id').value='';
+    document.getElementById('training-date').value=new Date().toISOString().split('T')[0];
+    document.getElementById('training-type').value='Gym';
+    document.getElementById('training-duration').value='';
+    document.getElementById('training-notes').value='';
+    document.getElementById('training-rating').value='3';
+  }
+  openModal('training-modal');
+}
+function saveTraining(){
+  const id=document.getElementById('training-edit-id').value;
+  const date=document.getElementById('training-date').value;
+  const type=document.getElementById('training-type').value;
+  const duration=parseInt(document.getElementById('training-duration').value)||0;
+  const notes=document.getElementById('training-notes').value.trim();
+  const rating=parseInt(document.getElementById('training-rating').value)||3;
+  if(!date||!duration)return;
+  if(id){
+    const s=_training.find(t=>t.id===id);if(!s)return;
+    Object.assign(s,{date,type,duration,notes,rating,modified:new Date().toISOString()});
+  } else {
+    _training.push({id:Date.now().toString(),date,type,duration,notes,rating,created:new Date().toISOString()});
+  }
+  closeModal('training-modal');
+  saveTrainingData();renderTraining();renderOverview();
+}
+function deleteTraining(id){
+  if(!confirm('Delete this session?'))return;
+  _training=_training.filter(t=>t.id!==id);
+  saveTrainingData();renderTraining();renderOverview();
+}
+function calcStreak(sessions){
+  if(!sessions.length)return 0;
+  const dates=[...new Set(sessions.map(s=>s.date))].sort().reverse();
+  const today=new Date().toISOString().split('T')[0];
+  const yesterday=new Date(Date.now()-86400000).toISOString().split('T')[0];
+  if(dates[0]!==today&&dates[0]!==yesterday)return 0;
+  let streak=1;
+  for(let i=0;i<dates.length-1;i++){
+    const curr=new Date(dates[i]);
+    const prev=new Date(dates[i+1]);
+    const diff=(curr-prev)/(86400000);
+    if(diff===1)streak++;
+    else break;
+  }
+  return streak;
+}
+function renderTraining(){
+  const el=document.getElementById('training-content');if(!el)return;
+  if(!_training.length){
+    el.innerHTML='<div class="empty-state"><div class="icon">◎</div><h3>No sessions logged</h3><p>Log a workout to start tracking your training</p></div>';
+    return;
+  }
+  const sorted=[..._training].sort((a,b)=>b.date.localeCompare(a.date));
+  const totalSessions=_training.length;
+  const totalMinutes=_training.reduce((s,t)=>s+t.duration,0);
+  const totalHours=Math.round(totalMinutes/60*10)/10;
+  const streak=calcStreak(_training);
+  const now=new Date();
+  const weekAgo=new Date(now-7*86400000).toISOString().split('T')[0];
+  const thisWeek=_training.filter(t=>t.date>=weekAgo).length;
+  const avgRating=_training.length?(_training.reduce((s,t)=>s+(t.rating||3),0)/_training.length).toFixed(1):'—';
+
+  // Type breakdown
+  const types={};
+  _training.forEach(t=>{types[t.type]=(types[t.type]||0)+1});
+  const typeEntries=Object.entries(types).sort((a,b)=>b[1]-a[1]);
+
+  // Weekly chart (last 8 weeks)
+  const weeks={};
+  for(let i=0;i<8;i++){
+    const d=new Date(now-i*7*86400000);
+    const wk=d.toISOString().split('T')[0].substring(0,7)+'-W'+Math.ceil(d.getDate()/7);
+    const start=new Date(d);start.setDate(start.getDate()-start.getDay());
+    const end=new Date(start);end.setDate(end.getDate()+6);
+    const startStr=start.toISOString().split('T')[0];
+    const endStr=end.toISOString().split('T')[0];
+    const count=_training.filter(t=>t.date>=startStr&&t.date<=endStr).length;
+    const label=start.toLocaleDateString('en-AU',{day:'numeric',month:'short'});
+    weeks[label]=count;
+  }
+  const weekKeys=Object.keys(weeks).reverse();
+  const maxWeek=Math.max(...Object.values(weeks),1);
+
+  const typeIcons={Gym:'🏋️',Run:'🏃',Swim:'🏊',Cycle:'🚴',HIIT:'⚡',Yoga:'🧘',Sport:'⚽',Walk:'🚶',Other:'💪'};
+
+  let html='<div class="metrics-grid" style="margin-bottom:16px">';
+  html+='<div class="card metric-tile"><div class="metric-value">'+totalSessions+'</div><div class="metric-label">Total Sessions</div></div>';
+  html+='<div class="card metric-tile"><div class="metric-value teal">'+thisWeek+'</div><div class="metric-label">This Week</div></div>';
+  html+='<div class="card metric-tile"><div class="metric-value" style="color:'+(streak>=3?'var(--teal)':streak>=1?'var(--amber)':'var(--red-soft)')+'">'+streak+'</div><div class="metric-label">Day Streak 🔥</div></div>';
+  html+='<div class="card metric-tile"><div class="metric-value">'+totalHours+'h</div><div class="metric-label">Total Hours</div></div>';
+  html+='<div class="card metric-tile"><div class="metric-value">'+avgRating+'</div><div class="metric-label">Avg Rating</div></div>';
+  html+='</div>';
+
+  html+='<div class="finance-grid" style="margin-bottom:16px">';
+  // Weekly frequency chart
+  html+='<div class="card"><div class="card-header"><span class="card-title">Weekly Frequency</span></div>';
+  html+='<div style="display:flex;align-items:flex-end;gap:8px;height:100px">';
+  weekKeys.forEach(w=>{
+    const count=weeks[w];
+    const h=Math.round((count/maxWeek)*80);
+    html+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">';
+    html+='<div style="font-size:0.6rem;color:var(--teal);font-weight:600">'+count+'</div>';
+    html+='<div style="width:100%;height:'+Math.max(h,2)+'px;background:var(--teal);border-radius:3px 3px 0 0;opacity:'+(count?'1':'0.2')+'"></div>';
+    html+='<div style="font-size:0.5rem;color:var(--text-faint);white-space:nowrap">'+w+'</div>';
+    html+='</div>';
+  });
+  html+='</div></div>';
+
+  // Type breakdown
+  html+='<div class="card"><div class="card-header"><span class="card-title">By Type</span></div>';
+  typeEntries.forEach(([type,count])=>{
+    const pct=Math.round((count/totalSessions)*100);
+    html+='<div style="margin-bottom:8px">';
+    html+='<div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:3px"><span style="color:var(--text-secondary)">'+(typeIcons[type]||'💪')+' '+type+'</span><span style="color:#fff;font-weight:600">'+count+' <span style="color:var(--text-faint);font-weight:400">'+pct+'%</span></span></div>';
+    html+='<div class="progress-bar" style="height:4px"><div class="progress-fill" style="width:'+pct+'%"></div></div>';
+    html+='</div>';
+  });
+  html+='</div></div>';
+
+  // Session log
+  html+='<div class="card"><div class="card-header"><span class="card-title">Session Log</span></div>';
+  html+='<div style="display:flex;flex-direction:column;gap:8px">';
+  sorted.forEach(s=>{
+    const icon=typeIcons[s.type]||'💪';
+    const stars='⭐'.repeat(s.rating||3);
+    html+='<div style="display:flex;align-items:flex-start;gap:12px;padding:10px 12px;border-radius:var(--radius-sm);background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);cursor:pointer" onclick="showTrainingModal(\''+s.id+'\')">';
+    html+='<div style="font-size:1.3rem;flex-shrink:0;margin-top:2px">'+icon+'</div>';
+    html+='<div style="flex:1;min-width:0">';
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">';
+    html+='<div style="font-size:0.85rem;font-weight:600;color:#fff">'+s.type+'</div>';
+    html+='<div style="font-size:0.6rem;color:var(--text-faint)">'+fmtShort(s.date)+'</div>';
+    html+='</div>';
+    html+='<div style="display:flex;gap:8px;margin-top:3px;font-size:0.68rem;color:var(--text-muted)">';
+    html+='<span>'+s.duration+' min</span><span>'+stars+'</span>';
+    html+='</div>';
+    if(s.notes){html+='<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px;white-space:pre-wrap;line-height:1.4">'+s.notes+'</div>';}
+    html+='</div>';
+    html+='<button onclick="event.stopPropagation();deleteTraining(\''+s.id+'\')" style="padding:2px 6px;border-radius:4px;background:none;border:1px solid rgba(239,68,68,0.15);color:var(--red-soft);font-size:0.55rem;cursor:pointer;font-family:var(--font);flex-shrink:0;align-self:center">✕</button>';
+    html+='</div>';
+  });
+  html+='</div></div>';
+  el.innerHTML=html;
+}
+
+// ════════════════════════════════════════
 // OVERVIEW
 // ════════════════════════════════════════
 function renderOverview(){
@@ -937,13 +1158,15 @@ function renderOverview(){
     '<div class="card metric-tile"><div class="metric-value">'+_notes.length+'</div><div class="metric-label">Notes</div></div>'+
     '<div class="card metric-tile"><div class="metric-value" style="color:var(--amber)">'+activeGoals+'</div><div class="metric-label">Active Goals</div></div>'+
     '<div class="card metric-tile"><div class="metric-value teal">'+$(totalIncome)+'</div><div class="metric-label">Income</div></div>'+
-    '<div class="card metric-tile"><div class="metric-value" style="color:var(--red-soft)">'+$(totalExpense)+'</div><div class="metric-label">Expenses</div></div>';
+    '<div class="card metric-tile"><div class="metric-value" style="color:var(--red-soft)">'+$(totalExpense)+'</div><div class="metric-label">Expenses</div></div>'+
+    '<div class="card metric-tile"><div class="metric-value" style="color:'+(calcStreak(_training)>=3?'var(--teal)':'var(--amber)')+'">'+calcStreak(_training)+'🔥</div><div class="metric-label">Training Streak</div></div>';
 
   // Recent activity
   const activities=[];
   _notes.forEach(n=>activities.push({text:'Note: '+n.title,date:n.modified}));
   _goals.forEach(g=>activities.push({text:'Goal: '+g.title+' ('+g.progress+'%)',date:g.modified}));
   _finances.slice(-5).forEach(e=>activities.push({text:(e.type==='income'?'+':'-')+$(e.amount)+' '+e.description,date:e.date}));
+  _training.slice(-5).forEach(t=>activities.push({text:t.type+' — '+t.duration+' min',date:t.date}));
   activities.sort((a,b)=>new Date(b.date)-new Date(a.date));
   const actEl=document.getElementById('overview-activity');
   if(activities.length){
