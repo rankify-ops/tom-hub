@@ -245,6 +245,7 @@ select.form-input{cursor:pointer;background:#1a1a1a}
       <div class="nav-item" data-tab="goals"><span class="nav-icon">⊕</span><span>Goals</span></div>
       <div class="nav-item" data-tab="finances"><span class="nav-icon">◇</span><span>Finances</span></div>
       <div class="nav-item" data-tab="training"><span class="nav-icon">◎</span><span>Training</span></div>
+      <div class="nav-item" data-tab="whoop"><span class="nav-icon">♡</span><span>Whoop</span></div>
     </nav>
     <div class="sidebar-links">
       <div class="sidebar-links-title">Quick Links</div>
@@ -274,6 +275,7 @@ select.form-input{cursor:pointer;background:#1a1a1a}
             <span class="quick-link" onclick="switchTab('goals')">⊕ Goals</span>
             <span class="quick-link" onclick="switchTab('finances')">◇ Finances</span>
             <span class="quick-link" onclick="switchTab('training')">◎ Training</span>
+            <span class="quick-link" onclick="switchTab('whoop')">♡ Whoop</span>
           </div>
         </div>
         <div class="card">
@@ -330,6 +332,18 @@ select.form-input{cursor:pointer;background:#1a1a1a}
       </div>
       <div id="finances-content"></div>
     </div>
+    <!-- ═══ WHOOP TAB ═══ -->
+    <div class="tab-panel" id="tab-whoop">
+      <div class="section-header">
+        <h2>Whoop</h2>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div class="updated" id="whoop-updated"></div>
+          <button class="btn btn-ghost" onclick="loadWhoop()" style="font-size:0.68rem">Refresh</button>
+        </div>
+      </div>
+      <div id="whoop-content"><div class="empty-state"><div class="icon">♡</div><h3>Loading...</h3></div></div>
+    </div>
+
     <!-- ═══ TRAINING TAB ═══ -->
     <div class="tab-panel" id="tab-training">
       <div class="section-header">
@@ -541,7 +555,7 @@ let _workoutTimer=null;
 
 // ─── Load All Data ───
 async function loadAll(){
-  await Promise.all([loadChecklists(),loadNotes(),loadGoals(),loadFinances(),loadTraining()]);
+  await Promise.all([loadChecklists(),loadNotes(),loadGoals(),loadFinances(),loadTraining(),loadWhoop()]);
   renderOverview();
 }
 
@@ -1399,6 +1413,178 @@ function renderTraining(){
 
   el.innerHTML=html;
 }
+
+// ════════════════════════════════════════
+// WHOOP
+// ════════════════════════════════════════
+let _whoopData=null;
+async function loadWhoop(){
+  try{
+    const res=await fetch('/api/whoop/data?t='+Date.now());
+    if(res.ok){_whoopData=await res.json();renderWhoop()}
+  }catch(e){console.warn('Whoop load failed',e)}
+}
+function renderWhoop(){
+  const el=document.getElementById('whoop-content');if(!el)return;
+  if(!_whoopData||!_whoopData.connected){
+    el.innerHTML='<div class="card" style="text-align:center;padding:40px 20px">'+
+      '<div style="font-size:2.5rem;margin-bottom:12px">♡</div>'+
+      '<div style="font-size:1.1rem;font-weight:700;color:#fff;margin-bottom:6px">Connect Your Whoop</div>'+
+      '<div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:18px;max-width:340px;margin-left:auto;margin-right:auto">Link your Whoop account to see recovery, strain, sleep, and workout data here.</div>'+
+      '<a href="/api/whoop/auth" style="display:inline-block;padding:10px 28px;border-radius:8px;background:var(--teal);color:#000;font-weight:700;font-size:0.85rem;text-decoration:none;font-family:var(--font)">Connect Whoop</a>'+
+      (_whoopData&&_whoopData.error?'<div style="font-size:0.7rem;color:var(--red-soft);margin-top:12px">Error: '+_whoopData.error+'</div>':'')+
+      '</div>';
+    return;
+  }
+  if(_whoopData.updated)document.getElementById('whoop-updated').textContent='Synced: '+fmt(_whoopData.updated);
+
+  const recovery=_whoopData.recovery||[];
+  const cycles=_whoopData.cycles||[];
+  const sleepData=_whoopData.sleep||[];
+  const workouts=_whoopData.workouts||[];
+  const profile=_whoopData.profile;
+
+  // Latest values
+  const latestRec=recovery.length?recovery[0]:null;
+  const latestCycle=cycles.length?cycles[0]:null;
+  const latestSleep=sleepData.length?sleepData[0]:null;
+  const recScore=latestRec?.score?.recovery_score;
+  const hrv=latestRec?.score?.hrv_rmssd_milli;
+  const rhr=latestRec?.score?.resting_heart_rate;
+  const strain=latestCycle?.score?.strain;
+  const avgHR=latestCycle?.score?.average_heart_rate;
+  const sleepMs=latestSleep?.score?.stage_summary?.total_in_bed_time_milli;
+  const sleepHrs=sleepMs?(sleepMs/3600000).toFixed(1):null;
+  const sleepScore=latestSleep?.score?.sleep_performance_percentage;
+
+  // Recovery color
+  function recCol(s){if(s==null)return'var(--text-faint)';if(s>=67)return'var(--teal)';if(s>=34)return'var(--amber)';return'var(--red-soft)'}
+
+  let html='';
+
+  // Profile greeting
+  if(profile){
+    html+='<div style="margin-bottom:18px;font-size:0.8rem;color:var(--text-muted)">Connected as <span style="color:#fff;font-weight:600">'+profile.first_name+' '+profile.last_name+'</span></div>';
+  }
+
+  // Key metrics
+  html+='<div class="metrics-grid" style="margin-bottom:20px">';
+  html+='<div class="card metric-tile"><div class="metric-value" style="color:'+recCol(recScore)+'">'+(recScore!=null?recScore+'%':'—')+'</div><div class="metric-label">Recovery</div></div>';
+  html+='<div class="card metric-tile"><div class="metric-value">'+(hrv!=null?Math.round(hrv):'—')+'</div><div class="metric-label">HRV (ms)</div></div>';
+  html+='<div class="card metric-tile"><div class="metric-value">'+(rhr!=null?rhr:'—')+'</div><div class="metric-label">Resting HR</div></div>';
+  html+='<div class="card metric-tile"><div class="metric-value teal">'+(strain!=null?strain.toFixed(1):'—')+'</div><div class="metric-label">Day Strain</div></div>';
+  html+='<div class="card metric-tile"><div class="metric-value">'+(sleepHrs||'—')+'h</div><div class="metric-label">Sleep</div></div>';
+  html+='<div class="card metric-tile"><div class="metric-value" style="color:'+(sleepScore>=85?'var(--teal)':sleepScore>=70?'var(--amber)':'var(--red-soft)')+'">'+(sleepScore!=null?sleepScore+'%':'—')+'</div><div class="metric-label">Sleep Score</div></div>';
+  html+='</div>';
+
+  // Recovery trend (last 14 days)
+  html+='<div class="finance-grid" style="margin-bottom:16px">';
+  html+='<div class="card"><div class="card-header"><span class="card-title">Recovery Trend</span></div>';
+  const recLast14=recovery.slice(0,14).reverse();
+  if(recLast14.length){
+    html+='<div style="display:flex;align-items:flex-end;gap:4px;height:100px">';
+    recLast14.forEach(r=>{
+      const s=r.score?.recovery_score||0;
+      const h=Math.max(s,3);
+      const d=r.cycle_id?'':'';
+      const day=r.created_at?new Date(r.created_at).toLocaleDateString('en-AU',{weekday:'short'}).substring(0,2):'';
+      html+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">';
+      html+='<div style="font-size:0.5rem;color:'+recCol(s)+';font-weight:600">'+s+'</div>';
+      html+='<div style="width:100%;height:'+h+'px;background:'+recCol(s)+';border-radius:2px 2px 0 0;opacity:0.8"></div>';
+      html+='<div style="font-size:0.45rem;color:var(--text-faint)">'+day+'</div>';
+      html+='</div>';
+    });
+    html+='</div>';
+  } else html+='<div style="font-size:0.75rem;color:var(--text-faint)">No recovery data yet</div>';
+  html+='</div>';
+
+  // Sleep trend
+  html+='<div class="card"><div class="card-header"><span class="card-title">Sleep Duration</span></div>';
+  const sleepLast14=sleepData.slice(0,14).reverse();
+  if(sleepLast14.length){
+    const maxSleep=Math.max(...sleepLast14.map(s=>s.score?.stage_summary?.total_in_bed_time_milli||0),1);
+    html+='<div style="display:flex;align-items:flex-end;gap:4px;height:100px">';
+    sleepLast14.forEach(s=>{
+      const ms=s.score?.stage_summary?.total_in_bed_time_milli||0;
+      const hrs=(ms/3600000).toFixed(1);
+      const h=Math.round((ms/maxSleep)*90)||2;
+      const col=hrs>=7?'var(--teal)':hrs>=6?'var(--amber)':'var(--red-soft)';
+      html+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">';
+      html+='<div style="font-size:0.5rem;color:'+col+';font-weight:600">'+hrs+'</div>';
+      html+='<div style="width:100%;height:'+h+'px;background:'+col+';border-radius:2px 2px 0 0;opacity:0.7"></div>';
+      html+='</div>';
+    });
+    html+='</div>';
+  } else html+='<div style="font-size:0.75rem;color:var(--text-faint)">No sleep data yet</div>';
+  html+='</div></div>';
+
+  // Strain trend
+  html+='<div class="card" style="margin-bottom:16px"><div class="card-header"><span class="card-title">Strain (Last 14 Days)</span></div>';
+  const cycleLast14=cycles.slice(0,14).reverse();
+  if(cycleLast14.length){
+    html+='<div style="display:flex;align-items:flex-end;gap:4px;height:80px">';
+    cycleLast14.forEach(c=>{
+      const s=c.score?.strain||0;
+      const h=Math.round((s/21)*75)||2;
+      const col=s>=14?'var(--red-soft)':s>=8?'var(--amber)':'var(--teal)';
+      html+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">';
+      html+='<div style="font-size:0.5rem;color:'+col+';font-weight:600">'+s.toFixed(1)+'</div>';
+      html+='<div style="width:100%;height:'+h+'px;background:'+col+';border-radius:2px 2px 0 0;opacity:0.7"></div>';
+      html+='</div>';
+    });
+    html+='</div>';
+  } else html+='<div style="font-size:0.75rem;color:var(--text-faint)">No cycle data yet</div>';
+  html+='</div>';
+
+  // Recent workouts
+  if(workouts.length){
+    html+='<div class="card"><div class="card-header"><span class="card-title">Recent Workouts</span></div>';
+    html+='<div style="display:flex;flex-direction:column;gap:6px">';
+    const sportNames={'-1':'Activity',0:'Running',1:'Cycling',16:'Rugby',17:'Soccer',25:'Swimming',43:'Strength',44:'CrossFit',48:'HIIT',52:'Yoga',63:'Walking',71:'Rowing'};
+    workouts.slice(0,10).forEach(w=>{
+      const wStrain=w.score?.strain?.toFixed(1)||'—';
+      const dur=w.score?.end&&w.score?.start?Math.round((new Date(w.end)-new Date(w.start))/60000):null;
+      const sport=sportNames[w.sport_id]||'Workout #'+w.sport_id;
+      const date=w.start?fmtShort(w.start):'';
+      html+='<div style="display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:var(--radius-sm);background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05)">';
+      html+='<div style="font-size:1.1rem">🏋️</div>';
+      html+='<div style="flex:1"><div style="font-size:0.8rem;font-weight:600;color:#fff">'+sport+'</div>';
+      html+='<div style="font-size:0.62rem;color:var(--text-muted)">'+date+(dur?' · '+dur+' min':'')+'</div></div>';
+      html+='<div style="text-align:right"><div style="font-size:0.85rem;font-weight:700;color:var(--teal)">'+wStrain+'</div><div style="font-size:0.5rem;color:var(--text-faint)">STRAIN</div></div>';
+      html+='</div>';
+    });
+    html+='</div></div>';
+  }
+
+  // Averages summary
+  if(recovery.length>=3){
+    const avg7rec=recovery.slice(0,7);
+    const avgRecScore=Math.round(avg7rec.reduce((s,r)=>s+(r.score?.recovery_score||0),0)/avg7rec.length);
+    const avgHRV=Math.round(avg7rec.reduce((s,r)=>s+(r.score?.hrv_rmssd_milli||0),0)/avg7rec.length);
+    const avgRHR=Math.round(avg7rec.reduce((s,r)=>s+(r.score?.resting_heart_rate||0),0)/avg7rec.length);
+    const avg7sleep=sleepData.slice(0,7);
+    const avgSleepHrs=avg7sleep.length?(avg7sleep.reduce((s,sl)=>s+((sl.score?.stage_summary?.total_in_bed_time_milli||0)/3600000),0)/avg7sleep.length).toFixed(1):'—';
+
+    html+='<div class="card" style="margin-top:16px"><div class="card-header"><span class="card-title">7-Day Averages</span></div>';
+    html+='<div class="metrics-grid">';
+    html+='<div class="metric-tile" style="padding:10px"><div class="metric-value" style="font-size:1.2rem;color:'+recCol(avgRecScore)+'">'+avgRecScore+'%</div><div class="metric-label">Avg Recovery</div></div>';
+    html+='<div class="metric-tile" style="padding:10px"><div class="metric-value" style="font-size:1.2rem">'+avgHRV+'</div><div class="metric-label">Avg HRV</div></div>';
+    html+='<div class="metric-tile" style="padding:10px"><div class="metric-value" style="font-size:1.2rem">'+avgRHR+'</div><div class="metric-label">Avg RHR</div></div>';
+    html+='<div class="metric-tile" style="padding:10px"><div class="metric-value" style="font-size:1.2rem">'+avgSleepHrs+'h</div><div class="metric-label">Avg Sleep</div></div>';
+    html+='</div></div>';
+  }
+
+  el.innerHTML=html;
+}
+
+// Check for whoop connection redirect
+(function(){
+  const params=new URLSearchParams(window.location.search);
+  if(params.get('whoop')==='connected'){
+    history.replaceState(null,'','/');
+    setTimeout(()=>switchTab('whoop'),300);
+  }
+})();
 
 // ════════════════════════════════════════
 // OVERVIEW
