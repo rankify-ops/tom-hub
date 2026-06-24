@@ -1059,6 +1059,46 @@ function deriveCosts(c){
   return{weekly:+(m*12/52).toFixed(2),monthly:+m.toFixed(2),sixMonth:+(m*6).toFixed(2),annual:+(m*12).toFixed(2)};
 }
 
+let _pieState={};
+function pieHover(i){
+  const s=_pieState;if(!s.id)return;
+  const svg=document.getElementById(s.id);if(!svg)return;
+  const slices=svg.querySelectorAll('[data-slice]');
+  slices.forEach(el=>{
+    const si=parseInt(el.dataset.slice);
+    if(si===i){el.style.transform='scale(1.07)';el.style.filter='brightness(1.3) drop-shadow(0 0 8px '+s.data[si].color+')';}
+    else{el.style.transform='scale(1)';el.style.filter='brightness(0.5)';}
+  });
+  const d=s.data[i];
+  const pct=Math.round(d.totalMonthly/s.total*100);
+  const cv=document.getElementById(s.id+'-center-val');
+  const cl=document.getElementById(s.id+'-center-lbl');
+  if(cv)cv.textContent='$'+d.totalMonthly.toFixed(2);
+  if(cl)cl.textContent=d.label+' · '+pct+'%';
+  document.querySelectorAll('[data-legend]').forEach(el=>{
+    el.style.background=parseInt(el.dataset.legend)===i?'rgba(255,255,255,0.08)':'';
+  });
+}
+function pieUnhover(){
+  const s=_pieState;if(!s.id)return;
+  const svg=document.getElementById(s.id);if(!svg)return;
+  svg.querySelectorAll('[data-slice]').forEach(el=>{el.style.transform='';el.style.filter='';});
+  const cv=document.getElementById(s.id+'-center-val');
+  const cl=document.getElementById(s.id+'-center-lbl');
+  if(cv)cv.textContent='$'+s.total.toFixed(2);
+  if(cl)cl.textContent='/month total';
+  document.querySelectorAll('[data-legend]').forEach(el=>{el.style.background='';});
+}
+function _initPieHover(id,data,total){
+  _pieState={id,data,total};
+  const svg=document.getElementById(id);if(!svg)return;
+  svg.querySelectorAll('[data-slice]').forEach(el=>{
+    const i=parseInt(el.dataset.slice);
+    el.addEventListener('mouseenter',()=>pieHover(i));
+    el.addEventListener('mouseleave',()=>pieUnhover());
+  });
+}
+
 function renderFinances(){
   const el=document.getElementById('finances-content');if(!el)return;
 
@@ -1138,33 +1178,40 @@ function renderFinances(){
 
   costHtml+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">';
 
-  // Pie chart card
+  // Pie chart card - interactive
+  const pieId='pie-'+Date.now();
   costHtml+='<div class="card" style="padding:20px;grid-row:span 3">';
   costHtml+='<div class="card-header" style="margin-bottom:12px"><span class="card-title">Cost Breakdown</span></div>';
-  costHtml+='<div style="display:flex;justify-content:center"><svg viewBox="0 0 200 200" width="200" height="200">';
-  slices.forEach(s=>{
+  costHtml+='<div style="position:relative;display:flex;justify-content:center">';
+  costHtml+='<svg id="'+pieId+'" viewBox="0 0 300 300" style="width:100%;max-width:400px;height:auto">';
+  slices.forEach((s,i)=>{
     if(s.pct<=0)return;
-    if(s.pct>=0.999){costHtml+='<circle cx="100" cy="100" r="80" fill="'+s.color+'"/>';return;}
-    const r=80;
+    if(s.pct>=0.999){costHtml+='<circle cx="150" cy="150" r="120" fill="'+s.color+'" data-slice="'+i+'"/>';return;}
+    const r=120;
     const startRad=(s.startAngle-90)*Math.PI/180;
     const endRad=(s.endAngle-90)*Math.PI/180;
-    const x1=100+r*Math.cos(startRad),y1=100+r*Math.sin(startRad);
-    const x2=100+r*Math.cos(endRad),y2=100+r*Math.sin(endRad);
+    const x1=150+r*Math.cos(startRad),y1=150+r*Math.sin(startRad);
+    const x2=150+r*Math.cos(endRad),y2=150+r*Math.sin(endRad);
     const large=s.pct>0.5?1:0;
-    costHtml+='<path d="M100,100 L'+x1+','+y1+' A'+r+','+r+' 0 '+large+',1 '+x2+','+y2+' Z" fill="'+s.color+'" stroke="rgba(0,0,0,0.3)" stroke-width="0.5"/>';
+    const midAngle=((s.startAngle+s.endAngle)/2-90)*Math.PI/180;
+    costHtml+='<path d="M150,150 L'+x1.toFixed(2)+','+y1.toFixed(2)+' A'+r+','+r+' 0 '+large+',1 '+x2.toFixed(2)+','+y2.toFixed(2)+' Z" fill="'+s.color+'" stroke="rgba(0,0,0,0.4)" stroke-width="1" data-slice="'+i+'" data-mid="'+midAngle.toFixed(4)+'" style="cursor:pointer;transition:transform 0.2s,filter 0.2s;transform-origin:150px 150px"/>';
   });
-  costHtml+='<circle cx="100" cy="100" r="45" fill="var(--card-bg,#1a1a2e)"/>';
-  costHtml+='<text x="100" y="96" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">$'+fmt2(pieTotal)+'</text>';
-  costHtml+='<text x="100" y="110" text-anchor="middle" fill="var(--text-faint)" font-size="7">/month total</text>';
-  costHtml+='</svg></div>';
-  costHtml+='<div style="display:flex;flex-direction:column;gap:6px;margin-top:12px">';
-  pieData.forEach(d=>{
+  costHtml+='<circle cx="150" cy="150" r="65" fill="var(--card-bg,#1a1a2e)" style="pointer-events:none"/>';
+  costHtml+='<text id="'+pieId+'-center-val" x="150" y="144" text-anchor="middle" fill="#fff" font-size="18" font-weight="700" style="pointer-events:none">$'+fmt2(pieTotal)+'</text>';
+  costHtml+='<text id="'+pieId+'-center-lbl" x="150" y="164" text-anchor="middle" fill="var(--text-faint)" font-size="10" style="pointer-events:none">/month total</text>';
+  costHtml+='</svg>';
+  costHtml+='<div id="'+pieId+'-tip" style="position:absolute;pointer-events:none;display:none;background:rgba(0,0,0,0.85);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 12px;font-size:0.75rem;color:#fff;white-space:nowrap;z-index:10;box-shadow:0 4px 20px rgba(0,0,0,0.4)"></div>';
+  costHtml+='</div>';
+
+  // Pie legend
+  costHtml+='<div style="display:flex;flex-direction:column;gap:8px;margin-top:16px">';
+  pieData.forEach((d,i)=>{
     const pct=Math.round(d.totalMonthly/pieTotal*100);
-    costHtml+='<div style="display:flex;align-items:center;gap:8px">';
-    costHtml+='<div style="width:10px;height:10px;border-radius:2px;background:'+d.color+';flex-shrink:0"></div>';
-    costHtml+='<div style="flex:1;font-size:0.7rem;color:var(--text-secondary)">'+d.label+'</div>';
-    costHtml+='<div style="font-size:0.7rem;font-weight:600;color:#fff">$'+fmt2(d.totalMonthly)+'</div>';
-    costHtml+='<div style="font-size:0.6rem;color:var(--text-faint);width:30px;text-align:right">'+pct+'%</div>';
+    costHtml+='<div data-legend="'+i+'" style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;transition:background 0.2s" onmouseenter="pieHover('+i+')" onmouseleave="pieUnhover()">';
+    costHtml+='<div style="width:12px;height:12px;border-radius:3px;background:'+d.color+';flex-shrink:0"></div>';
+    costHtml+='<div style="flex:1;font-size:0.75rem;color:var(--text-secondary)">'+d.label+'</div>';
+    costHtml+='<div style="font-size:0.75rem;font-weight:600;color:#fff">$'+fmt2(d.totalMonthly)+'</div>';
+    costHtml+='<div style="font-size:0.65rem;color:var(--text-faint);width:35px;text-align:right">'+pct+'%</div>';
     costHtml+='</div>';
   });
   costHtml+='</div></div>';
@@ -1226,6 +1273,7 @@ function renderFinances(){
 
   if(!_finances.length){
     el.innerHTML=costHtml;
+    _initPieHover(pieId,pieData,pieTotal);
     return;
   }
   const sorted=[..._finances].sort((a,b)=>new Date(b.date)-new Date(a.date));
@@ -1311,6 +1359,7 @@ function renderFinances(){
   });
   html+='</tbody></table></div>';
   el.innerHTML=costHtml+html;
+  _initPieHover(pieId,pieData,pieTotal);
 }
 
 // ════════════════════════════════════════
