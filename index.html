@@ -1540,14 +1540,15 @@ function renderWhoop(){
   if(workouts.length){
     html+='<div class="card"><div class="card-header"><span class="card-title">Recent Workouts</span></div>';
     html+='<div style="display:flex;flex-direction:column;gap:6px">';
-    const sportNames={'-1':'Activity',0:'Running',1:'Cycling',16:'Rugby',17:'Soccer',25:'Swimming',43:'Strength',44:'CrossFit',48:'HIIT',52:'Yoga',63:'Walking',71:'Rowing'};
+    const sportIcons={running:'🏃',cycling:'🚴',swimming:'🏊',weightlifting:'🏋️',tennis:'🎾',yoga:'🧘',hiking:'🥾',walking:'🚶',rowing:'🚣',sauna:'🧖',crossfit:'⚡'};
     workouts.slice(0,10).forEach(w=>{
       const wStrain=w.score?.strain?.toFixed(1)||'—';
-      const dur=w.score?.end&&w.score?.start?Math.round((new Date(w.end)-new Date(w.start))/60000):null;
-      const sport=sportNames[w.sport_id]||'Workout #'+w.sport_id;
+      const dur=w.start&&w.end?Math.round((new Date(w.end)-new Date(w.start))/60000):null;
+      const sport=w.sport_name?(w.sport_name.charAt(0).toUpperCase()+w.sport_name.slice(1)):'Workout';
+      const icon=sportIcons[w.sport_name]||'💪';
       const date=w.start?fmtShort(w.start):'';
       html+='<div style="display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:var(--radius-sm);background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05)">';
-      html+='<div style="font-size:1.1rem">🏋️</div>';
+      html+='<div style="font-size:1.1rem">'+icon+'</div>';
       html+='<div style="flex:1"><div style="font-size:0.8rem;font-weight:600;color:#fff">'+sport+'</div>';
       html+='<div style="font-size:0.62rem;color:var(--text-muted)">'+date+(dur?' · '+dur+' min':'')+'</div></div>';
       html+='<div style="text-align:right"><div style="font-size:0.85rem;font-weight:700;color:var(--teal)">'+wStrain+'</div><div style="font-size:0.5rem;color:var(--text-faint)">STRAIN</div></div>';
