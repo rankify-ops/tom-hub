@@ -24,13 +24,23 @@ async function kvSet(key, value) {
 }
 
 const KV_KEY = 'tom_finances';
+const KV_COSTS = 'tom_cost_tracking';
 
 module.exports = async function handler(req, res) {
   try {
     if (req.method === 'GET') {
-      const data = await kvGet(KV_KEY) || { entries: [] };
+      const [data, costs] = await Promise.all([
+        kvGet(KV_KEY),
+        kvGet(KV_COSTS),
+      ]);
       res.setHeader('Cache-Control', 'no-cache');
-      return res.status(200).json(data);
+      return res.status(200).json({
+        entries: data?.entries || [],
+        updated: data?.updated || null,
+        costTracking: costs?.items || null,
+        weeklyIncome: costs?.weeklyIncome ?? null,
+        costsUpdated: costs?.updated || null,
+      });
     }
 
     if (req.method === 'POST') {
@@ -39,6 +49,12 @@ module.exports = async function handler(req, res) {
       if (action === 'save') {
         const { entries } = req.body;
         await kvSet(KV_KEY, JSON.stringify({ entries, updated: new Date().toISOString() }));
+        return res.status(200).json({ success: true });
+      }
+
+      if (action === 'save_costs') {
+        const { items, weeklyIncome } = req.body;
+        await kvSet(KV_COSTS, JSON.stringify({ items, weeklyIncome, updated: new Date().toISOString() }));
         return res.status(200).json({ success: true });
       }
 

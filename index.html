@@ -960,8 +960,24 @@ function renderGoals(){
 async function loadFinances(){
   try{
     const res=await fetch('/api/finances?t='+Date.now());
-    if(res.ok){const d=await res.json();_finances=d.entries||[];if(d.updated)document.getElementById('finances-updated').textContent='Saved: '+fmt(d.updated);renderFinances()}
+    if(res.ok){
+      const d=await res.json();
+      _finances=d.entries||[];
+      if(d.updated)document.getElementById('finances-updated').textContent='Saved: '+fmt(d.updated);
+      if(d.costTracking&&d.costTracking.length){
+        _costTracking=d.costTracking;
+        _weeklyIncome=d.weeklyIncome??2469.54;
+      }else{
+        _costTracking=[..._defaultCosts];
+        _weeklyIncome=2469.54;
+        saveCostTracking();
+      }
+      renderFinances();
+    }
   }catch(e){console.warn('Finances load failed',e)}
+}
+async function saveCostTracking(){
+  try{await fetch('/api/finances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save_costs',items:_costTracking,weeklyIncome:_weeklyIncome})})}catch(e){console.warn('Cost tracking save failed',e)}
 }
 async function saveFinances(){
   try{await fetch('/api/finances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',entries:_finances})});document.getElementById('finances-updated').textContent='Saved: '+fmt(new Date().toISOString())}catch(e){console.warn('Finances save failed',e)}
@@ -1009,7 +1025,7 @@ function deleteFinance(id){
   _finances=_finances.filter(e=>e.id!==id);
   saveFinances();renderFinances();renderOverview();
 }
-const _costTracking=[
+const _defaultCosts=[
   {name:'Investment Property 33/286',owner:'Thomas Flood',monthly:1313,annual:15765,sixMonth:null,cycle:'Monthly',category:'Investment',catColor:'#e9c162',status:'active',payment:'Transfer to Commbank',payColor:'#ffc53d',renewal:'2026-07-12',url:null},
   {name:'Rent 6/286 Espl',owner:'Thomas Flood',monthly:620,annual:7440,sixMonth:null,cycle:'Monthly',category:'Rent',catColor:'#8dcec3',status:'active',payment:'Transfer to Commbank',payColor:'#ffc53d',renewal:'2028-04-03',url:null},
   {name:'Car Finance Costs',owner:'Thomas Flood',monthly:566.42,annual:6797.04,sixMonth:null,cycle:'Monthly',category:'Utilities',catColor:'#92ceac',status:'active',payment:'Subscription & Bills NAB',payColor:'#0091ff',renewal:'2026-06-30',url:'https://self-service.taureancapital.com.au'},
@@ -1029,13 +1045,15 @@ const _costTracking=[
   {name:'Spotify',owner:'Thomas Flood',monthly:7.99,annual:95.88,sixMonth:null,cycle:'Monthly',category:'Entertainment',catColor:'#96c7f2',status:'active',payment:'Qantas CC',payColor:'#e5484d',renewal:'2026-07-09',url:null},
   {name:'Kayo',owner:'Thomas Flood',monthly:null,annual:50,sixMonth:null,cycle:'Monthly',category:null,catColor:null,status:'paused',payment:'Qantas CC',payColor:'#ab4aba',renewal:'2026-07-04',url:null},
 ];
+let _costTracking=[];
+let _weeklyIncome=2469.54;
 
 function fmtDate(d){if(!d)return'–';const p=d.split('-');return p[2]+'/'+p[1]+'/'+p[0].slice(2);}
 
 function renderFinances(){
   const el=document.getElementById('finances-content');if(!el)return;
 
-  const weeklyIncome=2469.54;
+  const weeklyIncome=_weeklyIncome;
   const monthlyIncome=weeklyIncome*52/12;
   const annualIncome=weeklyIncome*52;
   const activeItems=_costTracking.filter(c=>c.status==='active');
