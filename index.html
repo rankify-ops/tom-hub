@@ -1102,31 +1102,100 @@ function renderFinances(){
   costHtml+='</div></div>';
   costHtml+='</div>';
 
-  costHtml+='<div style="overflow-x:auto">';
-  costHtml+='<table class="data-table" style="width:100%"><thead><tr>';
-  costHtml+='<th>Name</th><th>Account Owner</th><th>Category</th><th>Billing Cycle</th><th style="text-align:right">Annual</th><th style="text-align:right">6 Monthly</th><th style="text-align:right">Monthly</th><th style="text-align:right">Weekly</th><th>Renewal Date</th><th>Payment Method</th><th>Login URL</th>';
-  costHtml+='</tr></thead><tbody>';
+  costHtml+='</div>';
 
-  _costTracking.forEach(c=>{
-    const isPaused=c.status==='paused';
-    const rowStyle=isPaused?'opacity:0.5':'';
-    const d=deriveCosts(c);
-    costHtml+='<tr style="'+rowStyle+'">';
-    costHtml+='<td style="color:#fff;font-weight:600;white-space:nowrap">'+c.name+(isPaused?' <span style="color:var(--text-faint);font-weight:400;font-size:0.55rem">(PAUSED)</span>':'')+'</td>';
-    costHtml+='<td>'+c.owner+'</td>';
-    costHtml+='<td>'+(c.category?'<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.65rem;background:'+c.catColor+'22;color:'+c.catColor+';border:1px solid '+c.catColor+'44">'+c.category+'</span>':'–')+'</td>';
-    costHtml+='<td>'+(c.cycle==='Weekly'?'<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.65rem;background:#FF408122;color:#FF4081;border:1px solid #FF408144">'+c.cycle+'</span>':'<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.65rem;background:#7C4DFF22;color:#7C4DFF;border:1px solid #7C4DFF44">'+c.cycle+'</span>')+'</td>';
-    costHtml+='<td style="text-align:right;font-weight:600">$'+fmt2(d.annual)+'</td>';
-    costHtml+='<td style="text-align:right">$'+fmt2(d.sixMonth)+'</td>';
-    costHtml+='<td style="text-align:right;font-weight:600">$'+fmt2(d.monthly)+'</td>';
-    costHtml+='<td style="text-align:right">$'+fmt2(d.weekly)+'</td>';
-    costHtml+='<td style="white-space:nowrap">'+fmtDate(c.renewal)+'</td>';
-    costHtml+='<td><span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.65rem;background:'+c.payColor+'22;color:'+c.payColor+';border:1px solid '+c.payColor+'44;white-space:nowrap">'+c.payment+'</span></td>';
-    costHtml+='<td>'+(c.url?'<a href="'+c.url+'" target="_blank" style="color:var(--teal);font-size:0.65rem;text-decoration:none" title="'+c.url+'">🔗</a>':'–')+'</td>';
-    costHtml+='</tr>';
+  const catGroups=[
+    {label:'Investments',cats:['Investment'],color:'#e9c162',icon:'📈'},
+    {label:'Health',cats:['Health'],color:'#b6b6ff',icon:'💪'},
+    {label:'Entertainment & Tools',cats:['Entertainment','Organisational'],color:'#96c7f2',icon:'🎬'},
+    {label:'Utilities & Rent',cats:['Utilities','Rent'],color:'#92ceac',icon:'🏠'},
+    {label:'Liabilities',cats:['Car'],color:'#ffaa7d',icon:'🚗'},
+  ];
+
+  const grouped=catGroups.map(g=>{
+    const items=_costTracking.filter(c=>g.cats.includes(c.category));
+    const derived=items.map(c=>({...c,...deriveCosts(c)}));
+    const totalM=derived.reduce((s,d)=>s+d.monthly,0);
+    return{...g,items:derived,totalMonthly:totalM,totalAnnual:totalM*12,totalWeekly:totalM*12/52};
+  });
+  const uncategorized=_costTracking.filter(c=>!c.category);
+  if(uncategorized.length){
+    const derived=uncategorized.map(c=>({...c,...deriveCosts(c)}));
+    const totalM=derived.reduce((s,d)=>s+d.monthly,0);
+    grouped.push({label:'Other',cats:[],color:'#888',icon:'📋',items:derived,totalMonthly:totalM,totalAnnual:totalM*12,totalWeekly:totalM*12/52});
+  }
+
+  // Pie chart
+  const pieData=[...grouped.filter(g=>g.totalMonthly>0),{label:'Living Expenses',color:'#f97316',totalMonthly:monthlyLiving}];
+  const pieTotal=pieData.reduce((s,d)=>s+d.totalMonthly,0);
+  let angle=0;
+  const slices=pieData.map(d=>{
+    const pct=d.totalMonthly/pieTotal;
+    const startAngle=angle;
+    angle+=pct*360;
+    return{...d,pct,startAngle,endAngle:angle};
   });
 
-  costHtml+='</tbody></table></div></div>';
+  costHtml+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">';
+
+  // Pie chart card
+  costHtml+='<div class="card" style="padding:20px;grid-row:span 3">';
+  costHtml+='<div class="card-header" style="margin-bottom:12px"><span class="card-title">Cost Breakdown</span></div>';
+  costHtml+='<div style="display:flex;justify-content:center"><svg viewBox="0 0 200 200" width="200" height="200">';
+  slices.forEach(s=>{
+    if(s.pct<=0)return;
+    if(s.pct>=0.999){costHtml+='<circle cx="100" cy="100" r="80" fill="'+s.color+'"/>';return;}
+    const r=80;
+    const startRad=(s.startAngle-90)*Math.PI/180;
+    const endRad=(s.endAngle-90)*Math.PI/180;
+    const x1=100+r*Math.cos(startRad),y1=100+r*Math.sin(startRad);
+    const x2=100+r*Math.cos(endRad),y2=100+r*Math.sin(endRad);
+    const large=s.pct>0.5?1:0;
+    costHtml+='<path d="M100,100 L'+x1+','+y1+' A'+r+','+r+' 0 '+large+',1 '+x2+','+y2+' Z" fill="'+s.color+'" stroke="rgba(0,0,0,0.3)" stroke-width="0.5"/>';
+  });
+  costHtml+='<circle cx="100" cy="100" r="45" fill="var(--card-bg,#1a1a2e)"/>';
+  costHtml+='<text x="100" y="96" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">$'+fmt2(pieTotal)+'</text>';
+  costHtml+='<text x="100" y="110" text-anchor="middle" fill="var(--text-faint)" font-size="7">/month total</text>';
+  costHtml+='</svg></div>';
+  costHtml+='<div style="display:flex;flex-direction:column;gap:6px;margin-top:12px">';
+  pieData.forEach(d=>{
+    const pct=Math.round(d.totalMonthly/pieTotal*100);
+    costHtml+='<div style="display:flex;align-items:center;gap:8px">';
+    costHtml+='<div style="width:10px;height:10px;border-radius:2px;background:'+d.color+';flex-shrink:0"></div>';
+    costHtml+='<div style="flex:1;font-size:0.7rem;color:var(--text-secondary)">'+d.label+'</div>';
+    costHtml+='<div style="font-size:0.7rem;font-weight:600;color:#fff">$'+fmt2(d.totalMonthly)+'</div>';
+    costHtml+='<div style="font-size:0.6rem;color:var(--text-faint);width:30px;text-align:right">'+pct+'%</div>';
+    costHtml+='</div>';
+  });
+  costHtml+='</div></div>';
+
+  // Category cards
+  grouped.forEach(g=>{
+    if(!g.items.length)return;
+    costHtml+='<div class="card" style="padding:16px">';
+    costHtml+='<div class="card-header" style="margin-bottom:10px"><span class="card-title">'+g.icon+' '+g.label+'</span><span style="font-size:0.75rem;font-weight:700;color:'+g.color+'">$'+fmt2(g.totalMonthly)+'/mo</span></div>';
+    costHtml+='<div style="display:flex;gap:12px;margin-bottom:10px;font-size:0.6rem;color:var(--text-faint)">';
+    costHtml+='<span>$'+fmt2(g.totalWeekly)+'/wk</span>';
+    costHtml+='<span>$'+fmt2(g.totalAnnual)+'/yr</span>';
+    costHtml+='</div>';
+    costHtml+='<div style="display:flex;flex-direction:column;gap:4px">';
+    g.items.forEach(c=>{
+      const isPaused=c.status==='paused';
+      costHtml+='<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;background:rgba(255,255,255,0.03)'+(isPaused?';opacity:0.5':'')+'">';
+      costHtml+='<div style="flex:1;min-width:0">';
+      costHtml+='<div style="font-size:0.75rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.name+(isPaused?' <span style="color:var(--text-faint);font-weight:400;font-size:0.55rem">(PAUSED)</span>':'')+'</div>';
+      costHtml+='<div style="font-size:0.55rem;color:var(--text-muted);margin-top:1px">'+c.cycle+' · '+c.payment+(c.renewal?' · '+fmtDate(c.renewal):'')+'</div>';
+      costHtml+='</div>';
+      costHtml+='<div style="text-align:right;flex-shrink:0">';
+      costHtml+='<div style="font-size:0.75rem;font-weight:700;color:#fff">$'+fmt2(c.monthly)+'<span style="font-size:0.5rem;color:var(--text-faint);font-weight:400">/mo</span></div>';
+      costHtml+='<div style="font-size:0.5rem;color:var(--text-faint)">$'+fmt2(c.weekly)+'/wk · $'+fmt2(c.annual)+'/yr</div>';
+      costHtml+='</div>';
+      costHtml+='</div>';
+    });
+    costHtml+='</div></div>';
+  });
+
+  costHtml+='</div>';
 
   if(!_finances.length){
     el.innerHTML=costHtml;
