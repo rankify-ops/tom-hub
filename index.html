@@ -221,10 +221,10 @@ select.form-input{cursor:pointer;background:#1a1a1a}
     <div class="pin-divider"></div>
     <div class="pin-label">Enter PIN</div>
     <div class="pin-inputs" id="pin-inputs">
-      <input class="pin-input" type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
-      <input class="pin-input" type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
-      <input class="pin-input" type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
-      <input class="pin-input" type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
+      <input class="pin-input" type="text" maxlength="1" inputmode="numeric" autocomplete="off">
+      <input class="pin-input" type="text" maxlength="1" inputmode="numeric" autocomplete="off">
+      <input class="pin-input" type="text" maxlength="1" inputmode="numeric" autocomplete="off">
+      <input class="pin-input" type="text" maxlength="1" inputmode="numeric" autocomplete="off">
     </div>
     <div class="pin-error" id="pin-error">Incorrect PIN</div>
   </div>
@@ -498,26 +498,29 @@ if(sessionStorage.getItem('tom_hub_auth')==='true'){
 }
 
 pinInputs.forEach((input,i)=>{
-  input.addEventListener('input',e=>{
-    e.target.value=e.target.value.replace(/[^0-9]/g,'').slice(-1);
-    if(e.target.value&&i<pinInputs.length-1) pinInputs[i+1].focus();
-    const code=[...pinInputs].map(p=>p.value).join('');
-    if(code.length===4){
-      if(code===PIN){
-        sessionStorage.setItem('tom_hub_auth','true');
-        pinScreen.classList.add('hidden');
-      } else {
-        pinError.classList.add('show');
-        pinInputs.forEach(p=>{p.classList.add('error');p.value=''});
-        pinInputs[0].focus();
-        setTimeout(()=>{pinError.classList.remove('show');pinInputs.forEach(p=>p.classList.remove('error'))},1500);
+  input.addEventListener('keydown',e=>{
+    if(e.key>='0'&&e.key<='9'){
+      e.preventDefault();
+      input.value=e.key;
+      if(i<pinInputs.length-1) pinInputs[i+1].focus();
+      const code=[...pinInputs].map(p=>p.value).join('');
+      if(code.length===4){
+        if(code===PIN){
+          sessionStorage.setItem('tom_hub_auth','true');
+          pinScreen.classList.add('hidden');
+        } else {
+          pinError.classList.add('show');
+          pinInputs.forEach(p=>{p.classList.add('error');p.value=''});
+          pinInputs[0].focus();
+          setTimeout(()=>{pinError.classList.remove('show');pinInputs.forEach(p=>p.classList.remove('error'))},1500);
+        }
       }
+    } else if(e.key==='Backspace'){
+      e.preventDefault();
+      if(input.value){input.value=''}
+      else if(i>0){pinInputs[i-1].focus();pinInputs[i-1].value=''}
     }
   });
-  input.addEventListener('keydown',e=>{
-    if(e.key==='Backspace'&&!e.target.value&&i>0){pinInputs[i-1].focus();pinInputs[i-1].value=''}
-  });
-  input.addEventListener('focus',function(){this.select()});
 });
 if(!sessionStorage.getItem('tom_hub_auth')) setTimeout(()=>pinInputs[0]?.focus(),300);
 
