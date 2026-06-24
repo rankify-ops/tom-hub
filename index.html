@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Tom's Hub — Personal Operations</title>
+<link rel="icon" href="/favicon.ico">
+<link rel="apple-touch-icon" href="/icon-180.png">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tom Hub">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --black: #fff;
+  --text: #e8e8e8;
+  --text-secondary: #ccc;
+  --text-muted: #999;
+  --text-faint: #777;
+  --white: #fff;
+  --teal: #2dd4a8;
+  --teal-bright: #34eabd;
+  --teal-glow: rgba(45,212,168,0.15);
+  --teal-subtle: rgba(45,212,168,0.07);
+  --red-soft: #ef6b6b;
+  --amber: #f0a840;
+  --green: #34d399;
+  --glass-bg: rgba(255,255,255,0.08);
+  --glass-bg-heavy: rgba(255,255,255,0.12);
+  --glass-border: rgba(255,255,255,0.12);
+  --glass-border-subtle: rgba(255,255,255,0.08);
+  --glass-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  --glass-blur: 30px;
+  --sidebar-bg: rgba(255,255,255,0.06);
+  --font: 'Inter', -apple-system, sans-serif;
+  --sidebar-w: 256px;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --transition: 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;overflow-x:hidden}
+body{font-family:var(--font);color:var(--text);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;background:#0a0a0a;max-width:100vw}
+.bg-layer{position:fixed;inset:0;z-index:0;background:url('bg.jpg') center center/cover no-repeat}
+.bg-layer::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,0.5)}
+.app{display:flex;min-height:100vh;position:relative;z-index:2}
+.sidebar{width:var(--sidebar-w);min-height:100vh;position:fixed;left:0;top:0;background:rgba(0,0,0,0.4);backdrop-filter:blur(40px) saturate(1.4);-webkit-backdrop-filter:blur(40px) saturate(1.4);border-right:1px solid var(--glass-border);display:flex;flex-direction:column;z-index:100;transition:transform var(--transition);box-shadow:4px 0 30px rgba(0,0,0,0.15)}
+.sidebar-brand{padding:28px 22px 22px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.sidebar-brand h1{font-family:var(--font);font-size:1.3rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#fff;line-height:1.2}
+.sidebar-brand .subtitle{font-size:0.62rem;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.35);margin-top:5px;font-weight:500}
+.sidebar-nav{flex:1;padding:14px 10px;display:flex;flex-direction:column;gap:2px}
+.nav-item{display:flex;align-items:center;gap:11px;padding:10px 14px;border-radius:var(--radius-sm);cursor:pointer;transition:all var(--transition);font-size:0.84rem;font-weight:400;color:rgba(255,255,255,0.55);border:1px solid transparent;user-select:none}
+.nav-item:hover{background:rgba(45,212,168,0.06);color:var(--white)}
+.nav-item.active{background:rgba(45,212,168,0.1);color:var(--teal);border-color:rgba(45,212,168,0.18);font-weight:600}
+.nav-item .nav-icon{width:20px;text-align:center;font-size:0.85rem;opacity:0.6}
+.nav-item.active .nav-icon{opacity:1}
+.sidebar-links{padding:0 10px 14px;border-top:1px solid rgba(255,255,255,0.06);padding-top:14px}
+.sidebar-links-title{font-size:0.6rem;text-transform:uppercase;letter-spacing:0.14em;color:rgba(255,255,255,0.3);margin-bottom:8px;padding-left:14px;font-weight:500}
+.sidebar-link{display:flex;align-items:center;gap:9px;padding:7px 14px;font-size:0.76rem;color:rgba(255,255,255,0.5);text-decoration:none;border-radius:var(--radius-sm);transition:all var(--transition)}
+.sidebar-link:hover{background:rgba(255,255,255,0.06);color:var(--white)}
+.sidebar-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,0.06);font-size:0.68rem;color:rgba(255,255,255,0.4);letter-spacing:0.04em}
+.sidebar-footer .domain{color:var(--teal);font-weight:600;letter-spacing:0.06em}
+.mobile-toggle{display:none;position:fixed;top:14px;left:14px;z-index:200;width:42px;height:42px;border-radius:var(--radius-sm);background:rgba(0,0,0,0.4);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:1.1rem;cursor:pointer;align-items:center;justify-content:center;box-shadow:var(--glass-shadow)}
+.main{margin-left:var(--sidebar-w);flex:1;padding:30px 34px;min-height:100vh;max-width:100%;overflow-x:hidden}
+.card{background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur)) saturate(1.3);-webkit-backdrop-filter:blur(var(--glass-blur)) saturate(1.3);border:1px solid var(--glass-border);border-radius:var(--radius);padding:22px;position:relative;overflow:hidden;transition:all var(--transition);box-shadow:var(--glass-shadow)}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,0.1) 50%,transparent 100%)}
+.card:hover{border-color:rgba(255,255,255,0.18);box-shadow:0 8px 40px rgba(0,0,0,0.25)}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.card-title{font-family:var(--font);font-size:0.95rem;font-weight:600;color:var(--black);letter-spacing:0}
+.card-badge{font-size:0.6rem;padding:3px 10px;border-radius:20px;letter-spacing:0.08em;text-transform:uppercase;font-weight:600}
+.badge-teal{background:rgba(45,212,168,0.12);color:var(--teal);border:1px solid rgba(45,212,168,0.25)}
+.badge-amber{background:rgba(240,168,64,0.12);color:var(--amber);border:1px solid rgba(240,168,64,0.2)}
+.badge-red{background:rgba(239,107,107,0.12);color:var(--red-soft);border:1px solid rgba(239,107,107,0.2)}
+.badge-silver{background:rgba(255,255,255,0.06);color:var(--text-muted);border:1px solid rgba(255,255,255,0.1)}
+.tab-panel{display:none;animation:fadeUp 0.4s ease}
+.tab-panel.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.section-header{margin-bottom:24px}
+.section-header h2{font-family:var(--font);font-size:1.6rem;font-weight:600;color:var(--white);letter-spacing:-0.01em;text-shadow:0 2px 12px rgba(0,0,0,0.4)}
+.section-header .updated{font-size:0.7rem;color:rgba(255,255,255,0.8);margin-top:4px;letter-spacing:0.02em;text-shadow:0 1px 4px rgba(0,0,0,0.4)}
+.metrics-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:20px}
+@media(min-width:768px){.metrics-grid{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:24px}}
+.metric-tile{text-align:center;padding:20px 14px}
+.metric-value{font-family:var(--font);font-size:1.4rem;font-weight:600;color:var(--black);letter-spacing:-0.01em;line-height:1}
+@media(min-width:768px){.metric-value{font-size:1.8rem}}
+.metric-value.teal{color:var(--teal)}
+.metric-label{font-size:0.65rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-muted);margin-top:7px;font-weight:500}
+.data-table{width:100%;border-collapse:collapse}
+.data-table th{font-size:0.62rem;text-transform:uppercase;letter-spacing:0.12em;color:var(--text-faint);padding:9px 13px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.06);font-weight:600}
+.data-table td{padding:11px 13px;font-size:0.8rem;border-bottom:1px solid rgba(255,255,255,0.03);color:var(--text-secondary)}
+.data-table tr:hover td{background:rgba(255,255,255,0.04)}
+.content-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.content-card{padding:18px;border-radius:var(--radius-sm);background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08)}
+.content-card h4{font-family:var(--font);font-size:0.98rem;color:var(--black);margin-bottom:6px;font-weight:500}
+.content-card p{font-size:0.76rem;color:var(--text-muted);line-height:1.5}
+.content-tag{font-size:0.58rem;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text-muted);letter-spacing:0.04em;font-weight:500}
+.empty-state{text-align:center;padding:50px 20px;color:var(--text-muted)}
+.empty-state .icon{font-size:2.2rem;margin-bottom:14px;opacity:0.35}
+.empty-state h3{font-family:var(--font);font-size:1.15rem;color:var(--text);font-weight:400;margin-bottom:6px}
+.empty-state p{font-size:0.78rem;line-height:1.6;max-width:380px;margin:0 auto}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.quick-links{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.quick-link{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:18px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text-muted);font-size:0.7rem;text-decoration:none;transition:all var(--transition);letter-spacing:0.03em;font-weight:500;cursor:pointer}
+.quick-link:hover{border-color:rgba(45,212,168,0.3);color:var(--teal);background:var(--teal-subtle)}
+.shimmer{background:linear-gradient(90deg,rgba(255,255,255,0.03) 25%,rgba(255,255,255,0.08) 50%,rgba(255,255,255,0.03) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:var(--radius-sm);height:20px}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.finance-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.finance-row{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.8rem}
+.finance-row:last-child{border-bottom:none}
+.finance-row .label{color:var(--text-muted)}
+.finance-row .value{color:var(--white);font-weight:600}
+.btn{padding:6px 14px;border-radius:8px;background:var(--teal);border:none;color:#000;font-weight:700;font-size:0.75rem;cursor:pointer;font-family:var(--font);transition:all 0.2s}
+.btn:hover{filter:brightness(1.1)}
+.btn-ghost{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text-muted);font-weight:500}
+.btn-ghost:hover{border-color:rgba(255,255,255,0.2);color:#fff}
+.btn-danger{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.15);color:var(--red-soft)}
+.modal-overlay{display:none;position:fixed;inset:0;z-index:500;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.modal-card{position:relative;z-index:1;width:500px;max-width:92vw;max-height:85vh;overflow-y:auto;background:#1a1a2e;border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:24px;box-shadow:0 24px 80px rgba(0,0,0,0.4)}
+.modal-title{font-size:1rem;font-weight:700;color:#fff;margin-bottom:16px}
+.form-group{margin-bottom:12px}
+.form-label{font-size:0.65rem;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:4px}
+.form-input{width:100%;padding:10px 12px;border-radius:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:0.82rem;font-family:var(--font);outline:none;box-sizing:border-box;transition:border-color 0.2s}
+.form-input:focus{border-color:rgba(45,212,168,0.4)}
+textarea.form-input{min-height:100px;resize:vertical}
+select.form-input{cursor:pointer;background:#1a1a1a}
+.progress-bar{height:6px;border-radius:3px;background:rgba(255,255,255,0.06);overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;background:var(--teal);transition:width 0.3s}
+
+/* ─── PIN Screen ─── */
+.pin-screen{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;transition:opacity 0.5s ease,visibility 0.5s ease}
+.pin-screen.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.pin-bg{position:absolute;inset:0;background:url('bg.jpg') center center/cover no-repeat}
+.pin-bg::after{content:'';position:absolute;inset:0;backdrop-filter:blur(30px) saturate(1.2);-webkit-backdrop-filter:blur(30px) saturate(1.2);background:rgba(0,0,0,0.3)}
+.pin-card{position:relative;z-index:1;background:rgba(255,255,255,0.12);backdrop-filter:blur(40px) saturate(1.5);-webkit-backdrop-filter:blur(40px) saturate(1.5);border:1px solid rgba(255,255,255,0.15);border-radius:24px;padding:48px 40px;text-align:center;width:340px;max-width:90vw;box-shadow:0 24px 80px rgba(0,0,0,0.3)}
+.pin-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);border-radius:24px 24px 0 0}
+.pin-title{font-family:var(--font);font-size:1.1rem;font-weight:700;color:#fff;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px}
+.pin-sub{font-family:var(--font);font-size:0.65rem;color:rgba(255,255,255,0.45);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:28px}
+.pin-divider{width:40px;height:1px;background:rgba(255,255,255,0.15);margin:0 auto 24px}
+.pin-label{font-size:0.6rem;color:rgba(255,255,255,0.5);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:12px}
+.pin-inputs{display:flex;gap:10px;justify-content:center;margin-bottom:20px}
+.pin-input{width:48px;height:56px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-family:var(--font);font-size:1.4rem;font-weight:600;text-align:center;outline:none;transition:all 0.2s ease;-webkit-appearance:none;-moz-appearance:textfield}
+.pin-input::-webkit-inner-spin-button,.pin-input::-webkit-outer-spin-button{-webkit-appearance:none}
+.pin-input:focus{border-color:rgba(16,185,129,0.5);background:rgba(16,185,129,0.08);box-shadow:0 0 20px rgba(16,185,129,0.1)}
+.pin-input.error{border-color:rgba(220,74,74,0.6);background:rgba(220,74,74,0.08);animation:pinShake 0.4s ease}
+@keyframes pinShake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.pin-error{font-size:0.7rem;color:#e85d5d;height:20px;margin-bottom:4px;opacity:0;transition:opacity 0.2s}
+.pin-error.show{opacity:1}
+
+/* ─── Tablet (≤900px) ─── */
+@media(max-width:900px){
+.sidebar{transform:translateX(-100%);width:280px;background:rgba(10,10,10,0.92);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px)}
+.sidebar.open{transform:translateX(0)}
+.mobile-toggle{display:flex}
+.main{margin-left:0;padding:16px 14px;padding-top:60px;max-width:100vw;overflow-x:hidden}
+.grid-2{grid-template-columns:1fr}
+.finance-grid{grid-template-columns:1fr}
+.content-grid{grid-template-columns:1fr}
+.card{padding:16px;border-radius:12px}
+.section-header h2{font-size:1.35rem}
+.metric-value{font-size:1.5rem}
+.metric-tile{padding:14px 10px}
+.data-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap}
+.data-table thead,.data-table tbody,.data-table tr{display:table;width:100%;table-layout:auto}
+.data-table thead{display:table-header-group}
+.data-table th,.data-table td{padding:8px 10px;font-size:0.72rem}
+}
+
+/* ─── Phone (≤520px) ─── */
+@media(max-width:520px){
+.main{padding:12px 10px;padding-top:56px}
+.section-header{margin-bottom:16px}
+.section-header h2{font-size:1.2rem}
+.section-header .updated{font-size:0.62rem}
+.metric-value{font-size:1.25rem}
+.metric-label{font-size:0.55rem;letter-spacing:0.08em}
+.metric-tile{padding:12px 8px}
+.card{padding:12px;border-radius:10px}
+.card-header{margin-bottom:12px;flex-wrap:wrap;gap:6px}
+.card-title{font-size:0.82rem}
+.card-badge{font-size:0.5rem;padding:2px 6px}
+.data-table th{font-size:0.55rem;padding:6px 8px}
+.data-table td{font-size:0.7rem;padding:8px 8px}
+.finance-row{font-size:0.72rem;padding:7px 0}
+.content-card{padding:12px}
+.content-card h4{font-size:0.85rem}
+.content-card p{font-size:0.7rem}
+.quick-link{font-size:0.62rem;padding:4px 10px}
+.empty-state{padding:30px 16px}
+.empty-state .icon{font-size:1.8rem}
+.empty-state h3{font-size:1rem}
+.empty-state p{font-size:0.72rem}
+.pin-card{padding:36px 28px;border-radius:20px}
+.pin-input{width:42px;height:48px;font-size:1.2rem;border-radius:10px}
+.sidebar{width:260px}
+.nav-item{font-size:0.78rem;padding:8px 12px;gap:9px}
+.nav-item .nav-icon{font-size:0.78rem;width:18px}
+.sidebar-brand{padding:20px 18px 16px}
+.sidebar-brand h1{font-size:1rem}
+.sidebar-brand .subtitle{font-size:0.55rem}
+.sidebar-links{padding:0 8px 10px;padding-top:10px}
+.sidebar-link{font-size:0.7rem;padding:6px 12px}
+.sidebar-footer{padding:12px 16px;font-size:0.6rem}
+.modal-card{padding:18px;border-radius:16px}
+}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.12);border-radius:3px}::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.2)}
+</style>
+</head>
+<body>
+<!-- PIN Screen -->
+<div class="pin-screen" id="pin-screen">
+  <div class="pin-bg"></div>
+  <div class="pin-card">
+    <div class="pin-title">Tom's Hub</div>
+    <div class="pin-sub">Personal Operations</div>
+    <div class="pin-divider"></div>
+    <div class="pin-label">Enter PIN</div>
+    <div class="pin-inputs" id="pin-inputs">
+      <input class="pin-input" type="number" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
+      <input class="pin-input" type="number" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
+      <input class="pin-input" type="number" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
+      <input class="pin-input" type="number" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
+    </div>
+    <div class="pin-error" id="pin-error">Incorrect PIN</div>
+  </div>
+</div>
+
+<div class="bg-layer"></div>
+<button class="mobile-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <h1>Tom's Hub</h1>
+      <div class="subtitle">Personal Operations</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active" data-tab="overview"><span class="nav-icon">◈</span><span>Overview</span></div>
+      <div class="nav-item" data-tab="checklists"><span class="nav-icon">☑</span><span>Checklists</span></div>
+      <div class="nav-item" data-tab="notes"><span class="nav-icon">✎</span><span>Notes</span></div>
+      <div class="nav-item" data-tab="goals"><span class="nav-icon">⊕</span><span>Goals</span></div>
+      <div class="nav-item" data-tab="finances"><span class="nav-icon">◇</span><span>Finances</span></div>
+    </nav>
+    <div class="sidebar-links">
+      <div class="sidebar-links-title">Quick Links</div>
+      <a href="https://github.com" class="sidebar-link" target="_blank">◉ GitHub</a>
+      <a href="https://mail.google.com" class="sidebar-link" target="_blank">✉ Gmail</a>
+      <a href="https://calendar.google.com" class="sidebar-link" target="_blank">▤ Calendar</a>
+    </div>
+    <div class="sidebar-footer"><div class="domain">tomshub.vercel.app</div><div style="margin-top:3px">Tom's Hub © 2026</div></div>
+  </aside>
+
+  <main class="main">
+    <!-- ═══ OVERVIEW TAB ═══ -->
+    <div class="tab-panel active" id="tab-overview">
+      <div class="section-header"><h2>Overview</h2><div class="updated" id="overview-updated">Loading...</div></div>
+      <div class="metrics-grid" id="overview-metrics">
+        <div class="card metric-tile"><div class="shimmer" style="width:50px;height:28px;margin:0 auto"></div><div class="metric-label">Loading</div></div>
+        <div class="card metric-tile"><div class="shimmer" style="width:50px;height:28px;margin:0 auto"></div><div class="metric-label">Loading</div></div>
+        <div class="card metric-tile"><div class="shimmer" style="width:50px;height:28px;margin:0 auto"></div><div class="metric-label">Loading</div></div>
+        <div class="card metric-tile"><div class="shimmer" style="width:50px;height:28px;margin:0 auto"></div><div class="metric-label">Loading</div></div>
+      </div>
+      <div class="grid-2" id="overview-panels">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Quick Navigation</span></div>
+          <div class="quick-links">
+            <span class="quick-link" onclick="switchTab('checklists')">☑ Checklists</span>
+            <span class="quick-link" onclick="switchTab('notes')">✎ Notes</span>
+            <span class="quick-link" onclick="switchTab('goals')">⊕ Goals</span>
+            <span class="quick-link" onclick="switchTab('finances')">◇ Finances</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Recent Activity</span></div>
+          <div id="overview-activity" style="font-size:0.78rem;color:var(--text-muted)">Loading...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ CHECKLISTS TAB ═══ -->
+    <div class="tab-panel" id="tab-checklists">
+      <div class="section-header">
+        <h2>Checklists</h2>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div class="updated" id="checklists-updated"></div>
+          <button class="btn" onclick="createChecklist()">+ New List</button>
+        </div>
+      </div>
+      <div id="checklists-content"></div>
+    </div>
+
+    <!-- ═══ NOTES TAB ═══ -->
+    <div class="tab-panel" id="tab-notes">
+      <div class="section-header">
+        <h2>Notes</h2>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div class="updated" id="notes-updated"></div>
+          <button class="btn" onclick="showNoteModal()">+ New Note</button>
+        </div>
+      </div>
+      <div id="notes-content"></div>
+    </div>
+
+    <!-- ═══ GOALS TAB ═══ -->
+    <div class="tab-panel" id="tab-goals">
+      <div class="section-header">
+        <h2>Goals</h2>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div class="updated" id="goals-updated"></div>
+          <button class="btn" onclick="showGoalModal()">+ New Goal</button>
+        </div>
+      </div>
+      <div id="goals-content"></div>
+    </div>
+
+    <!-- ═══ FINANCES TAB ═══ -->
+    <div class="tab-panel" id="tab-finances">
+      <div class="section-header">
+        <h2>Finances</h2>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div class="updated" id="finances-updated"></div>
+          <button class="btn" onclick="showFinanceModal()">+ Add Entry</button>
+        </div>
+      </div>
+      <div id="finances-content"></div>
+    </div>
+  </main>
+</div>
+
+<!-- ═══ NOTE MODAL ═══ -->
+<div class="modal-overlay" id="note-modal">
+  <div class="modal-backdrop" onclick="closeModal('note-modal')"></div>
+  <div class="modal-card">
+    <div class="modal-title" id="note-modal-title">New Note</div>
+    <input type="hidden" id="note-edit-id">
+    <div class="form-group"><label class="form-label">Title</label><input type="text" id="note-title" class="form-input" placeholder="Note title..."></div>
+    <div class="form-group"><label class="form-label">Content</label><textarea id="note-body" class="form-input" placeholder="Write your note..."></textarea></div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn" onclick="saveNote()" style="flex:1">Save</button>
+      <button class="btn btn-ghost" onclick="closeModal('note-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ GOAL MODAL ═══ -->
+<div class="modal-overlay" id="goal-modal">
+  <div class="modal-backdrop" onclick="closeModal('goal-modal')"></div>
+  <div class="modal-card">
+    <div class="modal-title" id="goal-modal-title">New Goal</div>
+    <input type="hidden" id="goal-edit-id">
+    <div class="form-group"><label class="form-label">Title</label><input type="text" id="goal-title" class="form-input" placeholder="Goal title..."></div>
+    <div class="form-group"><label class="form-label">Category</label>
+      <select id="goal-category" class="form-input">
+        <option value="Personal">Personal</option>
+        <option value="Health">Health</option>
+        <option value="Career">Career</option>
+        <option value="Finance">Finance</option>
+        <option value="Learning">Learning</option>
+        <option value="Project">Project</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Target Date</label><input type="date" id="goal-date" class="form-input"></div>
+    <div class="form-group"><label class="form-label">Status</label>
+      <select id="goal-status" class="form-input">
+        <option value="Not Started">Not Started</option>
+        <option value="In Progress">In Progress</option>
+        <option value="Complete">Complete</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Progress (<span id="goal-progress-label">0</span>%)</label>
+      <input type="range" id="goal-progress" min="0" max="100" value="0" style="width:100%;accent-color:var(--teal)" oninput="document.getElementById('goal-progress-label').textContent=this.value">
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn" onclick="saveGoal()" style="flex:1">Save</button>
+      <button class="btn btn-ghost" onclick="closeModal('goal-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ FINANCE MODAL ═══ -->
+<div class="modal-overlay" id="finance-modal">
+  <div class="modal-backdrop" onclick="closeModal('finance-modal')"></div>
+  <div class="modal-card">
+    <div class="modal-title" id="finance-modal-title">Add Entry</div>
+    <input type="hidden" id="finance-edit-id">
+    <div class="form-group"><label class="form-label">Type</label>
+      <select id="finance-type" class="form-input">
+        <option value="income">Income</option>
+        <option value="expense">Expense</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Date</label><input type="date" id="finance-date" class="form-input"></div>
+    <div class="form-group"><label class="form-label">Amount</label><input type="number" step="0.01" id="finance-amount" class="form-input" placeholder="0.00"></div>
+    <div class="form-group"><label class="form-label">Description</label><input type="text" id="finance-desc" class="form-input" placeholder="e.g. Salary, Groceries..."></div>
+    <div class="form-group"><label class="form-label">Category</label>
+      <select id="finance-category" class="form-input">
+        <option value="Salary">Salary</option>
+        <option value="Freelance">Freelance</option>
+        <option value="Investment">Investment</option>
+        <option value="Housing">Housing</option>
+        <option value="Food">Food</option>
+        <option value="Transport">Transport</option>
+        <option value="Entertainment">Entertainment</option>
+        <option value="Utilities">Utilities</option>
+        <option value="Health">Health</option>
+        <option value="Shopping">Shopping</option>
+        <option value="Subscriptions">Subscriptions</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn" onclick="saveFinance()" style="flex:1">Save</button>
+      <button class="btn btn-ghost" onclick="closeModal('finance-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── PIN Gate ───
+const PIN='6975';
+const pinInputs=document.querySelectorAll('.pin-input');
+const pinError=document.getElementById('pin-error');
+const pinScreen=document.getElementById('pin-screen');
+
+if(sessionStorage.getItem('tom_hub_auth')==='true'){
+  pinScreen.classList.add('hidden');
+}
+
+pinInputs.forEach((input,i)=>{
+  input.addEventListener('input',e=>{
+    const val=e.target.value;
+    if(val.length>1) e.target.value=val.slice(-1);
+    if(val&&i<pinInputs.length-1) pinInputs[i+1].focus();
+    const code=[...pinInputs].map(p=>p.value).join('');
+    if(code.length===4){
+      if(code===PIN){
+        sessionStorage.setItem('tom_hub_auth','true');
+        pinScreen.classList.add('hidden');
+      } else {
+        pinError.classList.add('show');
+        pinInputs.forEach(p=>{p.classList.add('error');p.value=''});
+        pinInputs[0].focus();
+        setTimeout(()=>{pinError.classList.remove('show');pinInputs.forEach(p=>p.classList.remove('error'))},1500);
+      }
+    }
+  });
+  input.addEventListener('keydown',e=>{
+    if(e.key==='Backspace'&&!e.target.value&&i>0){pinInputs[i-1].focus();pinInputs[i-1].value=''}
+  });
+  input.addEventListener('focus',function(){this.select&&this.select()});
+});
+if(!sessionStorage.getItem('tom_hub_auth')) setTimeout(()=>pinInputs[0]?.focus(),300);
+
+// ─── Tab Navigation ───
+function switchTab(tab){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  const navItem=document.querySelector('.nav-item[data-tab="'+tab+'"]');
+  if(navItem) navItem.classList.add('active');
+  const panel=document.getElementById('tab-'+tab);
+  if(panel) panel.classList.add('active');
+  document.querySelector('.sidebar').classList.remove('open');
+}
+document.querySelectorAll('.nav-item').forEach(item=>{
+  item.addEventListener('click',()=>switchTab(item.dataset.tab));
+});
+
+// ─── Helpers ───
+function fmt(iso){if(!iso)return'—';return new Date(iso).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+function fmtShort(iso){if(!iso)return'—';return new Date(iso).toLocaleDateString('en-AU',{day:'numeric',month:'short'})}
+function $(v){return'$'+Number(v||0).toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+function openModal(id){document.getElementById(id).classList.add('open')}
+
+// ─── Data stores ───
+let _checklists=[];
+let _notes=[];
+let _goals=[];
+let _finances=[];
+
+// ─── Load All Data ───
+async function loadAll(){
+  await Promise.all([loadChecklists(),loadNotes(),loadGoals(),loadFinances()]);
+  renderOverview();
+}
+
+// ════════════════════════════════════════
+// CHECKLISTS
+// ════════════════════════════════════════
+async function loadChecklists(){
+  try{
+    const res=await fetch('/api/checklists?t='+Date.now());
+    if(res.ok){const d=await res.json();_checklists=d.lists||[];if(d.updated)document.getElementById('checklists-updated').textContent='Saved: '+fmt(d.updated);renderChecklists()}
+  }catch(e){console.warn('Checklists load failed',e)}
+}
+async function saveChecklists(){
+  try{await fetch('/api/checklists',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',lists:_checklists})});document.getElementById('checklists-updated').textContent='Saved: '+fmt(new Date().toISOString())}catch(e){console.warn('Checklists save failed',e)}
+}
+function createChecklist(){
+  const name=prompt('Checklist name:');
+  if(!name||!name.trim())return;
+  _checklists.unshift({id:Date.now().toString(),name:name.trim(),items:[],created:new Date().toISOString(),collapsed:false});
+  saveChecklists();renderChecklists();renderOverview();
+}
+function deleteChecklist(id){
+  if(!confirm('Delete this checklist?'))return;
+  _checklists=_checklists.filter(l=>l.id!==id);
+  saveChecklists();renderChecklists();renderOverview();
+}
+function addChecklistItem(listId){
+  const input=document.getElementById('cl-input-'+listId);
+  if(!input||!input.value.trim())return;
+  const list=_checklists.find(l=>l.id===listId);
+  if(!list)return;
+  list.items.push({id:Date.now().toString(),text:input.value.trim(),done:false,added:new Date().toISOString()});
+  input.value='';
+  saveChecklists();renderChecklists();renderOverview();
+}
+function toggleCheckItem(listId,itemId){
+  const list=_checklists.find(l=>l.id===listId);if(!list)return;
+  const item=list.items.find(i=>i.id===itemId);if(!item)return;
+  item.done=!item.done;
+  if(item.done)item.completed=new Date().toISOString();else delete item.completed;
+  saveChecklists();renderChecklists();renderOverview();
+}
+function deleteCheckItem(listId,itemId){
+  const list=_checklists.find(l=>l.id===listId);if(!list)return;
+  list.items=list.items.filter(i=>i.id!==itemId);
+  saveChecklists();renderChecklists();renderOverview();
+}
+function toggleCollapseChecklist(id){
+  const list=_checklists.find(l=>l.id===id);if(!list)return;
+  list.collapsed=!list.collapsed;
+  renderChecklists();
+}
+function clearCompleted(listId){
+  const list=_checklists.find(l=>l.id===listId);if(!list)return;
+  const count=list.items.filter(i=>i.done).length;
+  if(!count||!confirm('Clear '+count+' completed item'+(count>1?'s':'')+'?'))return;
+  list.items=list.items.filter(i=>!i.done);
+  saveChecklists();renderChecklists();renderOverview();
+}
+function renderChecklists(){
+  const el=document.getElementById('checklists-content');if(!el)return;
+  if(!_checklists.length){
+    el.innerHTML='<div class="empty-state"><div class="icon">☑</div><h3>No checklists yet</h3><p>Create one to start tracking tasks</p></div>';
+    return;
+  }
+  const totalItems=_checklists.reduce((s,l)=>s+l.items.length,0);
+  const totalDone=_checklists.reduce((s,l)=>s+l.items.filter(i=>i.done).length,0);
+  let html='<div class="metrics-grid" style="margin-bottom:16px">';
+  html+='<div class="card metric-tile"><div class="metric-value">'+_checklists.length+'</div><div class="metric-label">Lists</div></div>';
+  html+='<div class="card metric-tile"><div class="metric-value">'+totalItems+'</div><div class="metric-label">Total Items</div></div>';
+  html+='<div class="card metric-tile"><div class="metric-value teal">'+totalDone+'</div><div class="metric-label">Completed</div></div>';
+  html+='<div class="card metric-tile"><div class="metric-value" style="color:'+(totalItems-totalDone>0?'var(--amber)':'var(--teal)')+'">'+(totalItems-totalDone)+'</div><div class="metric-label">Remaining</div></div>';
+  html+='</div>';
+  html+='<div style="display:flex;flex-direction:column;gap:12px">';
+  _checklists.forEach(list=>{
+    const done=list.items.filter(i=>i.done).length;
+    const total=list.items.length;
+    const pct=total?Math.round((done/total)*100):0;
+    const barCol=pct===100?'var(--teal)':pct>=50?'var(--amber)':'var(--red-soft)';
+    html+='<div class="card" style="padding:0;overflow:hidden">';
+    html+='<div style="padding:14px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.04)" onclick="toggleCollapseChecklist(\''+list.id+'\')">';
+    html+='<span style="font-size:0.7rem;color:var(--text-faint);transition:transform 0.2s;transform:rotate('+(list.collapsed?'0':'90')+'deg)">▶</span>';
+    html+='<div style="flex:1"><div style="font-size:0.88rem;font-weight:700;color:#fff">'+list.name+'</div>';
+    html+='<div style="font-size:0.6rem;color:var(--text-faint);margin-top:2px">'+done+'/'+total+' complete'+(total?' · '+pct+'%':'')+'</div></div>';
+    if(total>0){html+='<div style="width:60px;height:4px;border-radius:2px;background:rgba(255,255,255,0.06);overflow:hidden"><div style="width:'+pct+'%;height:100%;border-radius:2px;background:'+barCol+';transition:width 0.3s"></div></div>';}
+    html+='<div style="display:flex;gap:4px">';
+    if(done>0)html+='<button onclick="event.stopPropagation();clearCompleted(\''+list.id+'\')" style="padding:3px 8px;border-radius:5px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:var(--text-faint);font-size:0.55rem;cursor:pointer;font-family:var(--font)">Clear done</button>';
+    html+='<button onclick="event.stopPropagation();deleteChecklist(\''+list.id+'\')" style="padding:3px 8px;border-radius:5px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.15);color:var(--red-soft);font-size:0.55rem;cursor:pointer;font-family:var(--font)">Delete</button>';
+    html+='</div></div>';
+    if(!list.collapsed){
+      html+='<div style="padding:0 16px 12px">';
+      const pending=list.items.filter(i=>!i.done);
+      const completed=list.items.filter(i=>i.done);
+      pending.forEach(item=>{
+        html+='<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.03)">';
+        html+='<div onclick="toggleCheckItem(\''+list.id+'\',\''+item.id+'\')" style="width:20px;height:20px;border-radius:5px;border:2px solid rgba(255,255,255,0.15);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s"></div>';
+        html+='<div style="flex:1;font-size:0.8rem;color:#fff">'+item.text+'</div>';
+        html+='<button onclick="deleteCheckItem(\''+list.id+'\',\''+item.id+'\')" style="padding:2px 6px;border-radius:4px;background:none;border:1px solid rgba(255,255,255,0.06);color:var(--text-faint);font-size:0.6rem;cursor:pointer;opacity:0.4;font-family:var(--font)" onmouseover="this.style.opacity=1;this.style.borderColor=\'rgba(239,68,68,0.3)\';this.style.color=\'var(--red-soft)\'" onmouseout="this.style.opacity=0.4;this.style.borderColor=\'rgba(255,255,255,0.06)\';this.style.color=\'var(--text-faint)\'">✕</button>';
+        html+='</div>';
+      });
+      completed.forEach(item=>{
+        html+='<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.03);opacity:0.45">';
+        html+='<div onclick="toggleCheckItem(\''+list.id+'\',\''+item.id+'\')" style="width:20px;height:20px;border-radius:5px;border:2px solid var(--teal);background:rgba(45,212,168,0.15);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.65rem;color:var(--teal)">✓</div>';
+        html+='<div style="flex:1;font-size:0.8rem;color:var(--text-muted);text-decoration:line-through">'+item.text+'</div>';
+        html+='<button onclick="deleteCheckItem(\''+list.id+'\',\''+item.id+'\')" style="padding:2px 6px;border-radius:4px;background:none;border:1px solid rgba(255,255,255,0.06);color:var(--text-faint);font-size:0.6rem;cursor:pointer;opacity:0.4;font-family:var(--font)">✕</button>';
+        html+='</div>';
+      });
+      html+='<div style="display:flex;gap:6px;margin-top:10px">';
+      html+='<input type="text" id="cl-input-'+list.id+'" class="form-input" placeholder="Add item..." style="flex:1;padding:8px 10px;font-size:0.78rem" onkeydown="if(event.key===\'Enter\')addChecklistItem(\''+list.id+'\')">';
+      html+='<button onclick="addChecklistItem(\''+list.id+'\')" class="btn" style="padding:8px 12px;font-size:0.7rem">Add</button>';
+      html+='</div></div>';
+    }
+    html+='</div>';
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+// ════════════════════════════════════════
+// NOTES
+// ════════════════════════════════════════
+async function loadNotes(){
+  try{
+    const res=await fetch('/api/notes?t='+Date.now());
+    if(res.ok){const d=await res.json();_notes=d.notes||[];if(d.updated)document.getElementById('notes-updated').textContent='Saved: '+fmt(d.updated);renderNotes()}
+  }catch(e){console.warn('Notes load failed',e)}
+}
+async function saveNotes(){
+  try{await fetch('/api/notes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',notes:_notes})});document.getElementById('notes-updated').textContent='Saved: '+fmt(new Date().toISOString())}catch(e){console.warn('Notes save failed',e)}
+}
+function showNoteModal(id){
+  const modal=document.getElementById('note-modal');
+  if(id){
+    const note=_notes.find(n=>n.id===id);if(!note)return;
+    document.getElementById('note-modal-title').textContent='Edit Note';
+    document.getElementById('note-edit-id').value=id;
+    document.getElementById('note-title').value=note.title;
+    document.getElementById('note-body').value=note.body;
+  } else {
+    document.getElementById('note-modal-title').textContent='New Note';
+    document.getElementById('note-edit-id').value='';
+    document.getElementById('note-title').value='';
+    document.getElementById('note-body').value='';
+  }
+  openModal('note-modal');
+}
+function saveNote(){
+  const id=document.getElementById('note-edit-id').value;
+  const title=document.getElementById('note-title').value.trim();
+  const body=document.getElementById('note-body').value.trim();
+  if(!title)return;
+  if(id){
+    const note=_notes.find(n=>n.id===id);if(!note)return;
+    note.title=title;note.body=body;note.modified=new Date().toISOString();
+  } else {
+    _notes.unshift({id:Date.now().toString(),title,body,created:new Date().toISOString(),modified:new Date().toISOString()});
+  }
+  closeModal('note-modal');
+  saveNotes();renderNotes();renderOverview();
+}
+function deleteNote(id){
+  if(!confirm('Delete this note?'))return;
+  _notes=_notes.filter(n=>n.id!==id);
+  saveNotes();renderNotes();renderOverview();
+}
+function renderNotes(){
+  const el=document.getElementById('notes-content');if(!el)return;
+  if(!_notes.length){
+    el.innerHTML='<div class="empty-state"><div class="icon">✎</div><h3>No notes yet</h3><p>Create a note to get started</p></div>';
+    return;
+  }
+  const sorted=[..._notes].sort((a,b)=>new Date(b.modified)-new Date(a.modified));
+  let html='<div class="content-grid">';
+  sorted.forEach(note=>{
+    const preview=note.body.length>120?note.body.substring(0,120)+'...':note.body;
+    html+='<div class="card content-card" style="cursor:pointer" onclick="showNoteModal(\''+note.id+'\')">';
+    html+='<h4>'+note.title+'</h4>';
+    html+='<p style="white-space:pre-wrap">'+preview+'</p>';
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">';
+    html+='<span class="content-tag">'+fmtShort(note.modified)+'</span>';
+    html+='<button onclick="event.stopPropagation();deleteNote(\''+note.id+'\')" style="padding:2px 8px;border-radius:4px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.15);color:var(--red-soft);font-size:0.6rem;cursor:pointer;font-family:var(--font)">Delete</button>';
+    html+='</div></div>';
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+// ════════════════════════════════════════
+// GOALS
+// ════════════════════════════════════════
+async function loadGoals(){
+  try{
+    const res=await fetch('/api/goals?t='+Date.now());
+    if(res.ok){const d=await res.json();_goals=d.goals||[];if(d.updated)document.getElementById('goals-updated').textContent='Saved: '+fmt(d.updated);renderGoals()}
+  }catch(e){console.warn('Goals load failed',e)}
+}
+async function saveGoals(){
+  try{await fetch('/api/goals',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',goals:_goals})});document.getElementById('goals-updated').textContent='Saved: '+fmt(new Date().toISOString())}catch(e){console.warn('Goals save failed',e)}
+}
+function showGoalModal(id){
+  const modal=document.getElementById('goal-modal');
+  if(id){
+    const goal=_goals.find(g=>g.id===id);if(!goal)return;
+    document.getElementById('goal-modal-title').textContent='Edit Goal';
+    document.getElementById('goal-edit-id').value=id;
+    document.getElementById('goal-title').value=goal.title;
+    document.getElementById('goal-category').value=goal.category||'Personal';
+    document.getElementById('goal-date').value=goal.targetDate||'';
+    document.getElementById('goal-status').value=goal.status||'Not Started';
+    document.getElementById('goal-progress').value=goal.progress||0;
+    document.getElementById('goal-progress-label').textContent=goal.progress||0;
+  } else {
+    document.getElementById('goal-modal-title').textContent='New Goal';
+    document.getElementById('goal-edit-id').value='';
+    document.getElementById('goal-title').value='';
+    document.getElementById('goal-category').value='Personal';
+    document.getElementById('goal-date').value='';
+    document.getElementById('goal-status').value='Not Started';
+    document.getElementById('goal-progress').value=0;
+    document.getElementById('goal-progress-label').textContent='0';
+  }
+  openModal('goal-modal');
+}
+function saveGoal(){
+  const id=document.getElementById('goal-edit-id').value;
+  const title=document.getElementById('goal-title').value.trim();
+  if(!title)return;
+  const data={
+    title,
+    category:document.getElementById('goal-category').value,
+    targetDate:document.getElementById('goal-date').value,
+    status:document.getElementById('goal-status').value,
+    progress:parseInt(document.getElementById('goal-progress').value)||0,
+    modified:new Date().toISOString()
+  };
+  if(id){
+    const goal=_goals.find(g=>g.id===id);if(!goal)return;
+    Object.assign(goal,data);
+  } else {
+    _goals.unshift({id:Date.now().toString(),created:new Date().toISOString(),...data});
+  }
+  closeModal('goal-modal');
+  saveGoals();renderGoals();renderOverview();
+}
+function deleteGoal(id){
+  if(!confirm('Delete this goal?'))return;
+  _goals=_goals.filter(g=>g.id!==id);
+  saveGoals();renderGoals();renderOverview();
+}
+function renderGoals(){
+  const el=document.getElementById('goals-content');if(!el)return;
+  if(!_goals.length){
+    el.innerHTML='<div class="empty-state"><div class="icon">⊕</div><h3>No goals yet</h3><p>Set a goal to start tracking your progress</p></div>';
+    return;
+  }
+  const total=_goals.length;
+  const complete=_goals.filter(g=>g.status==='Complete').length;
+  const inProgress=_goals.filter(g=>g.status==='In Progress').length;
+  const avgProgress=Math.round(_goals.reduce((s,g)=>s+(g.progress||0),0)/total);
+
+  let html='<div class="metrics-grid" style="margin-bottom:16px">';
+  html+='<div class="card metric-tile"><div class="metric-value">'+total+'</div><div class="metric-label">Total Goals</div></div>';
+  html+='<div class="card metric-tile"><div class="metric-value teal">'+complete+'</div><div class="metric-label">Complete</div></div>';
+  html+='<div class="card metric-tile"><div class="metric-value" style="color:var(--amber)">'+inProgress+'</div><div class="metric-label">In Progress</div></div>';
+  html+='<div class="card metric-tile"><div class="metric-value">'+avgProgress+'%</div><div class="metric-label">Avg Progress</div></div>';
+  html+='</div>';
+  html+='<div style="display:flex;flex-direction:column;gap:12px">';
+  _goals.forEach(goal=>{
+    const statusCol=goal.status==='Complete'?'var(--teal)':goal.status==='In Progress'?'var(--amber)':'var(--text-faint)';
+    const catCols={Personal:'#a78bfa',Health:'#f472b6',Career:'#60a5fa',Finance:'var(--teal)',Learning:'var(--amber)',Project:'#34d399'};
+    const catCol=catCols[goal.category]||'var(--text-muted)';
+    html+='<div class="card" style="cursor:pointer" onclick="showGoalModal(\''+goal.id+'\')">';
+    html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px">';
+    html+='<div style="flex:1"><div style="font-size:0.92rem;font-weight:700;color:#fff">'+goal.title+'</div>';
+    html+='<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">';
+    html+='<span style="padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.06);color:'+catCol+';font-size:0.58rem;font-weight:600">'+goal.category+'</span>';
+    html+='<span style="padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.06);color:'+statusCol+';font-size:0.58rem;font-weight:600">'+goal.status+'</span>';
+    if(goal.targetDate)html+='<span style="padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.06);color:var(--text-faint);font-size:0.58rem">Due: '+fmtShort(goal.targetDate)+'</span>';
+    html+='</div></div>';
+    html+='<button onclick="event.stopPropagation();deleteGoal(\''+goal.id+'\')" style="padding:3px 8px;border-radius:5px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.15);color:var(--red-soft);font-size:0.55rem;cursor:pointer;font-family:var(--font);flex-shrink:0">Delete</button>';
+    html+='</div>';
+    html+='<div class="progress-bar"><div class="progress-fill" style="width:'+(goal.progress||0)+'%;background:'+(goal.progress>=100?'var(--teal)':goal.progress>=50?'var(--amber)':'var(--red-soft)')+'"></div></div>';
+    html+='<div style="font-size:0.6rem;color:var(--text-faint);margin-top:4px;text-align:right">'+(goal.progress||0)+'%</div>';
+    html+='</div>';
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+// ════════════════════════════════════════
+// FINANCES
+// ════════════════════════════════════════
+async function loadFinances(){
+  try{
+    const res=await fetch('/api/finances?t='+Date.now());
+    if(res.ok){const d=await res.json();_finances=d.entries||[];if(d.updated)document.getElementById('finances-updated').textContent='Saved: '+fmt(d.updated);renderFinances()}
+  }catch(e){console.warn('Finances load failed',e)}
+}
+async function saveFinances(){
+  try{await fetch('/api/finances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',entries:_finances})});document.getElementById('finances-updated').textContent='Saved: '+fmt(new Date().toISOString())}catch(e){console.warn('Finances save failed',e)}
+}
+function showFinanceModal(id){
+  if(id){
+    const entry=_finances.find(e=>e.id===id);if(!entry)return;
+    document.getElementById('finance-modal-title').textContent='Edit Entry';
+    document.getElementById('finance-edit-id').value=id;
+    document.getElementById('finance-type').value=entry.type;
+    document.getElementById('finance-date').value=entry.date;
+    document.getElementById('finance-amount').value=entry.amount;
+    document.getElementById('finance-desc').value=entry.description;
+    document.getElementById('finance-category').value=entry.category;
+  } else {
+    document.getElementById('finance-modal-title').textContent='Add Entry';
+    document.getElementById('finance-edit-id').value='';
+    document.getElementById('finance-type').value='expense';
+    document.getElementById('finance-date').value=new Date().toISOString().split('T')[0];
+    document.getElementById('finance-amount').value='';
+    document.getElementById('finance-desc').value='';
+    document.getElementById('finance-category').value='Other';
+  }
+  openModal('finance-modal');
+}
+function saveFinance(){
+  const id=document.getElementById('finance-edit-id').value;
+  const type=document.getElementById('finance-type').value;
+  const date=document.getElementById('finance-date').value;
+  const amount=parseFloat(document.getElementById('finance-amount').value);
+  const description=document.getElementById('finance-desc').value.trim();
+  const category=document.getElementById('finance-category').value;
+  if(!amount||!date)return;
+  if(id){
+    const entry=_finances.find(e=>e.id===id);if(!entry)return;
+    Object.assign(entry,{type,date,amount,description,category,modified:new Date().toISOString()});
+  } else {
+    _finances.push({id:Date.now().toString(),type,date,amount,description,category,created:new Date().toISOString()});
+  }
+  closeModal('finance-modal');
+  saveFinances();renderFinances();renderOverview();
+}
+function deleteFinance(id){
+  if(!confirm('Delete this entry?'))return;
+  _finances=_finances.filter(e=>e.id!==id);
+  saveFinances();renderFinances();renderOverview();
+}
+function renderFinances(){
+  const el=document.getElementById('finances-content');if(!el)return;
+  if(!_finances.length){
+    el.innerHTML='<div class="empty-state"><div class="icon">◇</div><h3>No entries yet</h3><p>Add income or expense entries to start tracking</p></div>';
+    return;
+  }
+  const sorted=[..._finances].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const totalIncome=_finances.filter(e=>e.type==='income').reduce((s,e)=>s+e.amount,0);
+  const totalExpense=_finances.filter(e=>e.type==='expense').reduce((s,e)=>s+e.amount,0);
+  const balance=totalIncome-totalExpense;
+
+  // Monthly summary
+  const months={};
+  _finances.forEach(e=>{
+    const m=e.date.substring(0,7);
+    if(!months[m])months[m]={income:0,expense:0};
+    months[m][e.type]+=e.amount;
+  });
+  const monthKeys=Object.keys(months).sort().slice(-6);
+  const maxMonth=Math.max(...monthKeys.map(m=>Math.max(months[m].income,months[m].expense)),1);
+
+  // Category breakdown (expenses)
+  const cats={};
+  _finances.filter(e=>e.type==='expense').forEach(e=>{cats[e.category]=(cats[e.category]||0)+e.amount});
+  const catEntries=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+
+  let html='<div class="metrics-grid" style="margin-bottom:16px">';
+  html+='<div class="card metric-tile"><div class="metric-value teal">'+$(totalIncome)+'</div><div class="metric-label">Total Income</div></div>';
+  html+='<div class="card metric-tile"><div class="metric-value" style="color:var(--red-soft)">'+$(totalExpense)+'</div><div class="metric-label">Total Expenses</div></div>';
+  html+='<div class="card metric-tile"><div class="metric-value" style="color:'+(balance>=0?'var(--teal)':'var(--red-soft)')+'">'+$(Math.abs(balance))+'</div><div class="metric-label">'+(balance>=0?'Net Positive':'Net Negative')+'</div></div>';
+  html+='<div class="card metric-tile"><div class="metric-value">'+_finances.length+'</div><div class="metric-label">Entries</div></div>';
+  html+='</div>';
+
+  html+='<div class="finance-grid" style="margin-bottom:16px">';
+  // Monthly bar chart
+  html+='<div class="card"><div class="card-header"><span class="card-title">Monthly Summary</span></div>';
+  html+='<div style="display:flex;align-items:flex-end;gap:8px;height:120px;padding-top:10px">';
+  monthKeys.forEach(m=>{
+    const inc=months[m].income;
+    const exp=months[m].expense;
+    const incH=Math.round((inc/maxMonth)*100);
+    const expH=Math.round((exp/maxMonth)*100);
+    const label=m.substring(5);
+    html+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">';
+    html+='<div style="display:flex;gap:2px;align-items:flex-end;height:100px;width:100%">';
+    html+='<div style="flex:1;height:'+incH+'px;background:var(--teal);border-radius:3px 3px 0 0;min-height:2px" title="Income: '+$(inc)+'"></div>';
+    html+='<div style="flex:1;height:'+expH+'px;background:var(--red-soft);border-radius:3px 3px 0 0;min-height:2px" title="Expense: '+$(exp)+'"></div>';
+    html+='</div>';
+    html+='<div style="font-size:0.55rem;color:var(--text-faint)">'+label+'</div>';
+    html+='</div>';
+  });
+  html+='</div>';
+  html+='<div style="display:flex;gap:12px;margin-top:8px;font-size:0.6rem">';
+  html+='<span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--teal)"></span><span style="color:var(--text-muted)">Income</span></span>';
+  html+='<span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--red-soft)"></span><span style="color:var(--text-muted)">Expense</span></span>';
+  html+='</div></div>';
+
+  // Category breakdown
+  html+='<div class="card"><div class="card-header"><span class="card-title">Expense Categories</span></div>';
+  if(catEntries.length){
+    catEntries.forEach(([cat,amt])=>{
+      const pct=Math.round((amt/totalExpense)*100);
+      html+='<div style="margin-bottom:8px">';
+      html+='<div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:3px"><span style="color:var(--text-secondary)">'+cat+'</span><span style="color:#fff;font-weight:600">'+$(amt)+' <span style="color:var(--text-faint);font-weight:400">'+pct+'%</span></span></div>';
+      html+='<div class="progress-bar" style="height:4px"><div class="progress-fill" style="width:'+pct+'%"></div></div>';
+      html+='</div>';
+    });
+  } else {
+    html+='<div style="font-size:0.78rem;color:var(--text-faint)">No expenses recorded</div>';
+  }
+  html+='</div></div>';
+
+  // Transactions table
+  html+='<div class="card" style="margin-top:0"><div class="card-header"><span class="card-title">All Transactions</span></div>';
+  html+='<table class="data-table"><thead><tr><th>Date</th><th>Description</th><th>Category</th><th style="text-align:right">Amount</th><th></th></tr></thead><tbody>';
+  sorted.forEach(entry=>{
+    const isIncome=entry.type==='income';
+    const amtCol=isIncome?'var(--teal)':'var(--red-soft)';
+    const sign=isIncome?'+':'-';
+    html+='<tr>';
+    html+='<td>'+fmtShort(entry.date)+'</td>';
+    html+='<td style="color:#fff">'+entry.description+'</td>';
+    html+='<td><span class="content-tag">'+entry.category+'</span></td>';
+    html+='<td style="text-align:right;color:'+amtCol+';font-weight:600">'+sign+$(entry.amount)+'</td>';
+    html+='<td style="text-align:right"><button onclick="showFinanceModal(\''+entry.id+'\')" style="padding:2px 6px;border-radius:4px;background:none;border:1px solid rgba(255,255,255,0.06);color:var(--text-faint);font-size:0.55rem;cursor:pointer;font-family:var(--font);margin-right:4px">Edit</button><button onclick="deleteFinance(\''+entry.id+'\')" style="padding:2px 6px;border-radius:4px;background:none;border:1px solid rgba(239,68,68,0.15);color:var(--red-soft);font-size:0.55rem;cursor:pointer;font-family:var(--font)">✕</button></td>';
+    html+='</tr>';
+  });
+  html+='</tbody></table></div>';
+  el.innerHTML=html;
+}
+
+// ════════════════════════════════════════
+// OVERVIEW
+// ════════════════════════════════════════
+function renderOverview(){
+  const totalChecklistItems=_checklists.reduce((s,l)=>s+l.items.length,0);
+  const doneChecklistItems=_checklists.reduce((s,l)=>s+l.items.filter(i=>i.done).length,0);
+  const activeGoals=_goals.filter(g=>g.status!=='Complete').length;
+  const totalIncome=_finances.filter(e=>e.type==='income').reduce((s,e)=>s+e.amount,0);
+  const totalExpense=_finances.filter(e=>e.type==='expense').reduce((s,e)=>s+e.amount,0);
+
+  document.getElementById('overview-updated').textContent='Last loaded: '+fmt(new Date().toISOString());
+  document.getElementById('overview-metrics').innerHTML=
+    '<div class="card metric-tile"><div class="metric-value">'+_checklists.length+'</div><div class="metric-label">Checklists</div></div>'+
+    '<div class="card metric-tile"><div class="metric-value teal">'+doneChecklistItems+'/'+totalChecklistItems+'</div><div class="metric-label">Tasks Done</div></div>'+
+    '<div class="card metric-tile"><div class="metric-value">'+_notes.length+'</div><div class="metric-label">Notes</div></div>'+
+    '<div class="card metric-tile"><div class="metric-value" style="color:var(--amber)">'+activeGoals+'</div><div class="metric-label">Active Goals</div></div>'+
+    '<div class="card metric-tile"><div class="metric-value teal">'+$(totalIncome)+'</div><div class="metric-label">Income</div></div>'+
+    '<div class="card metric-tile"><div class="metric-value" style="color:var(--red-soft)">'+$(totalExpense)+'</div><div class="metric-label">Expenses</div></div>';
+
+  // Recent activity
+  const activities=[];
+  _notes.forEach(n=>activities.push({text:'Note: '+n.title,date:n.modified}));
+  _goals.forEach(g=>activities.push({text:'Goal: '+g.title+' ('+g.progress+'%)',date:g.modified}));
+  _finances.slice(-5).forEach(e=>activities.push({text:(e.type==='income'?'+':'-')+$(e.amount)+' '+e.description,date:e.date}));
+  activities.sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const actEl=document.getElementById('overview-activity');
+  if(activities.length){
+    actEl.innerHTML=activities.slice(0,5).map(a=>'<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.03);display:flex;justify-content:space-between"><span>'+a.text+'</span><span style="color:var(--text-faint);font-size:0.68rem">'+fmtShort(a.date)+'</span></div>').join('');
+  } else {
+    actEl.innerHTML='<div style="color:var(--text-faint)">No activity yet</div>';
+  }
+}
+
+// ─── Init ───
+loadAll();
+</script>
+</body>
+</html>
