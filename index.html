@@ -244,8 +244,7 @@ select.form-input{cursor:pointer;background:#1a1a1a}
       <div class="nav-item" data-tab="notes"><span class="nav-icon">✎</span><span>Notes</span></div>
       <div class="nav-item" data-tab="goals"><span class="nav-icon">⊕</span><span>Goals</span></div>
       <div class="nav-item" data-tab="finances"><span class="nav-icon">◇</span><span>Finances</span></div>
-      <div class="nav-item" data-tab="training"><span class="nav-icon">◎</span><span>Training</span></div>
-      <div class="nav-item" data-tab="whoop"><span class="nav-icon">♡</span><span>Whoop</span></div>
+      <div class="nav-item" data-tab="whoop"><span class="nav-icon">♡</span><span>Training & Recovery</span></div>
     </nav>
     <div class="sidebar-links">
       <div class="sidebar-links-title">Quick Links</div>
@@ -274,8 +273,7 @@ select.form-input{cursor:pointer;background:#1a1a1a}
             <span class="quick-link" onclick="switchTab('notes')">✎ Notes</span>
             <span class="quick-link" onclick="switchTab('goals')">⊕ Goals</span>
             <span class="quick-link" onclick="switchTab('finances')">◇ Finances</span>
-            <span class="quick-link" onclick="switchTab('training')">◎ Training</span>
-            <span class="quick-link" onclick="switchTab('whoop')">♡ Whoop</span>
+            <span class="quick-link" onclick="switchTab('whoop')">♡ Training & Recovery</span>
           </div>
         </div>
         <div class="card">
@@ -335,7 +333,7 @@ select.form-input{cursor:pointer;background:#1a1a1a}
     <!-- ═══ WHOOP TAB ═══ -->
     <div class="tab-panel" id="tab-whoop">
       <div class="section-header">
-        <h2>Whoop</h2>
+        <h2>Training & Recovery</h2>
         <div style="display:flex;gap:8px;align-items:center">
           <div class="updated" id="whoop-updated"></div>
           <button class="btn btn-ghost" onclick="loadWhoop()" style="font-size:0.68rem">Refresh</button>
@@ -344,16 +342,6 @@ select.form-input{cursor:pointer;background:#1a1a1a}
       <div id="whoop-content"><div class="empty-state"><div class="icon">♡</div><h3>Loading...</h3></div></div>
     </div>
 
-    <!-- ═══ TRAINING TAB ═══ -->
-    <div class="tab-panel" id="tab-training">
-      <div class="section-header">
-        <h2>Training</h2>
-        <div style="display:flex;gap:8px;align-items:center">
-          <div class="updated" id="training-updated"></div>
-        </div>
-      </div>
-      <div id="training-content"></div>
-    </div>
   </main>
 </div>
 
@@ -1056,15 +1044,14 @@ async function loadTraining(){
       const d=await res.json();
       _templates=d.templates&&d.templates.length?d.templates:JSON.parse(JSON.stringify(DEFAULT_TEMPLATES));
       _trainingLogs=d.logs||[];
-      if(d.updated)document.getElementById('training-updated').textContent='Saved: '+fmt(d.updated);
       if(!d.templates||!d.templates.length)saveTrainingData();
       restoreWorkout();
-      renderTraining();
+      renderWhoop();
     }
   }catch(e){console.warn('Training load failed',e)}
 }
 async function saveTrainingData(){
-  try{await fetch('/api/training',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',templates:_templates,logs:_trainingLogs})});document.getElementById('training-updated').textContent='Saved: '+fmt(new Date().toISOString())}catch(e){console.warn('Training save failed',e)}
+  try{await fetch('/api/training',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',templates:_templates,logs:_trainingLogs})})}catch(e){console.warn('Training save failed',e)}
 }
 
 function persistWorkout(){
@@ -1092,7 +1079,7 @@ function minimizeWorkout(){
   persistWorkout();
   closeModal('workout-modal');
   clearInterval(_workoutTimer);
-  renderTraining();
+  renderWhoop();
 }
 function beginWorkout(templateId){
   if(_activeWorkout){
@@ -1271,7 +1258,7 @@ function finishWorkout(){
   _activeWorkout=null;
   persistWorkout();
   closeModal('workout-modal');
-  saveTrainingData();renderTraining();renderOverview();
+  saveTrainingData();renderWhoop();renderOverview();
 }
 
 function cancelWorkout(){
@@ -1280,13 +1267,13 @@ function cancelWorkout(){
   _activeWorkout=null;
   persistWorkout();
   closeModal('workout-modal');
-  renderTraining();
+  renderWhoop();
 }
 
 function deleteTrainingLog(id){
   if(!confirm('Delete this workout log?'))return;
   _trainingLogs=_trainingLogs.filter(l=>l.id!==id);
-  saveTrainingData();renderTraining();renderOverview();
+  saveTrainingData();renderWhoop();renderOverview();
 }
 
 function findWhoopMatch(log){
@@ -1378,7 +1365,7 @@ function editTemplatePB(tplId,exIdx){
 function deleteTemplateExercise(tplId,exIdx){
   const tpl=_templates.find(t=>t.id===tplId);if(!tpl)return;
   tpl.exercises.splice(exIdx,1);
-  saveTrainingData();renderTraining();
+  saveTrainingData();renderWhoop();
 }
 
 function addTemplateExercise(tplId){
@@ -1387,7 +1374,7 @@ function addTemplateExercise(tplId){
   const tpl=_templates.find(t=>t.id===tplId);if(!tpl)return;
   tpl.exercises.push({name:input.value.trim(),pb:'',weight:'',sets:'',reps:''});
   input.value='';
-  saveTrainingData();renderTraining();
+  saveTrainingData();renderWhoop();
 }
 
 function calcStreak(logs){
@@ -1404,12 +1391,26 @@ function calcStreak(logs){
   return streak;
 }
 
-function renderTraining(){
-  const el=document.getElementById('training-content');if(!el)return;
-  const streak=calcStreak(_trainingLogs);
-  const thisWeek=_trainingLogs.filter(l=>l.date>=new Date(Date.now()-7*86400000).toISOString().split('T')[0]).length;
-  const totalMins=_trainingLogs.reduce((s,l)=>s+(l.duration||0),0);
-  const totalHrs=Math.round(totalMins/60*10)/10;
+// ════════════════════════════════════════
+// WHOOP / TRAINING & RECOVERY
+// ════════════════════════════════════════
+let _whoopData=null;
+let _whoopHistory=null;
+async function loadWhoop(){
+  try{
+    const [dataRes,histRes]=await Promise.all([
+      fetch('/api/whoop/data?t='+Date.now()),
+      fetch('/api/whoop/history?t='+Date.now()),
+    ]);
+    if(dataRes.ok)_whoopData=await dataRes.json();
+    if(histRes.ok){const h=await histRes.json();_whoopHistory=h.history||{};}
+    renderWhoop();
+    if(_whoopData&&_whoopData.connected)fetch('/api/whoop/sync').catch(()=>{});
+  }catch(e){console.warn('Whoop load failed',e)}
+}
+function renderWhoop(){
+  const el=document.getElementById('whoop-content');if(!el)return;
+  if(_whoopData?.updated)document.getElementById('whoop-updated').textContent='Synced: '+fmt(_whoopData.updated);
 
   let html='';
 
@@ -1428,134 +1429,31 @@ function renderTraining(){
   }
 
   // ── BEGIN WORKOUT (compact row) ──
-  html+='<div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">';
-  _templates.forEach(tpl=>{
-    html+='<button onclick="beginWorkout(\''+tpl.id+'\')" class="btn" style="padding:10px 18px;font-size:0.8rem;gap:6px;display:flex;align-items:center"><span>'+tpl.icon+'</span> '+tpl.name+'</button>';
-  });
-  html+='</div>';
-
-  // ── STATS ──
-  if(_trainingLogs.length){
-    html+='<div class="metrics-grid" style="margin-bottom:16px">';
-    html+='<div class="card metric-tile"><div class="metric-value">'+_trainingLogs.length+'</div><div class="metric-label">Total Sessions</div></div>';
-    html+='<div class="card metric-tile"><div class="metric-value teal">'+thisWeek+'</div><div class="metric-label">This Week</div></div>';
-    html+='<div class="card metric-tile"><div class="metric-value" style="color:'+(streak>=3?'var(--teal)':streak>=1?'var(--amber)':'var(--red-soft)')+'">'+streak+'</div><div class="metric-label">Day Streak 🔥</div></div>';
-    html+='<div class="card metric-tile"><div class="metric-value">'+totalHrs+'h</div><div class="metric-label">Total Hours</div></div>';
+  if(_templates.length){
+    html+='<div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">';
+    _templates.forEach(tpl=>{
+      html+='<button onclick="beginWorkout(\''+tpl.id+'\')" class="btn" style="padding:10px 18px;font-size:0.8rem;gap:6px;display:flex;align-items:center"><span>'+tpl.icon+'</span> '+tpl.name+'</button>';
+    });
     html+='</div>';
   }
 
-  // ── WORKOUT HISTORY ──
-  if(_trainingLogs.length){
-    const viewMode=localStorage.getItem('training_view')||'cards';
-    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
-    html+='<div style="font-size:0.9rem;font-weight:700;color:#fff">Workout History</div>';
-    html+='<div style="display:flex;gap:4px">';
-    html+='<button onclick="localStorage.setItem(\'training_view\',\'cards\');renderTraining()" style="padding:4px 10px;border-radius:5px;border:1px solid rgba(255,255,255,'+(viewMode==='cards'?'0.2':'0.06')+');background:'+(viewMode==='cards'?'rgba(255,255,255,0.08)':'transparent')+';color:'+(viewMode==='cards'?'#fff':'var(--text-faint)')+';font-size:0.6rem;cursor:pointer;font-family:var(--font)">Cards</button>';
-    html+='<button onclick="localStorage.setItem(\'training_view\',\'list\');renderTraining()" style="padding:4px 10px;border-radius:5px;border:1px solid rgba(255,255,255,'+(viewMode==='list'?'0.2':'0.06')+');background:'+(viewMode==='list'?'rgba(255,255,255,0.08)':'transparent')+';color:'+(viewMode==='list'?'#fff':'var(--text-faint)')+';font-size:0.6rem;cursor:pointer;font-family:var(--font)">List</button>';
-    html+='</div></div>';
-
-    if(viewMode==='cards'){
-      html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">';
-      _trainingLogs.slice(0,20).forEach((log,idx)=>{
-        const tpl=_templates.find(t=>t.id===log.templateId);
-        const icon=tpl?tpl.icon:'🏋️';
-        const done=log.exercises?log.exercises.filter(e=>e.done).length:0;
-        const total=log.exercises?log.exercises.length:0;
-        const pct=total?Math.round((done/total)*100):0;
-        const whoopMatch=findWhoopMatch(log);
-        const sc=whoopMatch?.score;
-        const cals=sc?.kilojoule?Math.round(sc.kilojoule*0.239):null;
-
-        html+='<div class="card" onclick="showWorkoutDetail(\''+log.id+'\')" style="cursor:pointer;padding:16px;position:relative">';
-        html+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">';
-        html+='<div style="font-size:1.5rem">'+icon+'</div>';
-        html+='<div style="flex:1"><div style="font-size:0.9rem;font-weight:700;color:#fff">'+log.templateName+'</div>';
-        html+='<div style="font-size:0.6rem;color:var(--text-muted)">'+fmtShort(log.date)+' · '+(log.duration||0)+' min</div></div>';
-        html+='<button onclick="event.stopPropagation();deleteTrainingLog(\''+log.id+'\')" style="padding:2px 6px;border-radius:4px;background:none;border:1px solid rgba(239,68,68,0.12);color:var(--red-soft);font-size:0.5rem;cursor:pointer;font-family:var(--font);position:absolute;top:10px;right:10px">✕</button>';
-        html+='</div>';
-
-        // Progress bar
-        html+='<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:0.55rem;color:var(--text-faint);margin-bottom:3px"><span>'+done+'/'+total+' exercises</span><span>'+pct+'%</span></div>';
-        html+='<div class="progress-bar"><div class="progress-fill" style="width:'+pct+'%"></div></div></div>';
-
-        // Whoop stats if linked
-        if(sc){
-          html+='<div style="display:flex;gap:6px;flex-wrap:wrap">';
-          if(sc.strain)html+='<div style="padding:3px 7px;border-radius:4px;background:rgba(45,212,168,0.08);font-size:0.6rem"><span style="color:var(--teal);font-weight:700">'+sc.strain.toFixed(1)+'</span> <span style="color:var(--text-faint)">strain</span></div>';
-          if(cals)html+='<div style="padding:3px 7px;border-radius:4px;background:rgba(255,255,255,0.04);font-size:0.6rem"><span style="color:var(--amber);font-weight:700">'+cals+'</span> <span style="color:var(--text-faint)">cal</span></div>';
-          if(sc.average_heart_rate)html+='<div style="padding:3px 7px;border-radius:4px;background:rgba(255,255,255,0.04);font-size:0.6rem"><span style="color:var(--red-soft);font-weight:700">'+sc.average_heart_rate+'</span> <span style="color:var(--text-faint)">bpm</span></div>';
-          html+='</div>';
-        }
-        html+='</div>';
-      });
-      html+='</div>';
-    } else {
-      // List view
-      html+='<div style="display:flex;flex-direction:column;gap:4px">';
-      _trainingLogs.slice(0,30).forEach(log=>{
-        const tpl=_templates.find(t=>t.id===log.templateId);
-        const icon=tpl?tpl.icon:'🏋️';
-        const done=log.exercises?log.exercises.filter(e=>e.done).length:0;
-        const total=log.exercises?log.exercises.length:0;
-        const whoopMatch=findWhoopMatch(log);
-        const sc=whoopMatch?.score;
-        const cals=sc?.kilojoule?Math.round(sc.kilojoule*0.239):null;
-
-        html+='<div onclick="showWorkoutDetail(\''+log.id+'\')" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.04);cursor:pointer">';
-        html+='<div style="font-size:1rem">'+icon+'</div>';
-        html+='<div style="flex:1;min-width:0"><div style="font-size:0.78rem;font-weight:600;color:#fff">'+log.templateName+'</div>';
-        html+='<div style="font-size:0.58rem;color:var(--text-muted)">'+fmtShort(log.date)+' · '+(log.duration||0)+' min · '+done+'/'+total+'</div></div>';
-        if(sc){
-          if(sc.strain)html+='<div style="font-size:0.7rem;font-weight:700;color:var(--teal);min-width:30px;text-align:right">'+sc.strain.toFixed(1)+'</div>';
-          if(cals)html+='<div style="font-size:0.65rem;color:var(--amber);min-width:40px;text-align:right">'+cals+' cal</div>';
-        }
-        html+='<button onclick="event.stopPropagation();deleteTrainingLog(\''+log.id+'\')" style="padding:2px 6px;border-radius:4px;background:none;border:1px solid rgba(239,68,68,0.12);color:var(--red-soft);font-size:0.5rem;cursor:pointer;font-family:var(--font)">✕</button>';
-        html+='</div>';
-      });
-      html+='</div>';
-    }
-  }
-
-  el.innerHTML=html;
-}
-
-// ════════════════════════════════════════
-// WHOOP
-// ════════════════════════════════════════
-let _whoopData=null;
-let _whoopHistory=null;
-async function loadWhoop(){
-  try{
-    const [dataRes,histRes]=await Promise.all([
-      fetch('/api/whoop/data?t='+Date.now()),
-      fetch('/api/whoop/history?t='+Date.now()),
-    ]);
-    if(dataRes.ok)_whoopData=await dataRes.json();
-    if(histRes.ok){const h=await histRes.json();_whoopHistory=h.history||{};}
-    renderWhoop();
-    // Trigger a sync in background to capture latest data
-    if(_whoopData&&_whoopData.connected)fetch('/api/whoop/sync').catch(()=>{});
-  }catch(e){console.warn('Whoop load failed',e)}
-}
-function renderWhoop(){
-  const el=document.getElementById('whoop-content');if(!el)return;
+  // ── WHOOP NOT CONNECTED ──
   if(!_whoopData||!_whoopData.connected){
-    el.innerHTML='<div class="card" style="text-align:center;padding:40px 20px">'+
-      '<div style="font-size:2.5rem;margin-bottom:12px">♡</div>'+
-      '<div style="font-size:1.1rem;font-weight:700;color:#fff;margin-bottom:6px">Connect Your Whoop</div>'+
-      '<div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:18px;max-width:340px;margin-left:auto;margin-right:auto">Link your Whoop account to see recovery, strain, sleep, and workout data here.</div>'+
-      '<a href="/api/whoop/auth" style="display:inline-block;padding:10px 28px;border-radius:8px;background:var(--teal);color:#000;font-weight:700;font-size:0.85rem;text-decoration:none;font-family:var(--font)">Connect Whoop</a>'+
-      (_whoopData&&_whoopData.error?'<div style="font-size:0.7rem;color:var(--red-soft);margin-top:12px">Error: '+_whoopData.error+'</div>':'')+
+    html+='<div class="card" style="text-align:center;padding:30px 20px;margin-bottom:20px">'+
+      '<div style="font-size:2rem;margin-bottom:8px">♡</div>'+
+      '<div style="font-size:0.9rem;font-weight:700;color:#fff;margin-bottom:4px">Connect Your Whoop</div>'+
+      '<div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:14px">Link your Whoop for recovery, strain & sleep data.</div>'+
+      '<a href="/api/whoop/auth" style="display:inline-block;padding:8px 22px;border-radius:8px;background:var(--teal);color:#000;font-weight:700;font-size:0.8rem;text-decoration:none;font-family:var(--font)">Connect Whoop</a>'+
+      (_whoopData&&_whoopData.error?'<div style="font-size:0.65rem;color:var(--red-soft);margin-top:8px">Error: '+_whoopData.error+'</div>':'')+
       '</div>';
-    return;
   }
-  if(_whoopData.updated)document.getElementById('whoop-updated').textContent='Synced: '+fmt(_whoopData.updated);
 
-  const recovery=_whoopData.recovery||[];
-  const cycles=_whoopData.cycles||[];
-  const sleepData=_whoopData.sleep||[];
-  const workouts=_whoopData.workouts||[];
-  const profile=_whoopData.profile;
+  const whoopConnected=_whoopData&&_whoopData.connected;
+  const recovery=whoopConnected?(_whoopData.recovery||[]):[];
+  const cycles=whoopConnected?(_whoopData.cycles||[]):[];
+  const sleepData=whoopConnected?(_whoopData.sleep||[]):[];
+  const workouts=whoopConnected?(_whoopData.workouts||[]):[];
+  const profile=whoopConnected?_whoopData.profile:null;
 
   // Latest values
   const latestRec=recovery.length?recovery[0]:null;
@@ -1575,6 +1473,7 @@ function renderWhoop(){
 
   let html='';
 
+  if(whoopConnected){
   // Profile greeting
   if(profile){
     html+='<div style="margin-bottom:18px;font-size:0.8rem;color:var(--text-muted)">Connected as <span style="color:#fff;font-weight:600">'+profile.first_name+' '+profile.last_name+'</span></div>';
@@ -1777,6 +1676,91 @@ function renderWhoop(){
       html+='</div>';
     });
     html+='</div></div>';
+  }
+
+  } // end if(whoopConnected)
+
+  // ── TRAINING STATS ──
+  const streak=calcStreak(_trainingLogs);
+  const thisWeek=_trainingLogs.filter(l=>l.date>=new Date(Date.now()-7*86400000).toISOString().split('T')[0]).length;
+  const totalMins=_trainingLogs.reduce((s,l)=>s+(l.duration||0),0);
+  const totalHrs=Math.round(totalMins/60*10)/10;
+
+  if(_trainingLogs.length){
+    html+='<div style="font-size:0.9rem;font-weight:700;color:#fff;margin:20px 0 12px">Training</div>';
+    html+='<div class="metrics-grid" style="margin-bottom:16px">';
+    html+='<div class="card metric-tile"><div class="metric-value">'+_trainingLogs.length+'</div><div class="metric-label">Total Sessions</div></div>';
+    html+='<div class="card metric-tile"><div class="metric-value teal">'+thisWeek+'</div><div class="metric-label">This Week</div></div>';
+    html+='<div class="card metric-tile"><div class="metric-value" style="color:'+(streak>=3?'var(--teal)':streak>=1?'var(--amber)':'var(--red-soft)')+'">'+streak+'</div><div class="metric-label">Day Streak 🔥</div></div>';
+    html+='<div class="card metric-tile"><div class="metric-value">'+totalHrs+'h</div><div class="metric-label">Total Hours</div></div>';
+    html+='</div>';
+  }
+
+  // ── WORKOUT HISTORY ──
+  if(_trainingLogs.length){
+    const viewMode=localStorage.getItem('training_view')||'cards';
+    html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
+    html+='<div style="font-size:0.9rem;font-weight:700;color:#fff">Workout History</div>';
+    html+='<div style="display:flex;gap:4px">';
+    html+='<button onclick="localStorage.setItem(\'training_view\',\'cards\');renderWhoop()" style="padding:4px 10px;border-radius:5px;border:1px solid rgba(255,255,255,'+(viewMode==='cards'?'0.2':'0.06')+');background:'+(viewMode==='cards'?'rgba(255,255,255,0.08)':'transparent')+';color:'+(viewMode==='cards'?'#fff':'var(--text-faint)')+';font-size:0.6rem;cursor:pointer;font-family:var(--font)">Cards</button>';
+    html+='<button onclick="localStorage.setItem(\'training_view\',\'list\');renderWhoop()" style="padding:4px 10px;border-radius:5px;border:1px solid rgba(255,255,255,'+(viewMode==='list'?'0.2':'0.06')+');background:'+(viewMode==='list'?'rgba(255,255,255,0.08)':'transparent')+';color:'+(viewMode==='list'?'#fff':'var(--text-faint)')+';font-size:0.6rem;cursor:pointer;font-family:var(--font)">List</button>';
+    html+='</div></div>';
+
+    if(viewMode==='cards'){
+      html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">';
+      _trainingLogs.slice(0,20).forEach(log=>{
+        const tpl=_templates.find(t=>t.id===log.templateId);
+        const icon=tpl?tpl.icon:'🏋️';
+        const done=log.exercises?log.exercises.filter(e=>e.done).length:0;
+        const total=log.exercises?log.exercises.length:0;
+        const pct=total?Math.round((done/total)*100):0;
+        const whoopMatch=findWhoopMatch(log);
+        const sc=whoopMatch?.score;
+        const cals=sc?.kilojoule?Math.round(sc.kilojoule*0.239):null;
+
+        html+='<div class="card" onclick="showWorkoutDetail(\''+log.id+'\')" style="cursor:pointer;padding:16px;position:relative">';
+        html+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">';
+        html+='<div style="font-size:1.5rem">'+icon+'</div>';
+        html+='<div style="flex:1"><div style="font-size:0.9rem;font-weight:700;color:#fff">'+log.templateName+'</div>';
+        html+='<div style="font-size:0.6rem;color:var(--text-muted)">'+fmtShort(log.date)+' · '+(log.duration||0)+' min</div></div>';
+        html+='<button onclick="event.stopPropagation();deleteTrainingLog(\''+log.id+'\')" style="padding:2px 6px;border-radius:4px;background:none;border:1px solid rgba(239,68,68,0.12);color:var(--red-soft);font-size:0.5rem;cursor:pointer;font-family:var(--font);position:absolute;top:10px;right:10px">✕</button>';
+        html+='</div>';
+        html+='<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:0.55rem;color:var(--text-faint);margin-bottom:3px"><span>'+done+'/'+total+' exercises</span><span>'+pct+'%</span></div>';
+        html+='<div class="progress-bar"><div class="progress-fill" style="width:'+pct+'%"></div></div></div>';
+        if(sc){
+          html+='<div style="display:flex;gap:6px;flex-wrap:wrap">';
+          if(sc.strain)html+='<div style="padding:3px 7px;border-radius:4px;background:rgba(45,212,168,0.08);font-size:0.6rem"><span style="color:var(--teal);font-weight:700">'+sc.strain.toFixed(1)+'</span> <span style="color:var(--text-faint)">strain</span></div>';
+          if(cals)html+='<div style="padding:3px 7px;border-radius:4px;background:rgba(255,255,255,0.04);font-size:0.6rem"><span style="color:var(--amber);font-weight:700">'+cals+'</span> <span style="color:var(--text-faint)">cal</span></div>';
+          if(sc.average_heart_rate)html+='<div style="padding:3px 7px;border-radius:4px;background:rgba(255,255,255,0.04);font-size:0.6rem"><span style="color:var(--red-soft);font-weight:700">'+sc.average_heart_rate+'</span> <span style="color:var(--text-faint)">bpm</span></div>';
+          html+='</div>';
+        }
+        html+='</div>';
+      });
+      html+='</div>';
+    } else {
+      html+='<div style="display:flex;flex-direction:column;gap:4px">';
+      _trainingLogs.slice(0,30).forEach(log=>{
+        const tpl=_templates.find(t=>t.id===log.templateId);
+        const icon=tpl?tpl.icon:'🏋️';
+        const done=log.exercises?log.exercises.filter(e=>e.done).length:0;
+        const total=log.exercises?log.exercises.length:0;
+        const whoopMatch=findWhoopMatch(log);
+        const sc=whoopMatch?.score;
+        const cals=sc?.kilojoule?Math.round(sc.kilojoule*0.239):null;
+
+        html+='<div onclick="showWorkoutDetail(\''+log.id+'\')" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.04);cursor:pointer">';
+        html+='<div style="font-size:1rem">'+icon+'</div>';
+        html+='<div style="flex:1;min-width:0"><div style="font-size:0.78rem;font-weight:600;color:#fff">'+log.templateName+'</div>';
+        html+='<div style="font-size:0.58rem;color:var(--text-muted)">'+fmtShort(log.date)+' · '+(log.duration||0)+' min · '+done+'/'+total+'</div></div>';
+        if(sc){
+          if(sc.strain)html+='<div style="font-size:0.7rem;font-weight:700;color:var(--teal);min-width:30px;text-align:right">'+sc.strain.toFixed(1)+'</div>';
+          if(cals)html+='<div style="font-size:0.65rem;color:var(--amber);min-width:40px;text-align:right">'+cals+' cal</div>';
+        }
+        html+='<button onclick="event.stopPropagation();deleteTrainingLog(\''+log.id+'\')" style="padding:2px 6px;border-radius:4px;background:none;border:1px solid rgba(239,68,68,0.12);color:var(--red-soft);font-size:0.5rem;cursor:pointer;font-family:var(--font)">✕</button>';
+        html+='</div>';
+      });
+      html+='</div>';
+    }
   }
 
   el.innerHTML=html;
