@@ -38,7 +38,15 @@ module.exports = async function handler(req, res) {
 
       if (action === 'save') {
         const { goals } = req.body;
-        await kvSet(KV_KEY, JSON.stringify({ goals, updated: new Date().toISOString() }));
+        const existing = await kvGet(KV_KEY) || {};
+        await kvSet(KV_KEY, JSON.stringify({ ...existing, goals, updated: new Date().toISOString() }));
+        return res.status(200).json({ success: true });
+      }
+
+      if (action === 'save_2026') {
+        const { statuses } = req.body;
+        const existing = await kvGet(KV_KEY) || {};
+        await kvSet(KV_KEY, JSON.stringify({ ...existing, statuses_2026: statuses, updated: new Date().toISOString() }));
         return res.status(200).json({ success: true });
       }
 

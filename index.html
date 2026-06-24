@@ -757,7 +757,7 @@ function renderNotes(){
 async function loadGoals(){
   try{
     const res=await fetch('/api/goals?t='+Date.now());
-    if(res.ok){const d=await res.json();_goals=d.goals||[];if(d.updated)document.getElementById('goals-updated').textContent='Saved: '+fmt(d.updated);renderGoals()}
+    if(res.ok){const d=await res.json();_goals=d.goals||[];apply2026Statuses(d.statuses_2026);if(d.updated)document.getElementById('goals-updated').textContent='Saved: '+fmt(d.updated);renderGoals()}
   }catch(e){console.warn('Goals load failed',e)}
 }
 async function saveGoals(){
@@ -865,20 +865,23 @@ const _2026Goals=[
 function toggleGoalDone(catIdx,itemIdx){
   const item=_2026Goals[catIdx].items[itemIdx];
   item.status=item.status==='complete'?'to do':'complete';
-  localStorage.setItem('goals_2026_status',JSON.stringify(_2026Goals.map(c=>c.items.map(i=>i.status))));
   renderGoals();
+  save2026Statuses();
 }
 
-function loadGoalStatuses(){
-  try{
-    const saved=JSON.parse(localStorage.getItem('goals_2026_status'));
-    if(saved){saved.forEach((cat,ci)=>{cat.forEach((s,ii)=>{if(_2026Goals[ci]&&_2026Goals[ci].items[ii])_2026Goals[ci].items[ii].status=s})})}
-  }catch(e){}
+function save2026Statuses(){
+  const statuses={};
+  _2026Goals.forEach(c=>c.items.forEach(i=>{statuses[i.id]=i.status}));
+  fetch('/api/goals',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save_2026',statuses})}).catch(e=>console.warn('2026 status save failed',e));
+}
+
+function apply2026Statuses(statuses){
+  if(!statuses)return;
+  _2026Goals.forEach(c=>c.items.forEach(i=>{if(statuses[i.id])i.status=statuses[i.id]}));
 }
 
 function renderGoals(){
   const el=document.getElementById('goals-content');if(!el)return;
-  loadGoalStatuses();
 
   const allItems=_2026Goals.flatMap(c=>c.items);
   const total=allItems.length;
