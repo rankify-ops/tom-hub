@@ -1010,60 +1010,68 @@ function deleteFinance(id){
   saveFinances();renderFinances();renderOverview();
 }
 const _costTracking=[
-  {name:'Investment Property 33/286',monthly:1313,annual:15765,cycle:'Monthly',category:'Investment',color:'#e9c162',status:'active',payment:'Transfer to Commbank',renewal:'2026-07-11'},
-  {name:'Rent 6/286 Espl',monthly:620,annual:7440,cycle:'Monthly',category:'Rent',color:'#8dcec3',status:'active',payment:'Transfer to Commbank',renewal:'2028-04-02'},
-  {name:'Car Finance Costs',monthly:566.42,annual:6797.04,cycle:'Monthly',category:'Utilities',color:'#92ceac',status:'active',payment:'Subscription & Bills NAB',renewal:'2026-06-30'},
-  {name:'Money sent to Rankify account',monthly:479,annual:5748,cycle:'Monthly',category:'Investment',color:'#e9c162',status:'active',payment:'Rankify Transfer',renewal:'2026-07-11'},
-  {name:'AHM Health Insurance',monthly:176,annual:1910.76,cycle:'Monthly',category:'Health',color:'#b6b6ff',status:'active',payment:'Qantas CC',renewal:'2026-07-22'},
-  {name:'P3 Membership',monthly:153.96,annual:1847.52,cycle:'Weekly',category:'Health',color:'#b6b6ff',status:'active',payment:'Qantas CC',renewal:'2026-06-29'},
-  {name:'Car Insurance',monthly:125.87,annual:1510.44,cycle:'Monthly',category:'Utilities',color:'#92ceac',status:'active',payment:'Qantas CC',renewal:'2026-07-22'},
-  {name:'Vodafone Plan',monthly:81.51,annual:978.12,cycle:'Monthly',category:'Entertainment',color:'#96c7f2',status:'active',payment:'Qantas CC',renewal:'2026-07-15'},
-  {name:'Snapfitness Gym',monthly:78.30,annual:939.60,cycle:'Fortnightly',category:'Health',color:'#b6b6ff',status:'active',payment:'Subscription & Bills NAB',renewal:'2026-04-14'},
-  {name:'Car Registration',monthly:null,annual:873.20,cycle:'6 Monthly',category:'Car',color:'#ffaa7d',status:'active',payment:'Manual Payment',renewal:'2026-10-17'},
-  {name:'Internet',monthly:35,annual:420,cycle:'Monthly',category:'Utilities',color:'#92ceac',status:'active',payment:'Transfer to Commbank',renewal:'2026-07-22'},
-  {name:'Express VPN',monthly:21.99,annual:263.88,cycle:'Monthly',category:'Investment',color:'#e9c162',status:'active',payment:'Qantas CC',renewal:'2026-06-24'},
-  {name:'ClickUp Personal',monthly:17,annual:204,cycle:'Monthly',category:'Organisational',color:'#6647f0',status:'active',payment:'Qantas CC',renewal:'2026-06-30'},
-  {name:'Youtube Premium',monthly:16.99,annual:203.88,cycle:'Monthly',category:'Entertainment',color:'#96c7f2',status:'active',payment:'Qantas CC',renewal:'2026-07-10'},
-  {name:'iCloud Storage',monthly:14.99,annual:179.88,cycle:'Monthly',category:'Entertainment',color:'#96c7f2',status:'active',payment:'Qantas CC',renewal:'2026-07-22'},
-  {name:'Amazon Prime',monthly:11.99,annual:143.88,cycle:'Monthly',category:'Entertainment',color:'#96c7f2',status:'active',payment:'Qantas CC',renewal:'2026-07-13'},
-  {name:'Spotify',monthly:7.99,annual:95.88,cycle:'Monthly',category:'Entertainment',color:'#96c7f2',status:'active',payment:'Qantas CC',renewal:'2026-07-09'},
-  {name:'Kayo',monthly:null,annual:50,cycle:'Monthly',category:null,color:'var(--text-faint)',status:'paused',payment:'Monthly',renewal:'2026-07-04'},
+  {name:'Investment Property 33/286',owner:'Thomas Flood',monthly:1313,annual:15765,sixMonth:null,cycle:'Monthly',category:'Investment',catColor:'#e9c162',status:'active',payment:'Transfer to Commbank',payColor:'#ffc53d',renewal:'2026-07-12',url:null},
+  {name:'Rent 6/286 Espl',owner:'Thomas Flood',monthly:620,annual:7440,sixMonth:null,cycle:'Monthly',category:'Rent',catColor:'#8dcec3',status:'active',payment:'Transfer to Commbank',payColor:'#ffc53d',renewal:'2028-04-03',url:null},
+  {name:'Car Finance Costs',owner:'Thomas Flood',monthly:566.42,annual:6797.04,sixMonth:null,cycle:'Monthly',category:'Utilities',catColor:'#92ceac',status:'active',payment:'Subscription & Bills NAB',payColor:'#0091ff',renewal:'2026-06-30',url:'https://self-service.taureancapital.com.au'},
+  {name:'Money sent to Rankify account',owner:'Thomas Flood',monthly:479,annual:5748,sixMonth:null,cycle:'Monthly',category:'Investment',catColor:'#e9c162',status:'active',payment:'Rankify Transfer',payColor:'#30a46c',renewal:'2026-07-12',url:null},
+  {name:'AHM Health Insurance',owner:'Thomas Flood',monthly:176,annual:1910.76,sixMonth:null,cycle:'Monthly',category:'Health',catColor:'#b6b6ff',status:'active',payment:'Qantas CC',payColor:'#e5484d',renewal:'2026-07-22',url:null},
+  {name:'P3 Membership',owner:'Thomas Flood',monthly:153.96,annual:1847.52,sixMonth:null,cycle:'Weekly',category:'Health',catColor:'#b6b6ff',status:'active',payment:'Qantas CC',payColor:'#e5484d',renewal:'2026-06-29',url:null},
+  {name:'Car Insurance',owner:'Thomas Flood',monthly:125.87,annual:1510.44,sixMonth:null,cycle:'Monthly',category:'Utilities',catColor:'#92ceac',status:'active',payment:'Qantas CC',payColor:'#e5484d',renewal:'2026-07-22',url:null},
+  {name:'Vodafone Plan',owner:'Thomas Flood',monthly:81.51,annual:978.12,sixMonth:null,cycle:'Monthly',category:'Entertainment',catColor:'#96c7f2',status:'active',payment:'Qantas CC',payColor:'#e5484d',renewal:'2026-07-15',url:null},
+  {name:'Snapfitness Gym',owner:'Thomas Flood',monthly:78.30,annual:939.60,sixMonth:null,cycle:'Fortnightly',category:'Health',catColor:'#b6b6ff',status:'active',payment:'Subscription & Bills NAB',payColor:'#0091ff',renewal:'2026-03-16',url:null},
+  {name:'Car Registration',owner:'Thomas Flood',monthly:null,annual:873.20,sixMonth:436.60,cycle:'6 Monthly',category:'Car',catColor:'#ffaa7d',status:'active',payment:'Manual Payment',payColor:'#b6b6ff',renewal:'2026-10-17',url:null},
+  {name:'Internet',owner:'Thomas Flood',monthly:35,annual:420,sixMonth:null,cycle:'Monthly',category:'Utilities',catColor:'#92ceac',status:'active',payment:'Transfer to Commbank',payColor:'#ffc53d',renewal:'2026-07-22',url:null},
+  {name:'Express VPN',owner:'Thomas Flood',monthly:21.99,annual:263.88,sixMonth:null,cycle:'Monthly',category:'Investment',catColor:'#e9c162',status:'active',payment:'Qantas CC',payColor:'#e5484d',renewal:'2026-06-24',url:'https://portal.expressvpn.com/my-subscriptions'},
+  {name:'ClickUp Personal',owner:'Thomas Flood',monthly:17,annual:204,sixMonth:17,cycle:'Monthly',category:'Organisational',catColor:'#6647f0',status:'active',payment:'Qantas CC',payColor:'#e5484d',renewal:'2026-06-30',url:'https://app.clickup.com/90161369511'},
+  {name:'Youtube Premium',owner:'Thomas Flood',monthly:16.99,annual:203.88,sixMonth:null,cycle:'Monthly',category:'Entertainment',catColor:'#96c7f2',status:'active',payment:'Qantas CC',payColor:'#e5484d',renewal:'2026-07-10',url:null},
+  {name:'iCloud Storage',owner:'Thomas Flood',monthly:14.99,annual:179.88,sixMonth:null,cycle:'Monthly',category:'Entertainment',catColor:'#96c7f2',status:'active',payment:'Qantas CC',payColor:'#e5484d',renewal:'2026-07-22',url:null},
+  {name:'Amazon Prime',owner:'Thomas Flood',monthly:11.99,annual:143.88,sixMonth:null,cycle:'Monthly',category:'Entertainment',catColor:'#96c7f2',status:'active',payment:'Qantas CC',payColor:'#e5484d',renewal:'2026-07-13',url:null},
+  {name:'Spotify',owner:'Thomas Flood',monthly:7.99,annual:95.88,sixMonth:null,cycle:'Monthly',category:'Entertainment',catColor:'#96c7f2',status:'active',payment:'Qantas CC',payColor:'#e5484d',renewal:'2026-07-09',url:null},
+  {name:'Kayo',owner:'Thomas Flood',monthly:null,annual:50,sixMonth:null,cycle:'Monthly',category:null,catColor:null,status:'paused',payment:'Qantas CC',payColor:'#ab4aba',renewal:'2026-07-04',url:null},
 ];
+
+function fmtDate(d){if(!d)return'–';const p=d.split('-');return p[2]+'/'+p[1]+'/'+p[0].slice(2);}
 
 function renderFinances(){
   const el=document.getElementById('finances-content');if(!el)return;
 
-  // Cost Tracking section
   const activeItems=_costTracking.filter(c=>c.status==='active');
   const totalMonthly=activeItems.reduce((s,c)=>s+(c.monthly||0),0);
   const totalAnnual=activeItems.reduce((s,c)=>s+(c.annual||0),0);
 
   let costHtml='<div class="card" style="margin-bottom:20px;padding:20px">';
-  costHtml+='<div class="card-header" style="margin-bottom:14px"><span class="card-title">Cost Tracking</span><span style="font-size:0.6rem;color:var(--text-faint)">from ClickUp</span></div>';
+  costHtml+='<div class="card-header" style="margin-bottom:14px"><span class="card-title">Cost Tracking</span><span style="font-size:0.6rem;color:var(--text-faint);margin-left:8px">from ClickUp</span></div>';
 
   costHtml+='<div class="metrics-grid" style="margin-bottom:16px">';
-  costHtml+='<div class="metric-tile" style="padding:10px"><div class="metric-value" style="font-size:1.1rem;color:var(--red-soft)">$'+totalMonthly.toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div class="metric-label">Monthly</div></div>';
-  costHtml+='<div class="metric-tile" style="padding:10px"><div class="metric-value" style="font-size:1.1rem;color:var(--amber)">$'+totalAnnual.toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div class="metric-label">Annual</div></div>';
+  costHtml+='<div class="metric-tile" style="padding:10px"><div class="metric-value" style="font-size:1.1rem;color:var(--red-soft)">$'+totalMonthly.toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div class="metric-label">Monthly Total</div></div>';
+  costHtml+='<div class="metric-tile" style="padding:10px"><div class="metric-value" style="font-size:1.1rem;color:var(--amber)">$'+totalAnnual.toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div class="metric-label">Annual Total</div></div>';
   costHtml+='<div class="metric-tile" style="padding:10px"><div class="metric-value" style="font-size:1.1rem">'+activeItems.length+'</div><div class="metric-label">Active</div></div>';
   costHtml+='<div class="metric-tile" style="padding:10px"><div class="metric-value" style="font-size:1.1rem;color:var(--text-faint)">'+_costTracking.filter(c=>c.status==='paused').length+'</div><div class="metric-label">Paused</div></div>';
   costHtml+='</div>';
 
-  costHtml+='<div style="display:flex;flex-direction:column;gap:4px">';
+  costHtml+='<div style="overflow-x:auto">';
+  costHtml+='<table class="data-table" style="width:100%"><thead><tr>';
+  costHtml+='<th>Name</th><th>Account Owner</th><th>Category</th><th>Billing Cycle</th><th style="text-align:right">Annual Cost</th><th style="text-align:right">6 Monthly Cost</th><th style="text-align:right">Monthly Cost</th><th>Renewal Date</th><th>Payment Method</th><th>Login URL</th>';
+  costHtml+='</tr></thead><tbody>';
+
   _costTracking.forEach(c=>{
     const isPaused=c.status==='paused';
-    costHtml+='<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05)'+(isPaused?';opacity:0.5':'')+'">';
-    costHtml+='<div style="width:4px;height:32px;border-radius:2px;background:'+(c.color||'var(--text-faint)')+';flex-shrink:0"></div>';
-    costHtml+='<div style="flex:1;min-width:0">';
-    costHtml+='<div style="font-size:0.82rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.name+(isPaused?' <span style="color:var(--text-faint);font-weight:400;font-size:0.6rem">(PAUSED)</span>':'')+'</div>';
-    costHtml+='<div style="font-size:0.58rem;color:var(--text-muted);margin-top:2px">'+c.cycle+(c.category?' · '+c.category:'')+' · '+c.payment+'</div>';
-    costHtml+='</div>';
-    costHtml+='<div style="text-align:right;flex-shrink:0">';
-    if(c.monthly)costHtml+='<div style="font-size:0.82rem;font-weight:700;color:'+(c.monthly>=100?'var(--red-soft)':'#fff')+'">$'+c.monthly.toFixed(2)+'</div>';
-    costHtml+='<div style="font-size:0.5rem;color:var(--text-faint)">$'+(c.annual||0).toLocaleString('en-AU')+'/yr</div>';
-    costHtml+='</div>';
-    costHtml+='</div>';
+    const rowStyle=isPaused?'opacity:0.5':'';
+    costHtml+='<tr style="'+rowStyle+'">';
+    costHtml+='<td style="color:#fff;font-weight:600;white-space:nowrap">'+c.name+(isPaused?' <span style="color:var(--text-faint);font-weight:400;font-size:0.55rem">(PAUSED)</span>':'')+'</td>';
+    costHtml+='<td>'+c.owner+'</td>';
+    costHtml+='<td>'+(c.category?'<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.65rem;background:'+c.catColor+'22;color:'+c.catColor+';border:1px solid '+c.catColor+'44">'+c.category+'</span>':'–')+'</td>';
+    costHtml+='<td>'+(c.cycle==='Weekly'?'<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.65rem;background:#FF408122;color:#FF4081;border:1px solid #FF408144">'+c.cycle+'</span>':'<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.65rem;background:#7C4DFF22;color:#7C4DFF;border:1px solid #7C4DFF44">'+c.cycle+'</span>')+'</td>';
+    costHtml+='<td style="text-align:right;font-weight:600">$'+(c.annual||0).toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td>';
+    costHtml+='<td style="text-align:right">'+(c.sixMonth?'$'+c.sixMonth.toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2}):'–')+'</td>';
+    costHtml+='<td style="text-align:right;font-weight:600">'+(c.monthly?'$'+c.monthly.toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2}):'–')+'</td>';
+    costHtml+='<td style="white-space:nowrap">'+fmtDate(c.renewal)+'</td>';
+    costHtml+='<td><span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.65rem;background:'+c.payColor+'22;color:'+c.payColor+';border:1px solid '+c.payColor+'44;white-space:nowrap">'+c.payment+'</span></td>';
+    costHtml+='<td>'+(c.url?'<a href="'+c.url+'" target="_blank" style="color:var(--teal);font-size:0.65rem;text-decoration:none" title="'+c.url+'">🔗</a>':'–')+'</td>';
+    costHtml+='</tr>';
   });
-  costHtml+='</div></div>';
+
+  costHtml+='</tbody></table></div></div>';
 
   if(!_finances.length){
     el.innerHTML=costHtml;
