@@ -497,28 +497,34 @@ if(sessionStorage.getItem('tom_hub_auth')==='true'){
   pinScreen.classList.add('hidden');
 }
 
+function checkPin(){
+  const code=[...pinInputs].map(p=>p.value).join('');
+  if(code.length===4){
+    if(code===PIN){
+      sessionStorage.setItem('tom_hub_auth','true');
+      pinScreen.classList.add('hidden');
+    } else {
+      pinError.classList.add('show');
+      pinInputs.forEach(p=>{p.classList.add('error');p.value=''});
+      pinInputs[0].focus();
+      setTimeout(()=>{pinError.classList.remove('show');pinInputs.forEach(p=>p.classList.remove('error'))},1500);
+    }
+  }
+}
 pinInputs.forEach((input,i)=>{
+  input.addEventListener('input',()=>{
+    input.value=input.value.replace(/[^0-9]/g,'');
+    if(input.value.length>1) input.value=input.value.charAt(0);
+    if(input.value&&i<pinInputs.length-1) pinInputs[i+1].focus();
+    checkPin();
+  });
   input.addEventListener('keydown',e=>{
-    if(e.key>='0'&&e.key<='9'){
-      e.preventDefault();
-      input.value=e.key;
-      if(i<pinInputs.length-1) pinInputs[i+1].focus();
-      const code=[...pinInputs].map(p=>p.value).join('');
-      if(code.length===4){
-        if(code===PIN){
-          sessionStorage.setItem('tom_hub_auth','true');
-          pinScreen.classList.add('hidden');
-        } else {
-          pinError.classList.add('show');
-          pinInputs.forEach(p=>{p.classList.add('error');p.value=''});
-          pinInputs[0].focus();
-          setTimeout(()=>{pinError.classList.remove('show');pinInputs.forEach(p=>p.classList.remove('error'))},1500);
-        }
-      }
-    } else if(e.key==='Backspace'){
-      e.preventDefault();
+    if(e.key==='Backspace'){
       if(input.value){input.value=''}
       else if(i>0){pinInputs[i-1].focus();pinInputs[i-1].value=''}
+      e.preventDefault();
+    } else if(e.key>='0'&&e.key<='9'){
+      input.value='';
     }
   });
 });
