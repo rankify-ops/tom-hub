@@ -1,4 +1,7 @@
 {
+  "crons": [
+    { "path": "/api/whoop/sync", "schedule": "0 15 * * *" }
+  ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/privacy", "destination": "/privacy.html" }

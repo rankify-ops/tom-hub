@@ -1418,10 +1418,18 @@ function renderTraining(){
 // WHOOP
 // ════════════════════════════════════════
 let _whoopData=null;
+let _whoopHistory=null;
 async function loadWhoop(){
   try{
-    const res=await fetch('/api/whoop/data?t='+Date.now());
-    if(res.ok){_whoopData=await res.json();renderWhoop()}
+    const [dataRes,histRes]=await Promise.all([
+      fetch('/api/whoop/data?t='+Date.now()),
+      fetch('/api/whoop/history?t='+Date.now()),
+    ]);
+    if(dataRes.ok)_whoopData=await dataRes.json();
+    if(histRes.ok){const h=await histRes.json();_whoopHistory=h.history||{};}
+    renderWhoop();
+    // Trigger a sync in background to capture latest data
+    if(_whoopData&&_whoopData.connected)fetch('/api/whoop/sync').catch(()=>{});
   }catch(e){console.warn('Whoop load failed',e)}
 }
 function renderWhoop(){
@@ -1572,6 +1580,35 @@ function renderWhoop(){
     html+='<div class="metric-tile" style="padding:10px"><div class="metric-value" style="font-size:1.2rem">'+avgHRV+'</div><div class="metric-label">Avg HRV</div></div>';
     html+='<div class="metric-tile" style="padding:10px"><div class="metric-value" style="font-size:1.2rem">'+avgRHR+'</div><div class="metric-label">Avg RHR</div></div>';
     html+='<div class="metric-tile" style="padding:10px"><div class="metric-value" style="font-size:1.2rem">'+avgSleepHrs+'h</div><div class="metric-label">Avg Sleep</div></div>';
+    html+='</div></div>';
+  }
+
+  // ── DAILY LOG (from stored history) ──
+  if(_whoopHistory&&Object.keys(_whoopHistory).length){
+    const days=Object.keys(_whoopHistory).sort().reverse();
+    html+='<div class="card" style="margin-top:16px"><div class="card-header"><span class="card-title">Daily Log ('+days.length+' days stored)</span></div>';
+    html+='<div style="display:flex;flex-direction:column;gap:4px">';
+    days.slice(0,30).forEach(date=>{
+      const d=_whoopHistory[date];
+      const rec=d.recovery;const sl=d.sleep;const st=d.strain;const ws=d.workouts||[];
+      const recScore=rec?.score;const hrvVal=rec?.hrv?Math.round(rec.hrv):null;
+      const sleepHrs=sl?.total_hours;const sleepPerf=sl?.performance;
+      const strainVal=st?.score;
+      function rc(s){if(s==null)return'var(--text-faint)';if(s>=67)return'var(--teal)';if(s>=34)return'var(--amber)';return'var(--red-soft)'}
+      html+='<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:6px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.04);font-size:0.72rem">';
+      html+='<div style="min-width:70px;color:var(--text-muted);font-weight:600;font-size:0.65rem">'+fmtShort(date)+'</div>';
+      html+='<div style="min-width:50px;text-align:center"><span style="color:'+rc(recScore)+';font-weight:700">'+(recScore!=null?recScore+'%':'—')+'</span><div style="font-size:0.45rem;color:var(--text-faint)">REC</div></div>';
+      html+='<div style="min-width:40px;text-align:center"><span style="color:#fff;font-weight:600">'+(hrvVal||'—')+'</span><div style="font-size:0.45rem;color:var(--text-faint)">HRV</div></div>';
+      html+='<div style="min-width:45px;text-align:center"><span style="color:#fff">'+(sleepHrs||'—')+'h</span><div style="font-size:0.45rem;color:var(--text-faint)">SLEEP</div></div>';
+      html+='<div style="min-width:40px;text-align:center"><span style="color:var(--teal);font-weight:600">'+(strainVal!=null?strainVal.toFixed(1):'—')+'</span><div style="font-size:0.45rem;color:var(--text-faint)">STRAIN</div></div>';
+      if(ws.length){
+        const wList=ws.map(w=>{const icon={running:'🏃',tennis:'🎾',weightlifting:'🏋️',sauna:'🧖'}[w.sport]||'💪';return icon+' '+(w.duration_min||'?')+'m'}).join(' ');
+        html+='<div style="flex:1;font-size:0.6rem;color:var(--text-secondary);text-align:right">'+wList+'</div>';
+      } else {
+        html+='<div style="flex:1"></div>';
+      }
+      html+='</div>';
+    });
     html+='</div></div>';
   }
 
