@@ -2280,33 +2280,123 @@ function showWhoopWorkoutDetail(workoutId){
 function renderOverview(){
   const totalChecklistItems=_checklists.reduce((s,l)=>s+l.items.length,0);
   const doneChecklistItems=_checklists.reduce((s,l)=>s+l.items.filter(i=>i.done).length,0);
+  const checklistPct=totalChecklistItems?Math.round(doneChecklistItems/totalChecklistItems*100):0;
   const activeGoals=_goals.filter(g=>g.status!=='Complete').length;
-  const totalIncome=_finances.filter(e=>e.type==='income').reduce((s,e)=>s+e.amount,0);
-  const totalExpense=_finances.filter(e=>e.type==='expense').reduce((s,e)=>s+e.amount,0);
+  const completedGoals=_goals.filter(g=>g.status==='Complete').length;
+  const avgGoalProgress=_goals.length?Math.round(_goals.reduce((s,g)=>s+g.progress,0)/_goals.length):0;
+
+  // Finance data
+  const activeItems=_costTracking.filter(c=>c.status==='active');
+  const totalMonthly=activeItems.reduce((s,c)=>s+deriveCosts(c).monthly,0);
+  const monthlyLiving=350*52/12;
+  const monthlyIncome=_weeklyIncome*52/12;
+  const surplus=monthlyIncome-totalMonthly-monthlyLiving;
+
+  // Whoop data
+  const todayStr=new Date().toISOString().split('T')[0];
+  const yesterdayStr=new Date(Date.now()-86400000).toISOString().split('T')[0];
+  let latestWhoop=null;
+  if(_whoopHistory){
+    latestWhoop=_whoopHistory[todayStr]||_whoopHistory[yesterdayStr]||null;
+  }
+  const recScore=latestWhoop?.recovery?.score;
+  const hrvVal=latestWhoop?.recovery?.hrv?Math.round(latestWhoop.recovery.hrv):null;
+  const sleepHrs=latestWhoop?.sleep?.total_hours;
+  const strainVal=latestWhoop?.strain?.score;
+  function rc(s){if(s==null)return'var(--text-faint)';if(s>=67)return'var(--teal)';if(s>=34)return'var(--amber)';return'var(--red-soft)'}
+
+  // Training
+  const streak=calcStreak(_trainingLogs);
+  const thisWeek=_trainingLogs.filter(l=>l.date>=new Date(Date.now()-7*86400000).toISOString().split('T')[0]).length;
 
   document.getElementById('overview-updated').textContent='Last loaded: '+fmt(new Date().toISOString());
-  document.getElementById('overview-metrics').innerHTML=
-    '<div class="card metric-tile"><div class="metric-value">'+_checklists.length+'</div><div class="metric-label">Checklists</div></div>'+
-    '<div class="card metric-tile"><div class="metric-value teal">'+doneChecklistItems+'/'+totalChecklistItems+'</div><div class="metric-label">Tasks Done</div></div>'+
-    '<div class="card metric-tile"><div class="metric-value">'+_notes.length+'</div><div class="metric-label">Notes</div></div>'+
-    '<div class="card metric-tile"><div class="metric-value" style="color:var(--amber)">'+activeGoals+'</div><div class="metric-label">Active Goals</div></div>'+
-    '<div class="card metric-tile"><div class="metric-value teal">'+$(totalIncome)+'</div><div class="metric-label">Income</div></div>'+
-    '<div class="card metric-tile"><div class="metric-value" style="color:var(--red-soft)">'+$(totalExpense)+'</div><div class="metric-label">Expenses</div></div>'+
-    '<div class="card metric-tile"><div class="metric-value" style="color:'+(calcStreak(_trainingLogs)>=3?'var(--teal)':'var(--amber)')+'">'+calcStreak(_trainingLogs)+'🔥</div><div class="metric-label">Training Streak</div></div>';
 
-  // Recent activity
-  const activities=[];
-  _notes.forEach(n=>activities.push({text:'Note: '+n.title,date:n.modified}));
-  _goals.forEach(g=>activities.push({text:'Goal: '+g.title+' ('+g.progress+'%)',date:g.modified}));
-  _finances.slice(-5).forEach(e=>activities.push({text:(e.type==='income'?'+':'-')+$(e.amount)+' '+e.description,date:e.date}));
-  _trainingLogs.slice(0,5).forEach(t=>{const d=getWhoopDuration(t);activities.push({text:t.templateName+(d?' — '+d+' min':''),date:t.date})});
-  activities.sort((a,b)=>new Date(b.date)-new Date(a.date));
-  const actEl=document.getElementById('overview-activity');
-  if(activities.length){
-    actEl.innerHTML=activities.slice(0,5).map(a=>'<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.03);display:flex;justify-content:space-between"><span>'+a.text+'</span><span style="color:var(--text-faint);font-size:0.68rem">'+fmtShort(a.date)+'</span></div>').join('');
-  } else {
-    actEl.innerHTML='<div style="color:var(--text-faint)">No activity yet</div>';
+  // Build metrics
+  const tc=s=>'onclick="switchTab(\''+s+'\')" style="cursor:pointer"';
+  document.getElementById('overview-metrics').innerHTML=
+    '<div class="card metric-tile" '+tc('finances')+'><div class="metric-value teal">$'+fmt2(surplus)+'</div><div class="metric-label">Surplus /mo</div></div>'+
+    '<div class="card metric-tile" '+tc('finances')+'><div class="metric-value" style="color:var(--red-soft)">$'+fmt2(totalMonthly)+'</div><div class="metric-label">Costs /mo</div></div>'+
+    '<div class="card metric-tile" '+tc('whoop')+'><div class="metric-value" style="color:'+rc(recScore)+'">'+(recScore!=null?recScore+'%':'—')+'</div><div class="metric-label">Recovery</div></div>'+
+    '<div class="card metric-tile" '+tc('whoop')+'><div class="metric-value" style="color:'+(streak>=3?'var(--teal)':'var(--amber)')+'">'+streak+'🔥</div><div class="metric-label">Streak</div></div>'+
+    '<div class="card metric-tile" '+tc('goals')+'><div class="metric-value" style="color:var(--amber)">'+activeGoals+'</div><div class="metric-label">Active Goals</div></div>'+
+    '<div class="card metric-tile" '+tc('checklists')+'><div class="metric-value teal">'+checklistPct+'%</div><div class="metric-label">Tasks Done</div></div>'+
+    '<div class="card metric-tile" '+tc('notes')+'><div class="metric-value">'+_notes.length+'</div><div class="metric-label">Notes</div></div>';
+
+  // Build panels
+  let panels='';
+
+  // Finance snapshot
+  panels+='<div class="card" style="cursor:pointer" onclick="switchTab(\'finances\')">';
+  panels+='<div class="card-header"><span class="card-title">💰 Finances</span><span style="font-size:0.65rem;color:var(--text-faint)">'+activeItems.length+' subscriptions</span></div>';
+  panels+='<div style="display:flex;gap:12px;margin:10px 0">';
+  panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Income</div><div style="font-weight:700;color:var(--teal)">$'+fmt2(monthlyIncome)+'</div></div>';
+  panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Costs</div><div style="font-weight:700;color:var(--red-soft)">$'+fmt2(totalMonthly)+'</div></div>';
+  panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Living</div><div style="font-weight:700;color:var(--amber)">$'+fmt2(monthlyLiving)+'</div></div>';
+  panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Surplus</div><div style="font-weight:700;color:'+(surplus>=0?'var(--teal)':'var(--red-soft)')+'">$'+fmt2(surplus)+'</div></div>';
+  panels+='</div>';
+  // mini bar of top 3 costs
+  const topCosts=[...activeItems].sort((a,b)=>deriveCosts(b).monthly-deriveCosts(a).monthly).slice(0,3);
+  topCosts.forEach(c=>{
+    const d=deriveCosts(c);
+    panels+='<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:0.7rem;border-top:1px solid rgba(255,255,255,0.04)">';
+    panels+='<span style="color:var(--text-secondary)">'+c.name+'</span><span style="color:#fff;font-weight:600">$'+fmt2(d.monthly)+'/mo</span></div>';
+  });
+  panels+='</div>';
+
+  // Whoop / Training snapshot
+  panels+='<div class="card" style="cursor:pointer" onclick="switchTab(\'whoop\')">';
+  panels+='<div class="card-header"><span class="card-title">💪 Health & Training</span><span style="font-size:0.65rem;color:var(--text-faint)">'+thisWeek+' sessions this week</span></div>';
+  if(latestWhoop){
+    panels+='<div style="display:flex;gap:12px;margin:10px 0">';
+    panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Recovery</div><div style="font-weight:700;color:'+rc(recScore)+'">'+(recScore!=null?recScore+'%':'—')+'</div></div>';
+    panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">HRV</div><div style="font-weight:700;color:#fff">'+(hrvVal||'—')+'</div></div>';
+    panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Sleep</div><div style="font-weight:700;color:#fff">'+(sleepHrs?sleepHrs+'h':'—')+'</div></div>';
+    panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Strain</div><div style="font-weight:700;color:var(--teal)">'+(strainVal!=null?strainVal.toFixed(1):'—')+'</div></div>';
+    panels+='</div>';
   }
+  // recent training
+  const recentTraining=_trainingLogs.slice(0,3);
+  recentTraining.forEach(t=>{
+    const dur=getWhoopDuration(t);
+    panels+='<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:0.7rem;border-top:1px solid rgba(255,255,255,0.04)">';
+    panels+='<span style="color:var(--text-secondary)">'+t.templateName+(dur?' — '+dur+'m':'')+'</span><span style="color:var(--text-faint)">'+fmtShort(t.date)+'</span></div>';
+  });
+  panels+='</div>';
+
+  // Goals snapshot
+  panels+='<div class="card" style="cursor:pointer" onclick="switchTab(\'goals\')">';
+  panels+='<div class="card-header"><span class="card-title">🎯 Goals</span><span style="font-size:0.65rem;color:var(--text-faint)">'+completedGoals+'/'+_goals.length+' complete</span></div>';
+  if(_goals.length){
+    panels+='<div style="margin:8px 0"><div style="height:6px;border-radius:3px;background:rgba(255,255,255,0.08);overflow:hidden"><div style="height:100%;width:'+avgGoalProgress+'%;background:var(--teal);border-radius:3px;transition:width 0.3s"></div></div>';
+    panels+='<div style="text-align:right;font-size:0.6rem;color:var(--text-faint);margin-top:3px">Avg progress: '+avgGoalProgress+'%</div></div>';
+    _goals.filter(g=>g.status!=='Complete').slice(0,3).forEach(g=>{
+      panels+='<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:0.7rem;border-top:1px solid rgba(255,255,255,0.04)">';
+      panels+='<span style="color:var(--text-secondary)">'+g.title+'</span>';
+      panels+='<div style="display:flex;align-items:center;gap:6px"><div style="width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,0.08);overflow:hidden"><div style="height:100%;width:'+g.progress+'%;background:var(--teal);border-radius:2px"></div></div><span style="color:var(--text-faint);font-size:0.6rem">'+g.progress+'%</span></div>';
+      panels+='</div>';
+    });
+  } else {
+    panels+='<div style="color:var(--text-faint);font-size:0.75rem;padding:8px 0">No goals yet</div>';
+  }
+  panels+='</div>';
+
+  // Recent Activity
+  panels+='<div class="card">';
+  panels+='<div class="card-header"><span class="card-title">📋 Recent Activity</span></div>';
+  const activities=[];
+  _notes.forEach(n=>activities.push({text:'✎ '+n.title,date:n.modified,tab:'notes'}));
+  _goals.forEach(g=>activities.push({text:'🎯 '+g.title+' ('+g.progress+'%)',date:g.modified,tab:'goals'}));
+  _finances.slice(-5).forEach(e=>activities.push({text:(e.type==='income'?'💚 +':'🔴 -')+$(e.amount)+' '+e.description,date:e.date,tab:'finances'}));
+  _trainingLogs.slice(0,5).forEach(t=>{const d=getWhoopDuration(t);activities.push({text:'💪 '+t.templateName+(d?' — '+d+'m':''),date:t.date,tab:'whoop'})});
+  activities.sort((a,b)=>new Date(b.date)-new Date(a.date));
+  if(activities.length){
+    panels+=activities.slice(0,6).map(a=>'<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.03);display:flex;justify-content:space-between;cursor:pointer;font-size:0.72rem" onclick="switchTab(\''+a.tab+'\')"><span style="color:var(--text-secondary)">'+a.text+'</span><span style="color:var(--text-faint);font-size:0.6rem">'+fmtShort(a.date)+'</span></div>').join('');
+  } else {
+    panels+='<div style="color:var(--text-faint);font-size:0.75rem">No activity yet</div>';
+  }
+  panels+='</div>';
+
+  document.getElementById('overview-panels').innerHTML=panels;
 }
 
 // ─── Init ───
