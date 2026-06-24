@@ -221,10 +221,10 @@ select.form-input{cursor:pointer;background:#1a1a1a}
     <div class="pin-divider"></div>
     <div class="pin-label">Enter PIN</div>
     <div class="pin-inputs" id="pin-inputs">
-      <input class="pin-input" type="number" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
-      <input class="pin-input" type="number" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
-      <input class="pin-input" type="number" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
-      <input class="pin-input" type="number" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
+      <input class="pin-input" type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
+      <input class="pin-input" type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
+      <input class="pin-input" type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
+      <input class="pin-input" type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off">
     </div>
     <div class="pin-error" id="pin-error">Incorrect PIN</div>
   </div>
@@ -499,9 +499,8 @@ if(sessionStorage.getItem('tom_hub_auth')==='true'){
 
 pinInputs.forEach((input,i)=>{
   input.addEventListener('input',e=>{
-    const val=e.target.value;
-    if(val.length>1) e.target.value=val.slice(-1);
-    if(val&&i<pinInputs.length-1) pinInputs[i+1].focus();
+    e.target.value=e.target.value.replace(/[^0-9]/g,'').slice(-1);
+    if(e.target.value&&i<pinInputs.length-1) pinInputs[i+1].focus();
     const code=[...pinInputs].map(p=>p.value).join('');
     if(code.length===4){
       if(code===PIN){
@@ -518,7 +517,7 @@ pinInputs.forEach((input,i)=>{
   input.addEventListener('keydown',e=>{
     if(e.key==='Backspace'&&!e.target.value&&i>0){pinInputs[i-1].focus();pinInputs[i-1].value=''}
   });
-  input.addEventListener('focus',function(){this.select&&this.select()});
+  input.addEventListener('focus',function(){this.select()});
 });
 if(!sessionStorage.getItem('tom_hub_auth')) setTimeout(()=>pinInputs[0]?.focus(),300);
 
