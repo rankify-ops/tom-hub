@@ -1035,18 +1035,34 @@ function fmtDate(d){if(!d)return'–';const p=d.split('-');return p[2]+'/'+p[1]+
 function renderFinances(){
   const el=document.getElementById('finances-content');if(!el)return;
 
+  const weeklyIncome=2469.54;
+  const monthlyIncome=weeklyIncome*52/12;
+  const annualIncome=weeklyIncome*52;
   const activeItems=_costTracking.filter(c=>c.status==='active');
   const totalMonthly=activeItems.reduce((s,c)=>s+(c.monthly||0),0);
+  const totalWeekly=totalMonthly*12/52;
   const totalAnnual=activeItems.reduce((s,c)=>s+(c.annual||0),0);
+  const weeklyNet=weeklyIncome-totalWeekly;
+  const monthlyNet=monthlyIncome-totalMonthly;
+  const annualNet=annualIncome-totalAnnual;
+  const fmt2=n=>n.toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2});
 
   let costHtml='<div class="card" style="margin-bottom:20px;padding:20px">';
   costHtml+='<div class="card-header" style="margin-bottom:14px"><span class="card-title">Cost Tracking</span><span style="font-size:0.6rem;color:var(--text-faint);margin-left:8px">from ClickUp</span></div>';
 
-  costHtml+='<div class="metrics-grid" style="margin-bottom:16px">';
-  costHtml+='<div class="metric-tile" style="padding:10px"><div class="metric-value" style="font-size:1.1rem;color:var(--red-soft)">$'+totalMonthly.toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div class="metric-label">Monthly Total</div></div>';
-  costHtml+='<div class="metric-tile" style="padding:10px"><div class="metric-value" style="font-size:1.1rem;color:var(--amber)">$'+totalAnnual.toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div class="metric-label">Annual Total</div></div>';
-  costHtml+='<div class="metric-tile" style="padding:10px"><div class="metric-value" style="font-size:1.1rem">'+activeItems.length+'</div><div class="metric-label">Active</div></div>';
-  costHtml+='<div class="metric-tile" style="padding:10px"><div class="metric-value" style="font-size:1.1rem;color:var(--text-faint)">'+_costTracking.filter(c=>c.status==='paused').length+'</div><div class="metric-label">Paused</div></div>';
+  costHtml+='<div class="metrics-grid" style="margin-bottom:16px;grid-template-columns:repeat(4,1fr)">';
+  costHtml+='<div class="metric-tile" style="padding:10px;grid-column:span 4"><div style="display:flex;justify-content:center;align-items:baseline;gap:6px"><div class="metric-value" style="font-size:1.3rem;color:var(--teal)">$'+fmt2(weeklyIncome)+'</div><div class="metric-label" style="font-size:0.6rem">/week income</div></div></div>';
+
+  costHtml+='<div class="metric-tile" style="padding:10px"><div class="metric-value" style="font-size:0.95rem;color:var(--red-soft)">$'+fmt2(totalWeekly)+'</div><div class="metric-label">Weekly Costs</div></div>';
+  costHtml+='<div class="metric-tile" style="padding:10px"><div class="metric-value" style="font-size:0.95rem;color:var(--red-soft)">$'+fmt2(totalMonthly)+'</div><div class="metric-label">Monthly Costs</div></div>';
+  costHtml+='<div class="metric-tile" style="padding:10px"><div class="metric-value" style="font-size:0.95rem;color:var(--amber)">$'+fmt2(totalAnnual)+'</div><div class="metric-label">Annual Costs</div></div>';
+  costHtml+='<div class="metric-tile" style="padding:10px"><div class="metric-value" style="font-size:0.95rem">'+activeItems.length+' <span style="color:var(--text-faint);font-size:0.7rem">/ '+_costTracking.filter(c=>c.status==='paused').length+' paused</span></div><div class="metric-label">Subscriptions</div></div>';
+
+  costHtml+='<div class="metric-tile" style="padding:10px;grid-column:span 4;border-top:1px solid rgba(255,255,255,0.06);margin-top:4px;padding-top:12px"><div style="display:flex;justify-content:center;gap:24px">';
+  costHtml+='<div style="text-align:center"><div style="font-size:0.95rem;font-weight:700;color:'+(weeklyNet>=0?'var(--teal)':'var(--red-soft)')+'">$'+fmt2(weeklyNet)+'</div><div style="font-size:0.55rem;color:var(--text-faint);margin-top:2px">Net /week</div></div>';
+  costHtml+='<div style="text-align:center"><div style="font-size:0.95rem;font-weight:700;color:'+(monthlyNet>=0?'var(--teal)':'var(--red-soft)')+'">$'+fmt2(monthlyNet)+'</div><div style="font-size:0.55rem;color:var(--text-faint);margin-top:2px">Net /month</div></div>';
+  costHtml+='<div style="text-align:center"><div style="font-size:0.95rem;font-weight:700;color:'+(annualNet>=0?'var(--teal)':'var(--red-soft)')+'">$'+fmt2(annualNet)+'</div><div style="font-size:0.55rem;color:var(--text-faint);margin-top:2px">Net /year</div></div>';
+  costHtml+='</div></div>';
   costHtml+='</div>';
 
   costHtml+='<div style="overflow-x:auto">';
