@@ -336,7 +336,6 @@ select.form-input{cursor:pointer;background:#1a1a1a}
         <h2>Training</h2>
         <div style="display:flex;gap:8px;align-items:center">
           <div class="updated" id="training-updated"></div>
-          <button class="btn" onclick="showTrainingModal()">+ Log Session</button>
         </div>
       </div>
       <div id="training-content"></div>
@@ -344,40 +343,42 @@ select.form-input{cursor:pointer;background:#1a1a1a}
   </main>
 </div>
 
-<!-- ═══ TRAINING MODAL ═══ -->
-<div class="modal-overlay" id="training-modal">
-  <div class="modal-backdrop" onclick="closeModal('training-modal')"></div>
-  <div class="modal-card">
-    <div class="modal-title" id="training-modal-title">Log Session</div>
-    <input type="hidden" id="training-edit-id">
-    <div class="form-group"><label class="form-label">Date</label><input type="date" id="training-date" class="form-input"></div>
-    <div class="form-group"><label class="form-label">Type</label>
-      <select id="training-type" class="form-input">
-        <option value="Gym">Gym</option>
-        <option value="Run">Run</option>
-        <option value="Swim">Swim</option>
-        <option value="Cycle">Cycle</option>
-        <option value="HIIT">HIIT</option>
-        <option value="Yoga">Yoga</option>
-        <option value="Sport">Sport</option>
-        <option value="Walk">Walk</option>
-        <option value="Other">Other</option>
-      </select>
+<!-- ═══ ACTIVE WORKOUT MODAL ═══ -->
+<div class="modal-overlay" id="workout-modal">
+  <div class="modal-backdrop"></div>
+  <div class="modal-card" style="width:600px;max-height:92vh">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div>
+        <div class="modal-title" style="margin-bottom:2px" id="workout-modal-title">Workout</div>
+        <div style="font-size:0.65rem;color:var(--text-faint)" id="workout-modal-time"></div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn" onclick="finishWorkout()">Finish Workout</button>
+        <button class="btn btn-ghost" onclick="cancelWorkout()">Cancel</button>
+      </div>
     </div>
-    <div class="form-group"><label class="form-label">Duration (minutes)</label><input type="number" id="training-duration" class="form-input" placeholder="45"></div>
-    <div class="form-group"><label class="form-label">Exercises / Notes</label><textarea id="training-notes" class="form-input" placeholder="e.g. Bench 80kg x8, Squats 100kg x5..."></textarea></div>
-    <div class="form-group"><label class="form-label">Rating</label>
-      <select id="training-rating" class="form-input">
-        <option value="5">⭐⭐⭐⭐⭐ Great</option>
-        <option value="4">⭐⭐⭐⭐ Good</option>
-        <option value="3" selected>⭐⭐⭐ OK</option>
-        <option value="2">⭐⭐ Tough</option>
-        <option value="1">⭐ Bad day</option>
-      </select>
+    <div id="workout-exercises"></div>
+    <div style="display:flex;gap:6px;margin-top:12px">
+      <input type="text" id="workout-new-exercise" class="form-input" placeholder="Add exercise..." style="flex:1;padding:8px 10px;font-size:0.78rem" onkeydown="if(event.key==='Enter')addWorkoutExercise()">
+      <button class="btn" onclick="addWorkoutExercise()" style="padding:8px 12px;font-size:0.7rem">Add</button>
     </div>
+  </div>
+</div>
+
+<!-- ═══ EXERCISE PB EDIT MODAL ═══ -->
+<div class="modal-overlay" id="pb-modal">
+  <div class="modal-backdrop" onclick="closeModal('pb-modal')"></div>
+  <div class="modal-card" style="width:380px">
+    <div class="modal-title">Update PB</div>
+    <input type="hidden" id="pb-template-id">
+    <input type="hidden" id="pb-exercise-idx">
+    <div id="pb-exercise-name" style="font-size:0.9rem;font-weight:600;color:#fff;margin-bottom:12px"></div>
+    <div class="form-group"><label class="form-label">Weight (kg)</label><input type="text" id="pb-weight" class="form-input" placeholder="e.g. 50"></div>
+    <div class="form-group"><label class="form-label">Sets x Reps</label><input type="text" id="pb-sets" class="form-input" placeholder="e.g. 3 x 10"></div>
+    <div class="form-group"><label class="form-label">Notes</label><input type="text" id="pb-notes" class="form-input" placeholder="e.g. failure, red strap..."></div>
     <div style="display:flex;gap:8px;margin-top:4px">
-      <button class="btn" onclick="saveTraining()" style="flex:1">Save</button>
-      <button class="btn btn-ghost" onclick="closeModal('training-modal')">Cancel</button>
+      <button class="btn" onclick="savePB()" style="flex:1">Save PB</button>
+      <button class="btn btn-ghost" onclick="closeModal('pb-modal')">Cancel</button>
     </div>
   </div>
 </div>
@@ -532,7 +533,10 @@ let _checklists=[];
 let _notes=[];
 let _goals=[];
 let _finances=[];
-let _training=[];
+let _templates=[];
+let _trainingLogs=[];
+let _activeWorkout=null;
+let _workoutTimer=null;
 
 // ─── Load All Data ───
 async function loadAll(){
@@ -973,171 +977,333 @@ function renderFinances(){
 }
 
 // ════════════════════════════════════════
-// TRAINING
+// TRAINING — Workout templates, PB tracking, session logging
 // ════════════════════════════════════════
+const DEFAULT_TEMPLATES=[
+  {id:'back-bis',name:'Back & Biceps',icon:'💪',exercises:[
+    {name:'Dead hang',pb:'30 secs',weight:'',sets:'',reps:''},
+    {name:'Chin ups to failure',pb:'13',weight:'',sets:'','reps':'failure'},
+    {name:'Bar curl',pb:'30kg',weight:'30',sets:'3',reps:'10'},
+    {name:'Cross over pull backs',pb:'17kg',weight:'17',sets:'3',reps:'10'},
+    {name:'Wrist curls',pb:'',weight:'',sets:'',reps:''},
+    {name:'Supported row',pb:'50kg',weight:'50',sets:'3',reps:'10'},
+    {name:'Seated pulldown',pb:'52kg',weight:'52',sets:'3',reps:'10'},
+    {name:'Seated pullback',pb:'45kg',weight:'45',sets:'3',reps:'10'},
+    {name:'Lower back bends',pb:'15kg',weight:'15',sets:'3',reps:'10'},
+    {name:'Reverse wrist curls',pb:'',weight:'',sets:'',reps:''},
+    {name:'Lat pull down',pb:'54kg',weight:'54',sets:'3',reps:'10'},
+    {name:'Single arm curls',pb:'12.5kg',weight:'12.5',sets:'6',reps:'10'},
+    {name:'21s (7 up, 7 down, 7 full)',pb:'22.5kg',weight:'22.5',sets:'1',reps:'21'},
+  ]},
+  {id:'legs',name:'Legs',icon:'🦵',exercises:[
+    {name:'Bike (steep increments)',pb:'10+ mins',weight:'',sets:'',reps:''},
+    {name:'Leg extension',pb:'27kg',weight:'27',sets:'3',reps:'10'},
+    {name:'Leg press single legs',pb:'27kg',weight:'27',sets:'3',reps:'6'},
+    {name:'Leg press both legs',pb:'81kg',weight:'81',sets:'3',reps:'10'},
+    {name:'Calf raises',pb:'',weight:'',sets:'3',reps:'15 x 2'},
+    {name:'Situps',pb:'50',weight:'',sets:'1',reps:'50'},
+    {name:'Plank',pb:'2 min',weight:'',sets:'1',reps:'2 min'},
+    {name:'Bulgarian squats',pb:'',weight:'',sets:'',reps:''},
+    {name:'Squats',pb:'',weight:'',sets:'',reps:''},
+    {name:'Stretching on floor',pb:'',weight:'',sets:'',reps:''},
+  ]},
+  {id:'chest-tris',name:'Chest & Triceps',icon:'🏋️',exercises:[
+    {name:'Dead hangs',pb:'30 secs',weight:'',sets:'1',reps:'30s'},
+    {name:'Pullups to failure',pb:'6 OR 3x10 red strap',weight:'',sets:'',reps:'failure'},
+    {name:'Dumbbell press laying down',pb:'25kg',weight:'25',sets:'3',reps:'10'},
+    {name:'Arms out to side (flys)',pb:'10kg',weight:'10',sets:'3',reps:'10'},
+    {name:'Chest press',pb:'50kg',weight:'50',sets:'3',reps:'10'},
+    {name:'Pec flys',pb:'100kg',weight:'100',sets:'3',reps:'10'},
+    {name:'Pec flys reversed',pb:'66kg',weight:'66',sets:'3',reps:'10'},
+    {name:'Triceps press',pb:'50kg',weight:'50',sets:'3',reps:'10'},
+    {name:'Lower back bends',pb:'15kg',weight:'15',sets:'3',reps:'10'},
+    {name:'Skull crushers',pb:'20kg',weight:'20',sets:'3',reps:'10'},
+    {name:'Dips',pb:'0kg',weight:'0',sets:'3',reps:'10'},
+  ]},
+];
+
 async function loadTraining(){
   try{
     const res=await fetch('/api/training?t='+Date.now());
-    if(res.ok){const d=await res.json();_training=d.sessions||[];if(d.updated)document.getElementById('training-updated').textContent='Saved: '+fmt(d.updated);renderTraining()}
+    if(res.ok){
+      const d=await res.json();
+      _templates=d.templates&&d.templates.length?d.templates:JSON.parse(JSON.stringify(DEFAULT_TEMPLATES));
+      _trainingLogs=d.logs||[];
+      if(d.updated)document.getElementById('training-updated').textContent='Saved: '+fmt(d.updated);
+      if(!d.templates||!d.templates.length)saveTrainingData();
+      renderTraining();
+    }
   }catch(e){console.warn('Training load failed',e)}
 }
 async function saveTrainingData(){
-  try{await fetch('/api/training',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',sessions:_training})});document.getElementById('training-updated').textContent='Saved: '+fmt(new Date().toISOString())}catch(e){console.warn('Training save failed',e)}
+  try{await fetch('/api/training',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',templates:_templates,logs:_trainingLogs})});document.getElementById('training-updated').textContent='Saved: '+fmt(new Date().toISOString())}catch(e){console.warn('Training save failed',e)}
 }
-function showTrainingModal(id){
-  if(id){
-    const s=_training.find(t=>t.id===id);if(!s)return;
-    document.getElementById('training-modal-title').textContent='Edit Session';
-    document.getElementById('training-edit-id').value=id;
-    document.getElementById('training-date').value=s.date;
-    document.getElementById('training-type').value=s.type;
-    document.getElementById('training-duration').value=s.duration;
-    document.getElementById('training-notes').value=s.notes||'';
-    document.getElementById('training-rating').value=s.rating||3;
-  } else {
-    document.getElementById('training-modal-title').textContent='Log Session';
-    document.getElementById('training-edit-id').value='';
-    document.getElementById('training-date').value=new Date().toISOString().split('T')[0];
-    document.getElementById('training-type').value='Gym';
-    document.getElementById('training-duration').value='';
-    document.getElementById('training-notes').value='';
-    document.getElementById('training-rating').value='3';
-  }
-  openModal('training-modal');
+
+function beginWorkout(templateId){
+  const tpl=_templates.find(t=>t.id===templateId);if(!tpl)return;
+  _activeWorkout={
+    id:Date.now().toString(),
+    templateId:tpl.id,
+    templateName:tpl.name,
+    date:new Date().toISOString().split('T')[0],
+    startTime:new Date().toISOString(),
+    exercises:tpl.exercises.map(e=>({name:e.name,weight:e.weight,sets:e.sets,reps:e.reps,pb:e.pb,done:false})),
+  };
+  document.getElementById('workout-modal-title').textContent='🏋️ '+tpl.name;
+  renderWorkoutModal();
+  openModal('workout-modal');
+  _workoutTimer=setInterval(updateWorkoutTimer,1000);
+  updateWorkoutTimer();
 }
-function saveTraining(){
-  const id=document.getElementById('training-edit-id').value;
-  const date=document.getElementById('training-date').value;
-  const type=document.getElementById('training-type').value;
-  const duration=parseInt(document.getElementById('training-duration').value)||0;
-  const notes=document.getElementById('training-notes').value.trim();
-  const rating=parseInt(document.getElementById('training-rating').value)||3;
-  if(!date||!duration)return;
-  if(id){
-    const s=_training.find(t=>t.id===id);if(!s)return;
-    Object.assign(s,{date,type,duration,notes,rating,modified:new Date().toISOString()});
-  } else {
-    _training.push({id:Date.now().toString(),date,type,duration,notes,rating,created:new Date().toISOString()});
+
+function updateWorkoutTimer(){
+  if(!_activeWorkout)return;
+  const elapsed=Math.floor((Date.now()-new Date(_activeWorkout.startTime).getTime())/1000);
+  const m=Math.floor(elapsed/60);const s=elapsed%60;
+  document.getElementById('workout-modal-time').textContent='⏱ '+m+':'+(s<10?'0':'')+s+' — '+new Date(_activeWorkout.startTime).toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'});
+}
+
+function renderWorkoutModal(){
+  if(!_activeWorkout)return;
+  const el=document.getElementById('workout-exercises');
+  const done=_activeWorkout.exercises.filter(e=>e.done).length;
+  const total=_activeWorkout.exercises.length;
+  let html='<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:0.68rem;color:var(--text-faint);margin-bottom:4px"><span>'+done+'/'+total+' complete</span><span>'+Math.round((done/total)*100||0)+'%</span></div>';
+  html+='<div class="progress-bar"><div class="progress-fill" style="width:'+((done/total)*100||0)+'%"></div></div></div>';
+  html+='<div style="display:flex;flex-direction:column;gap:4px">';
+  _activeWorkout.exercises.forEach((ex,i)=>{
+    const pbText=ex.weight?(ex.weight+'kg'+(ex.sets?' · '+ex.sets+'x'+ex.reps:'')):(ex.pb||'');
+    html+='<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:rgba(255,255,255,'+(ex.done?'0.02':'0.04')+');border:1px solid rgba('+(ex.done?'45,212,168,0.15':'255,255,255,0.06')+');opacity:'+(ex.done?'0.5':'1')+'">';
+    html+='<div onclick="toggleWorkoutExercise('+i+')" style="width:22px;height:22px;border-radius:6px;border:2px solid '+(ex.done?'var(--teal)':'rgba(255,255,255,0.15)')+';background:'+(ex.done?'rgba(45,212,168,0.15)':'transparent')+';cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:var(--teal)">'+(ex.done?'✓':'')+'</div>';
+    html+='<div style="flex:1;min-width:0"><div style="font-size:0.82rem;font-weight:600;color:'+(ex.done?'var(--text-muted)':'#fff')+';'+(ex.done?'text-decoration:line-through':'')+'">'+ex.name+'</div>';
+    if(pbText)html+='<div style="font-size:0.65rem;color:var(--teal);margin-top:1px">PB: '+pbText+'</div>';
+    html+='</div>';
+    html+='<button onclick="editWorkoutPB('+i+')" style="padding:3px 8px;border-radius:5px;background:rgba(45,212,168,0.08);border:1px solid rgba(45,212,168,0.2);color:var(--teal);font-size:0.55rem;cursor:pointer;font-family:var(--font);flex-shrink:0">PB</button>';
+    html+='<button onclick="removeWorkoutExercise('+i+')" style="padding:3px 6px;border-radius:5px;background:none;border:1px solid rgba(255,255,255,0.06);color:var(--text-faint);font-size:0.55rem;cursor:pointer;font-family:var(--font);flex-shrink:0;opacity:0.4">✕</button>';
+    html+='</div>';
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+function toggleWorkoutExercise(idx){
+  if(!_activeWorkout)return;
+  _activeWorkout.exercises[idx].done=!_activeWorkout.exercises[idx].done;
+  renderWorkoutModal();
+}
+
+function editWorkoutPB(idx){
+  if(!_activeWorkout)return;
+  const ex=_activeWorkout.exercises[idx];
+  document.getElementById('pb-template-id').value=_activeWorkout.templateId;
+  document.getElementById('pb-exercise-idx').value=idx;
+  document.getElementById('pb-exercise-name').textContent=ex.name;
+  document.getElementById('pb-weight').value=ex.weight||'';
+  document.getElementById('pb-sets').value=ex.sets&&ex.reps?ex.sets+' x '+ex.reps:'';
+  document.getElementById('pb-notes').value='';
+  openModal('pb-modal');
+}
+
+function savePB(){
+  const tplId=document.getElementById('pb-template-id').value;
+  const idx=parseInt(document.getElementById('pb-exercise-idx').value);
+  const weight=document.getElementById('pb-weight').value.trim();
+  const setsReps=document.getElementById('pb-sets').value.trim();
+  const notes=document.getElementById('pb-notes').value.trim();
+  let sets='',reps='';
+  if(setsReps){
+    const parts=setsReps.split(/\s*x\s*/i);
+    sets=parts[0]||'';reps=parts[1]||'';
   }
-  closeModal('training-modal');
+  const pbLabel=(weight?weight+'kg':'')+(setsReps?' '+setsReps:'')+(notes?' '+notes:'');
+  // Update active workout exercise
+  if(_activeWorkout&&_activeWorkout.templateId===tplId){
+    const ex=_activeWorkout.exercises[idx];
+    if(weight)ex.weight=weight;
+    if(sets)ex.sets=sets;if(reps)ex.reps=reps;
+    if(pbLabel)ex.pb=pbLabel.trim();
+    renderWorkoutModal();
+  }
+  // Update template
+  const tpl=_templates.find(t=>t.id===tplId);
+  if(tpl&&tpl.exercises[idx]){
+    const tex=tpl.exercises[idx];
+    if(weight)tex.weight=weight;
+    if(sets)tex.sets=sets;if(reps)tex.reps=reps;
+    if(pbLabel)tex.pb=pbLabel.trim();
+  }
+  saveTrainingData();
+  closeModal('pb-modal');
+}
+
+function addWorkoutExercise(){
+  if(!_activeWorkout)return;
+  const input=document.getElementById('workout-new-exercise');
+  if(!input||!input.value.trim())return;
+  const name=input.value.trim();
+  _activeWorkout.exercises.push({name,weight:'',sets:'',reps:'',pb:'',done:false});
+  // Also add to template
+  const tpl=_templates.find(t=>t.id===_activeWorkout.templateId);
+  if(tpl)tpl.exercises.push({name,pb:'',weight:'',sets:'',reps:''});
+  input.value='';
+  saveTrainingData();
+  renderWorkoutModal();
+}
+
+function removeWorkoutExercise(idx){
+  if(!_activeWorkout)return;
+  _activeWorkout.exercises.splice(idx,1);
+  renderWorkoutModal();
+}
+
+function finishWorkout(){
+  if(!_activeWorkout)return;
+  const done=_activeWorkout.exercises.filter(e=>e.done).length;
+  const total=_activeWorkout.exercises.length;
+  if(!confirm('Finish workout? '+done+'/'+total+' exercises completed.'))return;
+  clearInterval(_workoutTimer);
+  _activeWorkout.endTime=new Date().toISOString();
+  const elapsed=Math.floor((new Date(_activeWorkout.endTime)-new Date(_activeWorkout.startTime))/60000);
+  _activeWorkout.duration=elapsed;
+  _trainingLogs.unshift(_activeWorkout);
+  _activeWorkout=null;
+  closeModal('workout-modal');
   saveTrainingData();renderTraining();renderOverview();
 }
-function deleteTraining(id){
-  if(!confirm('Delete this session?'))return;
-  _training=_training.filter(t=>t.id!==id);
+
+function cancelWorkout(){
+  if(!confirm('Cancel this workout? Progress will be lost.'))return;
+  clearInterval(_workoutTimer);
+  _activeWorkout=null;
+  closeModal('workout-modal');
+}
+
+function deleteTrainingLog(id){
+  if(!confirm('Delete this workout log?'))return;
+  _trainingLogs=_trainingLogs.filter(l=>l.id!==id);
   saveTrainingData();renderTraining();renderOverview();
 }
-function calcStreak(sessions){
-  if(!sessions.length)return 0;
-  const dates=[...new Set(sessions.map(s=>s.date))].sort().reverse();
+
+function editTemplatePB(tplId,exIdx){
+  const tpl=_templates.find(t=>t.id===tplId);if(!tpl)return;
+  const ex=tpl.exercises[exIdx];if(!ex)return;
+  document.getElementById('pb-template-id').value=tplId;
+  document.getElementById('pb-exercise-idx').value=exIdx;
+  document.getElementById('pb-exercise-name').textContent=ex.name;
+  document.getElementById('pb-weight').value=ex.weight||'';
+  document.getElementById('pb-sets').value=ex.sets&&ex.reps?ex.sets+' x '+ex.reps:'';
+  document.getElementById('pb-notes').value='';
+  // Override savePB to just save template (no active workout)
+  openModal('pb-modal');
+}
+
+function deleteTemplateExercise(tplId,exIdx){
+  const tpl=_templates.find(t=>t.id===tplId);if(!tpl)return;
+  tpl.exercises.splice(exIdx,1);
+  saveTrainingData();renderTraining();
+}
+
+function addTemplateExercise(tplId){
+  const input=document.getElementById('tpl-add-'+tplId);
+  if(!input||!input.value.trim())return;
+  const tpl=_templates.find(t=>t.id===tplId);if(!tpl)return;
+  tpl.exercises.push({name:input.value.trim(),pb:'',weight:'',sets:'',reps:''});
+  input.value='';
+  saveTrainingData();renderTraining();
+}
+
+function calcStreak(logs){
+  if(!logs.length)return 0;
+  const dates=[...new Set(logs.map(s=>s.date))].sort().reverse();
   const today=new Date().toISOString().split('T')[0];
   const yesterday=new Date(Date.now()-86400000).toISOString().split('T')[0];
   if(dates[0]!==today&&dates[0]!==yesterday)return 0;
   let streak=1;
   for(let i=0;i<dates.length-1;i++){
-    const curr=new Date(dates[i]);
-    const prev=new Date(dates[i+1]);
-    const diff=(curr-prev)/(86400000);
-    if(diff===1)streak++;
-    else break;
+    const curr=new Date(dates[i]);const prev=new Date(dates[i+1]);
+    if((curr-prev)/86400000===1)streak++;else break;
   }
   return streak;
 }
+
 function renderTraining(){
   const el=document.getElementById('training-content');if(!el)return;
-  if(!_training.length){
-    el.innerHTML='<div class="empty-state"><div class="icon">◎</div><h3>No sessions logged</h3><p>Log a workout to start tracking your training</p></div>';
-    return;
-  }
-  const sorted=[..._training].sort((a,b)=>b.date.localeCompare(a.date));
-  const totalSessions=_training.length;
-  const totalMinutes=_training.reduce((s,t)=>s+t.duration,0);
-  const totalHours=Math.round(totalMinutes/60*10)/10;
-  const streak=calcStreak(_training);
-  const now=new Date();
-  const weekAgo=new Date(now-7*86400000).toISOString().split('T')[0];
-  const thisWeek=_training.filter(t=>t.date>=weekAgo).length;
-  const avgRating=_training.length?(_training.reduce((s,t)=>s+(t.rating||3),0)/_training.length).toFixed(1):'—';
+  const streak=calcStreak(_trainingLogs);
+  const thisWeek=_trainingLogs.filter(l=>l.date>=new Date(Date.now()-7*86400000).toISOString().split('T')[0]).length;
+  const totalMins=_trainingLogs.reduce((s,l)=>s+(l.duration||0),0);
+  const totalHrs=Math.round(totalMins/60*10)/10;
 
-  // Type breakdown
-  const types={};
-  _training.forEach(t=>{types[t.type]=(types[t.type]||0)+1});
-  const typeEntries=Object.entries(types).sort((a,b)=>b[1]-a[1]);
+  let html='';
 
-  // Weekly chart (last 8 weeks)
-  const weeks={};
-  for(let i=0;i<8;i++){
-    const d=new Date(now-i*7*86400000);
-    const wk=d.toISOString().split('T')[0].substring(0,7)+'-W'+Math.ceil(d.getDate()/7);
-    const start=new Date(d);start.setDate(start.getDate()-start.getDay());
-    const end=new Date(start);end.setDate(end.getDate()+6);
-    const startStr=start.toISOString().split('T')[0];
-    const endStr=end.toISOString().split('T')[0];
-    const count=_training.filter(t=>t.date>=startStr&&t.date<=endStr).length;
-    const label=start.toLocaleDateString('en-AU',{day:'numeric',month:'short'});
-    weeks[label]=count;
-  }
-  const weekKeys=Object.keys(weeks).reverse();
-  const maxWeek=Math.max(...Object.values(weeks),1);
-
-  const typeIcons={Gym:'🏋️',Run:'🏃',Swim:'🏊',Cycle:'🚴',HIIT:'⚡',Yoga:'🧘',Sport:'⚽',Walk:'🚶',Other:'💪'};
-
-  let html='<div class="metrics-grid" style="margin-bottom:16px">';
-  html+='<div class="card metric-tile"><div class="metric-value">'+totalSessions+'</div><div class="metric-label">Total Sessions</div></div>';
-  html+='<div class="card metric-tile"><div class="metric-value teal">'+thisWeek+'</div><div class="metric-label">This Week</div></div>';
-  html+='<div class="card metric-tile"><div class="metric-value" style="color:'+(streak>=3?'var(--teal)':streak>=1?'var(--amber)':'var(--red-soft)')+'">'+streak+'</div><div class="metric-label">Day Streak 🔥</div></div>';
-  html+='<div class="card metric-tile"><div class="metric-value">'+totalHours+'h</div><div class="metric-label">Total Hours</div></div>';
-  html+='<div class="card metric-tile"><div class="metric-value">'+avgRating+'</div><div class="metric-label">Avg Rating</div></div>';
+  // ── BEGIN WORKOUT CARDS ──
+  html+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:24px">';
+  _templates.forEach(tpl=>{
+    const lastSession=_trainingLogs.find(l=>l.templateId===tpl.id);
+    const lastDate=lastSession?fmtShort(lastSession.date):'Never';
+    html+='<div class="card" style="cursor:pointer;text-align:center;padding:28px 20px" onclick="beginWorkout(\''+tpl.id+'\')">';
+    html+='<div style="font-size:2.2rem;margin-bottom:8px">'+tpl.icon+'</div>';
+    html+='<div style="font-size:1rem;font-weight:700;color:#fff;margin-bottom:4px">'+tpl.name+'</div>';
+    html+='<div style="font-size:0.65rem;color:var(--text-faint);margin-bottom:12px">'+tpl.exercises.length+' exercises · Last: '+lastDate+'</div>';
+    html+='<div style="display:inline-block;padding:8px 24px;border-radius:8px;background:var(--teal);color:#000;font-weight:700;font-size:0.8rem;font-family:var(--font)">Begin Workout</div>';
+    html+='</div>';
+  });
   html+='</div>';
 
-  html+='<div class="finance-grid" style="margin-bottom:16px">';
-  // Weekly frequency chart
-  html+='<div class="card"><div class="card-header"><span class="card-title">Weekly Frequency</span></div>';
-  html+='<div style="display:flex;align-items:flex-end;gap:8px;height:100px">';
-  weekKeys.forEach(w=>{
-    const count=weeks[w];
-    const h=Math.round((count/maxWeek)*80);
-    html+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">';
-    html+='<div style="font-size:0.6rem;color:var(--teal);font-weight:600">'+count+'</div>';
-    html+='<div style="width:100%;height:'+Math.max(h,2)+'px;background:var(--teal);border-radius:3px 3px 0 0;opacity:'+(count?'1':'0.2')+'"></div>';
-    html+='<div style="font-size:0.5rem;color:var(--text-faint);white-space:nowrap">'+w+'</div>';
+  // ── STATS ──
+  if(_trainingLogs.length){
+    html+='<div class="metrics-grid" style="margin-bottom:16px">';
+    html+='<div class="card metric-tile"><div class="metric-value">'+_trainingLogs.length+'</div><div class="metric-label">Total Sessions</div></div>';
+    html+='<div class="card metric-tile"><div class="metric-value teal">'+thisWeek+'</div><div class="metric-label">This Week</div></div>';
+    html+='<div class="card metric-tile"><div class="metric-value" style="color:'+(streak>=3?'var(--teal)':streak>=1?'var(--amber)':'var(--red-soft)')+'">'+streak+'</div><div class="metric-label">Day Streak 🔥</div></div>';
+    html+='<div class="card metric-tile"><div class="metric-value">'+totalHrs+'h</div><div class="metric-label">Total Hours</div></div>';
     html+='</div>';
-  });
-  html+='</div></div>';
+  }
 
-  // Type breakdown
-  html+='<div class="card"><div class="card-header"><span class="card-title">By Type</span></div>';
-  typeEntries.forEach(([type,count])=>{
-    const pct=Math.round((count/totalSessions)*100);
-    html+='<div style="margin-bottom:8px">';
-    html+='<div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:3px"><span style="color:var(--text-secondary)">'+(typeIcons[type]||'💪')+' '+type+'</span><span style="color:#fff;font-weight:600">'+count+' <span style="color:var(--text-faint);font-weight:400">'+pct+'%</span></span></div>';
-    html+='<div class="progress-bar" style="height:4px"><div class="progress-fill" style="width:'+pct+'%"></div></div>';
+  // ── EXERCISE TEMPLATES (PB reference) ──
+  html+='<div style="display:flex;flex-direction:column;gap:14px;margin-bottom:24px">';
+  _templates.forEach(tpl=>{
+    html+='<div class="card" style="padding:0;overflow:hidden">';
+    html+='<div style="padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,0.04)">';
+    html+='<span style="font-size:1.1rem">'+tpl.icon+'</span>';
+    html+='<div style="flex:1"><div style="font-size:0.88rem;font-weight:700;color:#fff">'+tpl.name+' — Exercise PBs</div></div>';
     html+='</div>';
+    html+='<div style="padding:8px 16px 12px">';
+    tpl.exercises.forEach((ex,i)=>{
+      const pbDisplay=ex.weight?(ex.weight+'kg'+(ex.sets?' · '+ex.sets+'x'+ex.reps:'')):(ex.pb||'—');
+      html+='<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.03)">';
+      html+='<div style="flex:1;font-size:0.8rem;color:#fff">'+ex.name+'</div>';
+      html+='<div style="font-size:0.72rem;color:var(--teal);font-weight:600;min-width:80px;text-align:right">'+pbDisplay+'</div>';
+      html+='<button onclick="editTemplatePB(\''+tpl.id+'\','+i+')" style="padding:2px 6px;border-radius:4px;background:rgba(45,212,168,0.08);border:1px solid rgba(45,212,168,0.15);color:var(--teal);font-size:0.5rem;cursor:pointer;font-family:var(--font)">Edit PB</button>';
+      html+='<button onclick="deleteTemplateExercise(\''+tpl.id+'\','+i+')" style="padding:2px 6px;border-radius:4px;background:none;border:1px solid rgba(255,255,255,0.06);color:var(--text-faint);font-size:0.5rem;cursor:pointer;font-family:var(--font);opacity:0.4">✕</button>';
+      html+='</div>';
+    });
+    html+='<div style="display:flex;gap:6px;margin-top:8px">';
+    html+='<input type="text" id="tpl-add-'+tpl.id+'" class="form-input" placeholder="Add exercise..." style="flex:1;padding:7px 10px;font-size:0.75rem" onkeydown="if(event.key===\'Enter\')addTemplateExercise(\''+tpl.id+'\')">';
+    html+='<button onclick="addTemplateExercise(\''+tpl.id+'\')" class="btn" style="padding:7px 12px;font-size:0.68rem">Add</button>';
+    html+='</div>';
+    html+='</div></div>';
   });
-  html+='</div></div>';
+  html+='</div>';
 
-  // Session log
-  html+='<div class="card"><div class="card-header"><span class="card-title">Session Log</span></div>';
-  html+='<div style="display:flex;flex-direction:column;gap:8px">';
-  sorted.forEach(s=>{
-    const icon=typeIcons[s.type]||'💪';
-    const stars='⭐'.repeat(s.rating||3);
-    html+='<div style="display:flex;align-items:flex-start;gap:12px;padding:10px 12px;border-radius:var(--radius-sm);background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);cursor:pointer" onclick="showTrainingModal(\''+s.id+'\')">';
-    html+='<div style="font-size:1.3rem;flex-shrink:0;margin-top:2px">'+icon+'</div>';
-    html+='<div style="flex:1;min-width:0">';
-    html+='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">';
-    html+='<div style="font-size:0.85rem;font-weight:600;color:#fff">'+s.type+'</div>';
-    html+='<div style="font-size:0.6rem;color:var(--text-faint)">'+fmtShort(s.date)+'</div>';
-    html+='</div>';
-    html+='<div style="display:flex;gap:8px;margin-top:3px;font-size:0.68rem;color:var(--text-muted)">';
-    html+='<span>'+s.duration+' min</span><span>'+stars+'</span>';
-    html+='</div>';
-    if(s.notes){html+='<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px;white-space:pre-wrap;line-height:1.4">'+s.notes+'</div>';}
-    html+='</div>';
-    html+='<button onclick="event.stopPropagation();deleteTraining(\''+s.id+'\')" style="padding:2px 6px;border-radius:4px;background:none;border:1px solid rgba(239,68,68,0.15);color:var(--red-soft);font-size:0.55rem;cursor:pointer;font-family:var(--font);flex-shrink:0;align-self:center">✕</button>';
-    html+='</div>';
-  });
-  html+='</div></div>';
+  // ── WORKOUT HISTORY ──
+  if(_trainingLogs.length){
+    html+='<div class="card"><div class="card-header"><span class="card-title">Workout History</span></div>';
+    html+='<div style="display:flex;flex-direction:column;gap:6px">';
+    _trainingLogs.slice(0,20).forEach(log=>{
+      const tpl=_templates.find(t=>t.id===log.templateId);
+      const icon=tpl?tpl.icon:'🏋️';
+      const done=log.exercises?log.exercises.filter(e=>e.done).length:0;
+      const total=log.exercises?log.exercises.length:0;
+      html+='<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--radius-sm);background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05)">';
+      html+='<div style="font-size:1.2rem">'+icon+'</div>';
+      html+='<div style="flex:1"><div style="font-size:0.82rem;font-weight:600;color:#fff">'+log.templateName+'</div>';
+      html+='<div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px">'+fmtShort(log.date)+' · '+(log.duration||0)+' min · '+done+'/'+total+' exercises</div></div>';
+      html+='<button onclick="deleteTrainingLog(\''+log.id+'\')" style="padding:2px 6px;border-radius:4px;background:none;border:1px solid rgba(239,68,68,0.15);color:var(--red-soft);font-size:0.55rem;cursor:pointer;font-family:var(--font)">✕</button>';
+      html+='</div>';
+    });
+    html+='</div></div>';
+  }
+
   el.innerHTML=html;
 }
 
@@ -1159,14 +1325,14 @@ function renderOverview(){
     '<div class="card metric-tile"><div class="metric-value" style="color:var(--amber)">'+activeGoals+'</div><div class="metric-label">Active Goals</div></div>'+
     '<div class="card metric-tile"><div class="metric-value teal">'+$(totalIncome)+'</div><div class="metric-label">Income</div></div>'+
     '<div class="card metric-tile"><div class="metric-value" style="color:var(--red-soft)">'+$(totalExpense)+'</div><div class="metric-label">Expenses</div></div>'+
-    '<div class="card metric-tile"><div class="metric-value" style="color:'+(calcStreak(_training)>=3?'var(--teal)':'var(--amber)')+'">'+calcStreak(_training)+'🔥</div><div class="metric-label">Training Streak</div></div>';
+    '<div class="card metric-tile"><div class="metric-value" style="color:'+(calcStreak(_trainingLogs)>=3?'var(--teal)':'var(--amber)')+'">'+calcStreak(_trainingLogs)+'🔥</div><div class="metric-label">Training Streak</div></div>';
 
   // Recent activity
   const activities=[];
   _notes.forEach(n=>activities.push({text:'Note: '+n.title,date:n.modified}));
   _goals.forEach(g=>activities.push({text:'Goal: '+g.title+' ('+g.progress+'%)',date:g.modified}));
   _finances.slice(-5).forEach(e=>activities.push({text:(e.type==='income'?'+':'-')+$(e.amount)+' '+e.description,date:e.date}));
-  _training.slice(-5).forEach(t=>activities.push({text:t.type+' — '+t.duration+' min',date:t.date}));
+  _trainingLogs.slice(0,5).forEach(t=>activities.push({text:t.templateName+' — '+(t.duration||0)+' min',date:t.date}));
   activities.sort((a,b)=>new Date(b.date)-new Date(a.date));
   const actEl=document.getElementById('overview-activity');
   if(activities.length){

@@ -28,7 +28,7 @@ const KV_KEY = 'tom_training';
 module.exports = async function handler(req, res) {
   try {
     if (req.method === 'GET') {
-      const data = await kvGet(KV_KEY) || { sessions: [] };
+      const data = await kvGet(KV_KEY) || { templates: [], logs: [] };
       res.setHeader('Cache-Control', 'no-cache');
       return res.status(200).json(data);
     }
@@ -37,8 +37,8 @@ module.exports = async function handler(req, res) {
       const { action } = req.body;
 
       if (action === 'save') {
-        const { sessions } = req.body;
-        await kvSet(KV_KEY, JSON.stringify({ sessions, updated: new Date().toISOString() }));
+        const { templates, logs } = req.body;
+        await kvSet(KV_KEY, JSON.stringify({ templates, logs, updated: new Date().toISOString() }));
         return res.status(200).json({ success: true });
       }
 
