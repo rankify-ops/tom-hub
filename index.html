@@ -1196,6 +1196,33 @@ function renderFinances(){
 
   costHtml+='</div>';
 
+  // Full list table
+  costHtml+='<div class="card" style="margin-top:16px;padding:20px">';
+  costHtml+='<div class="card-header" style="margin-bottom:12px"><span class="card-title">All Subscriptions</span><span style="font-size:0.6rem;color:var(--text-faint);margin-left:8px">'+_costTracking.length+' items</span></div>';
+  costHtml+='<div style="overflow-x:auto">';
+  costHtml+='<table class="data-table" style="width:100%"><thead><tr>';
+  costHtml+='<th>Name</th><th>Category</th><th>Billing Cycle</th><th style="text-align:right">Weekly</th><th style="text-align:right">Monthly</th><th style="text-align:right">6 Monthly</th><th style="text-align:right">Annual</th><th>Renewal</th><th>Payment Method</th><th>Login</th>';
+  costHtml+='</tr></thead><tbody>';
+  _costTracking.forEach(c=>{
+    const d=deriveCosts(c);
+    const isPaused=c.status==='paused';
+    costHtml+='<tr style="'+(isPaused?'opacity:0.5':'')+'">';
+    costHtml+='<td style="color:#fff;font-weight:600;white-space:nowrap">'+c.name+(isPaused?' <span style="color:var(--text-faint);font-weight:400;font-size:0.55rem">(PAUSED)</span>':'')+'</td>';
+    costHtml+='<td>'+(c.category?'<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.65rem;background:'+c.catColor+'22;color:'+c.catColor+';border:1px solid '+c.catColor+'44">'+c.category+'</span>':'–')+'</td>';
+    const cycleColors={Weekly:'#FF4081',Fortnightly:'#92ceac','6 Monthly':'#aec0f5'};
+    const cc=cycleColors[c.cycle]||'#7C4DFF';
+    costHtml+='<td><span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.65rem;background:'+cc+'22;color:'+cc+';border:1px solid '+cc+'44">'+c.cycle+'</span></td>';
+    costHtml+='<td style="text-align:right">$'+fmt2(d.weekly)+'</td>';
+    costHtml+='<td style="text-align:right;font-weight:600">$'+fmt2(d.monthly)+'</td>';
+    costHtml+='<td style="text-align:right">$'+fmt2(d.sixMonth)+'</td>';
+    costHtml+='<td style="text-align:right;font-weight:600">$'+fmt2(d.annual)+'</td>';
+    costHtml+='<td style="white-space:nowrap">'+fmtDate(c.renewal)+'</td>';
+    costHtml+='<td><span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.65rem;background:'+c.payColor+'22;color:'+c.payColor+';border:1px solid '+c.payColor+'44;white-space:nowrap">'+c.payment+'</span></td>';
+    costHtml+='<td>'+(c.url?'<a href="'+c.url+'" target="_blank" style="color:var(--teal);font-size:0.65rem;text-decoration:none" title="'+c.url+'">🔗</a>':'–')+'</td>';
+    costHtml+='</tr>';
+  });
+  costHtml+='</tbody></table></div></div>';
+
   if(!_finances.length){
     el.innerHTML=costHtml;
     return;
