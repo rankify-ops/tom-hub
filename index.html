@@ -1423,12 +1423,41 @@ function renderTraining(){
       if(whoopMatch&&whoopMatch.score){
         const sc=whoopMatch.score;
         const cals=sc.kilojoule?Math.round(sc.kilojoule*0.239):null;
-        html+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.04)">';
-        html+='<div style="font-size:0.55rem;color:var(--text-faint);display:flex;align-items:center;gap:3px">♡ WHOOP</div>';
-        if(sc.strain)html+='<div style="padding:3px 7px;border-radius:4px;background:rgba(45,212,168,0.08);font-size:0.6rem"><span style="color:var(--teal);font-weight:600">'+sc.strain.toFixed(1)+'</span> <span style="color:var(--text-faint)">strain</span></div>';
-        if(cals)html+='<div style="padding:3px 7px;border-radius:4px;background:rgba(255,255,255,0.04);font-size:0.6rem"><span style="color:var(--amber);font-weight:600">'+cals+'</span> <span style="color:var(--text-faint)">cal</span></div>';
-        if(sc.average_heart_rate)html+='<div style="padding:3px 7px;border-radius:4px;background:rgba(255,255,255,0.04);font-size:0.6rem"><span style="color:var(--red-soft);font-weight:600">'+sc.average_heart_rate+'</span> <span style="color:var(--text-faint)">avg HR</span></div>';
-        if(sc.max_heart_rate)html+='<div style="padding:3px 7px;border-radius:4px;background:rgba(255,255,255,0.04);font-size:0.6rem"><span style="color:var(--red-soft);font-weight:600">'+sc.max_heart_rate+'</span> <span style="color:var(--text-faint)">max HR</span></div>';
+        const wDur=whoopMatch.start&&whoopMatch.end?Math.round((new Date(whoopMatch.end)-new Date(whoopMatch.start))/60000):null;
+        const zones=sc.zone_durations;
+
+        html+='<div style="margin-top:10px;padding:10px 12px;border-radius:8px;background:rgba(45,212,168,0.04);border:1px solid rgba(45,212,168,0.12)">';
+        html+='<div style="font-size:0.6rem;color:var(--teal);font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:4px">♡ WHOOP · Weightlifting'+(wDur?' · '+wDur+' min':'')+'</div>';
+
+        // Stat tiles
+        html+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px">';
+        html+='<div style="text-align:center;padding:6px;border-radius:6px;background:rgba(0,0,0,0.2)"><div style="font-size:1rem;font-weight:700;color:var(--teal)">'+(sc.strain?sc.strain.toFixed(1):'—')+'</div><div style="font-size:0.45rem;color:var(--text-faint);margin-top:1px">STRAIN</div></div>';
+        html+='<div style="text-align:center;padding:6px;border-radius:6px;background:rgba(0,0,0,0.2)"><div style="font-size:1rem;font-weight:700;color:var(--amber)">'+(cals||'—')+'</div><div style="font-size:0.45rem;color:var(--text-faint);margin-top:1px">CALORIES</div></div>';
+        html+='<div style="text-align:center;padding:6px;border-radius:6px;background:rgba(0,0,0,0.2)"><div style="font-size:1rem;font-weight:700;color:var(--red-soft)">'+(sc.average_heart_rate||'—')+'</div><div style="font-size:0.45rem;color:var(--text-faint);margin-top:1px">AVG HR</div></div>';
+        html+='<div style="text-align:center;padding:6px;border-radius:6px;background:rgba(0,0,0,0.2)"><div style="font-size:1rem;font-weight:700;color:var(--red-soft)">'+(sc.max_heart_rate||'—')+'</div><div style="font-size:0.45rem;color:var(--text-faint);margin-top:1px">MAX HR</div></div>';
+        html+='</div>';
+
+        // HR zones
+        if(zones){
+          const zoneColors=['#4a9eff','#2dd4a8','#34d399','#fbbf24','#f97316','#ef4444'];
+          const zoneLabels=['Rest','Light','Moderate','Hard','Very Hard','Max'];
+          const zoneVals=[zones.zone_zero_milli||0,zones.zone_one_milli||0,zones.zone_two_milli||0,zones.zone_three_milli||0,zones.zone_four_milli||0,zones.zone_five_milli||0];
+          const total=zoneVals.reduce((a,b)=>a+b,0);
+          if(total>0){
+            html+='<div style="font-size:0.5rem;color:var(--text-faint);margin-bottom:3px">HR ZONES</div>';
+            html+='<div style="display:flex;height:10px;border-radius:5px;overflow:hidden;gap:1px">';
+            zoneVals.forEach((z,i)=>{if(z>0)html+='<div style="width:'+((z/total)*100).toFixed(1)+'%;background:'+zoneColors[i]+'"></div>';});
+            html+='</div>';
+            html+='<div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap">';
+            zoneVals.forEach((z,i)=>{
+              if(z>0){
+                const mins=Math.round(z/60000);
+                html+='<div style="font-size:0.55rem;display:flex;align-items:center;gap:3px"><div style="width:6px;height:6px;border-radius:50%;background:'+zoneColors[i]+'"></div><span style="color:var(--text-muted)">'+zoneLabels[i]+'</span> <span style="color:#fff;font-weight:600">'+mins+'m</span></div>';
+              }
+            });
+            html+='</div>';
+          }
+        }
         html+='</div>';
       }
 
