@@ -548,6 +548,7 @@ document.querySelectorAll('.nav-item').forEach(item=>{
 // ─── Helpers ───
 function fmt(iso){if(!iso)return'—';return new Date(iso).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}
 function fmtShort(iso){if(!iso)return'—';return new Date(iso).toLocaleDateString('en-AU',{day:'numeric',month:'short'})}
+function fmt2(n){return n.toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function $(v){return'$'+Number(v||0).toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function closeModal(id){document.getElementById(id).classList.remove('open')}
 function openModal(id){document.getElementById(id).classList.add('open')}
@@ -1116,7 +1117,7 @@ function renderFinances(){
   const weeklyNet=weeklyIncome-totalWeekly-weeklyLiving;
   const monthlyNet=monthlyIncome-totalMonthly-monthlyLiving;
   const annualNet=annualIncome-totalAnnual-annualLiving;
-  const fmt2=n=>n.toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2});
+
 
   let costHtml='<div class="card" style="margin-bottom:20px;padding:20px">';
   costHtml+='<div class="card-header" style="margin-bottom:14px"><span class="card-title">Cost Tracking</span><span style="font-size:0.6rem;color:var(--text-faint);margin-left:8px">from ClickUp</span></div>';
