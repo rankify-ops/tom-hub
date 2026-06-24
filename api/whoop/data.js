@@ -87,10 +87,10 @@ module.exports = async function handler(req, res) {
 
     const [profile, recoveryRes, cycleRes, sleepRes, workoutRes, bodyRes] = await Promise.all([
       whoopGet('/v1/user/profile/basic', at),
-      whoopGet('/v1/recovery?start=' + encodeURIComponent(thirtyDaysAgo) + '&end=' + encodeURIComponent(now.toISOString()) + '&limit=30', at),
-      whoopGet('/v1/cycle?start=' + encodeURIComponent(thirtyDaysAgo) + '&end=' + encodeURIComponent(now.toISOString()) + '&limit=30', at),
-      whoopGet('/v1/activity/sleep?start=' + encodeURIComponent(thirtyDaysAgo) + '&end=' + encodeURIComponent(now.toISOString()) + '&limit=30', at),
-      whoopGet('/v1/activity/workout?start=' + encodeURIComponent(sevenDaysAgo) + '&end=' + encodeURIComponent(now.toISOString()) + '&limit=25', at),
+      whoopGet('/v2/recovery?start=' + encodeURIComponent(thirtyDaysAgo) + '&end=' + encodeURIComponent(now.toISOString()) + '&limit=25', at),
+      whoopGet('/v2/cycle?start=' + encodeURIComponent(thirtyDaysAgo) + '&end=' + encodeURIComponent(now.toISOString()) + '&limit=25', at),
+      whoopGet('/v2/activity/sleep?start=' + encodeURIComponent(thirtyDaysAgo) + '&end=' + encodeURIComponent(now.toISOString()) + '&limit=25', at),
+      whoopGet('/v2/activity/workout?start=' + encodeURIComponent(sevenDaysAgo) + '&end=' + encodeURIComponent(now.toISOString()) + '&limit=25', at),
       whoopGet('/v1/user/measurement/body', at),
     ]);
 
