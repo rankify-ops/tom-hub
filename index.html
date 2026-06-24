@@ -310,9 +310,10 @@ select.form-input{cursor:pointer;background:#1a1a1a}
     <!-- ═══ GOALS TAB ═══ -->
     <div class="tab-panel" id="tab-goals">
       <div class="section-header">
-        <h2>Goals</h2>
+        <h2>2026 Goals</h2>
         <div style="display:flex;gap:8px;align-items:center">
           <div class="updated" id="goals-updated"></div>
+          <button class="btn btn-ghost" onclick="loadGoals()" style="font-size:0.68rem">Refresh</button>
           <button class="btn" onclick="showGoalModal()">+ New Goal</button>
         </div>
       </div>
@@ -812,43 +813,141 @@ function deleteGoal(id){
   _goals=_goals.filter(g=>g.id!==id);
   saveGoals();renderGoals();renderOverview();
 }
+const _2026Goals=[
+  {cat:'Spirit',icon:'✝',color:'#a78bfa',items:[
+    {id:'86d1u1pv5',name:'Do Gods will not my own',status:'to do'},
+    {id:'86d1u1pvd',name:'Lean on his understanding',status:'to do'},
+    {id:'86d1u1pvx',name:'Daily Prayer',status:'to do'},
+    {id:'86d1u1pw7',name:'Study Scripture',status:'to do'},
+    {id:'86d1u1pwg',name:'Do new adventurous things, get out of comfort zone',status:'to do'},
+    {id:'86d1u1px0',name:'Less reactive More Discipline',status:'to do'},
+  ]},
+  {cat:'Mind',icon:'🧠',color:'#60a5fa',items:[
+    {id:'86d1u1pxj',name:'Follow Morning Routine Every Morning',status:'to do'},
+    {id:'86d1u1py4',name:'One Serious book per quarter',status:'to do'},
+    {id:'86d1u1pyk',name:'Meditations: Marcus Aurelius',status:'in progress'},
+    {id:'86d1u1pz4',name:'Book of Enoch: Bible book',status:'to do'},
+    {id:'86d1u1pzp',name:'Slower cleaner choices',status:'to do'},
+  ]},
+  {cat:'Body',icon:'💪',color:'#f472b6',items:[
+    {id:'86d1u1pzy',name:'Keep playing tennis comp',status:'to do'},
+    {id:'86d1u1q0d',name:'Maintain strict eating (smoothies, mince & steaks)',status:'to do'},
+    {id:'86d1u1q0t',name:'Follow workout plan every week (3x Strength)',status:'to do'},
+    {id:'86d1u1q10',name:'Improve sleep consistency and quality',status:'to do'},
+  ]},
+  {cat:'Travel',icon:'✈️',color:'var(--teal)',items:[
+    {id:'86d1u1q1b',name:'Regensburg & Italy (MAY) 15 Days',status:'to do'},
+    {id:'86d1u1q22',name:'Japan again (Osaka, Kyoto & Tokyo) 15 Days',status:'to do'},
+    {id:'86d1u1q2p',name:'Visit somewhere else? White Christmas?',status:'to do'},
+    {id:'86d1u1q37',name:'Hong Kong / China',status:'to do'},
+  ]},
+  {cat:'Legacy',icon:'🏛',color:'var(--amber)',items:[
+    {id:'86d1u1q3e',name:'Ring',status:'to do'},
+    {id:'86d1u1q3q',name:'Wealth building for future',status:'to do'},
+    {id:'86d1u1q44',name:'Journaling',status:'to do'},
+  ]},
+  {cat:'Growth',icon:'📈',color:'#34d399',items:[
+    {id:'86d1u1q4j',name:'Take advantage of credit cards for travel points',status:'to do'},
+    {id:'86d1u1q56',name:'Pay back Dom for investment deposit ASAP',status:'to do'},
+    {id:'86d1u1q5p',name:'Setup pay.com for credit card points',status:'to do'},
+    {id:'86d1u1q62',name:'Buy Gold & Silver commodities',status:'to do'},
+    {id:'86d1u1q6a',name:'Save for another Investment property deposit',status:'to do'},
+    {id:'86d1u1q6q',name:'Exceed Expectations at Vicom',status:'to do'},
+    {id:'86d1u1q7h',name:'Grow Rankify',status:'to do'},
+    {id:'86d1u1q7z',name:'Grow Hiatus',status:'to do'},
+  ]},
+  {cat:'Experiences',icon:'🎯',color:'#e879f9',items:[
+    {id:'86d1u1q8c',name:'Purchase Rifle & Scope — Go Hunting',status:'to do'},
+    {id:'86d1u1q8q',name:'Spend more time / plan more things with family',status:'to do'},
+  ]},
+];
+
+function toggleGoalDone(catIdx,itemIdx){
+  const item=_2026Goals[catIdx].items[itemIdx];
+  item.status=item.status==='complete'?'to do':'complete';
+  localStorage.setItem('goals_2026_status',JSON.stringify(_2026Goals.map(c=>c.items.map(i=>i.status))));
+  renderGoals();
+}
+
+function loadGoalStatuses(){
+  try{
+    const saved=JSON.parse(localStorage.getItem('goals_2026_status'));
+    if(saved){saved.forEach((cat,ci)=>{cat.forEach((s,ii)=>{if(_2026Goals[ci]&&_2026Goals[ci].items[ii])_2026Goals[ci].items[ii].status=s})})}
+  }catch(e){}
+}
+
 function renderGoals(){
   const el=document.getElementById('goals-content');if(!el)return;
-  if(!_goals.length){
-    el.innerHTML='<div class="empty-state"><div class="icon">⊕</div><h3>No goals yet</h3><p>Set a goal to start tracking your progress</p></div>';
-    return;
-  }
-  const total=_goals.length;
-  const complete=_goals.filter(g=>g.status==='Complete').length;
-  const inProgress=_goals.filter(g=>g.status==='In Progress').length;
-  const avgProgress=Math.round(_goals.reduce((s,g)=>s+(g.progress||0),0)/total);
+  loadGoalStatuses();
 
-  let html='<div class="metrics-grid" style="margin-bottom:16px">';
+  const allItems=_2026Goals.flatMap(c=>c.items);
+  const total=allItems.length;
+  const done=allItems.filter(i=>i.status==='complete').length;
+  const inProg=allItems.filter(i=>i.status==='in progress').length;
+  const pct=total?Math.round((done/total)*100):0;
+
+  let html='<div class="metrics-grid" style="margin-bottom:18px">';
   html+='<div class="card metric-tile"><div class="metric-value">'+total+'</div><div class="metric-label">Total Goals</div></div>';
-  html+='<div class="card metric-tile"><div class="metric-value teal">'+complete+'</div><div class="metric-label">Complete</div></div>';
-  html+='<div class="card metric-tile"><div class="metric-value" style="color:var(--amber)">'+inProgress+'</div><div class="metric-label">In Progress</div></div>';
-  html+='<div class="card metric-tile"><div class="metric-value">'+avgProgress+'%</div><div class="metric-label">Avg Progress</div></div>';
+  html+='<div class="card metric-tile"><div class="metric-value teal">'+done+'</div><div class="metric-label">Complete</div></div>';
+  html+='<div class="card metric-tile"><div class="metric-value" style="color:var(--amber)">'+inProg+'</div><div class="metric-label">In Progress</div></div>';
+  html+='<div class="card metric-tile"><div class="metric-value">'+pct+'%</div><div class="metric-label">Overall</div></div>';
   html+='</div>';
-  html+='<div style="display:flex;flex-direction:column;gap:12px">';
-  _goals.forEach(goal=>{
-    const statusCol=goal.status==='Complete'?'var(--teal)':goal.status==='In Progress'?'var(--amber)':'var(--text-faint)';
-    const catCols={Personal:'#a78bfa',Health:'#f472b6',Career:'#60a5fa',Finance:'var(--teal)',Learning:'var(--amber)',Project:'#34d399'};
-    const catCol=catCols[goal.category]||'var(--text-muted)';
-    html+='<div class="card" style="cursor:pointer" onclick="showGoalModal(\''+goal.id+'\')">';
-    html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px">';
-    html+='<div style="flex:1"><div style="font-size:0.92rem;font-weight:700;color:#fff">'+goal.title+'</div>';
-    html+='<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">';
-    html+='<span style="padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.06);color:'+catCol+';font-size:0.58rem;font-weight:600">'+goal.category+'</span>';
-    html+='<span style="padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.06);color:'+statusCol+';font-size:0.58rem;font-weight:600">'+goal.status+'</span>';
-    if(goal.targetDate)html+='<span style="padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.06);color:var(--text-faint);font-size:0.58rem">Due: '+fmtShort(goal.targetDate)+'</span>';
-    html+='</div></div>';
-    html+='<button onclick="event.stopPropagation();deleteGoal(\''+goal.id+'\')" style="padding:3px 8px;border-radius:5px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.15);color:var(--red-soft);font-size:0.55rem;cursor:pointer;font-family:var(--font);flex-shrink:0">Delete</button>';
+
+  html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px">';
+  _2026Goals.forEach((cat,ci)=>{
+    const catDone=cat.items.filter(i=>i.status==='complete').length;
+    const catTotal=cat.items.length;
+    const catPct=catTotal?Math.round((catDone/catTotal)*100):0;
+
+    html+='<div class="card" style="padding:18px">';
+    html+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">';
+    html+='<div style="font-size:1.4rem">'+cat.icon+'</div>';
+    html+='<div style="flex:1"><div style="font-size:0.95rem;font-weight:700;color:'+cat.color+'">'+cat.cat+'</div>';
+    html+='<div style="font-size:0.55rem;color:var(--text-faint);margin-top:2px">'+catDone+'/'+catTotal+' complete</div></div>';
+    html+='<div style="font-size:1rem;font-weight:700;color:'+(catPct>=100?'var(--teal)':catPct>0?'var(--amber)':'var(--text-faint)')+'">'+catPct+'%</div>';
     html+='</div>';
-    html+='<div class="progress-bar"><div class="progress-fill" style="width:'+(goal.progress||0)+'%;background:'+(goal.progress>=100?'var(--teal)':goal.progress>=50?'var(--amber)':'var(--red-soft)')+'"></div></div>';
-    html+='<div style="font-size:0.6rem;color:var(--text-faint);margin-top:4px;text-align:right">'+(goal.progress||0)+'%</div>';
+
+    html+='<div style="height:3px;border-radius:2px;background:rgba(255,255,255,0.06);margin-bottom:14px;overflow:hidden"><div style="height:100%;width:'+catPct+'%;background:'+cat.color+';border-radius:2px;transition:width 0.3s"></div></div>';
+
+    cat.items.forEach((item,ii)=>{
+      const isDone=item.status==='complete';
+      const isInProg=item.status==='in progress';
+      html+='<div onclick="toggleGoalDone('+ci+','+ii+')" style="display:flex;align-items:flex-start;gap:10px;padding:8px 6px;border-radius:6px;cursor:pointer;transition:background 0.15s'+(isDone?';opacity:0.5':'')+'" onmouseenter="this.style.background=\'rgba(255,255,255,0.04)\'" onmouseleave="this.style.background=\'transparent\'">';
+      html+='<div style="width:18px;height:18px;border-radius:5px;border:2px solid '+(isDone?'var(--teal)':isInProg?'var(--amber)':'rgba(255,255,255,0.15)')+';flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:1px;background:'+(isDone?'rgba(45,212,168,0.15)':'transparent')+'">'+(isDone?'<span style="color:var(--teal);font-size:0.6rem;font-weight:700">✓</span>':'')+'</div>';
+      html+='<div style="flex:1;font-size:0.78rem;color:'+(isDone?'var(--text-faint)':'#fff')+';'+(isDone?'text-decoration:line-through;':'')+'">'+item.name+'</div>';
+      if(isInProg)html+='<span style="padding:1px 6px;border-radius:3px;background:rgba(240,168,64,0.1);color:var(--amber);font-size:0.5rem;font-weight:600;flex-shrink:0">IN PROGRESS</span>';
+      html+='</div>';
+    });
+
     html+='</div>';
   });
   html+='</div>';
+
+  // Custom goals below
+  if(_goals.length){
+    html+='<div style="margin-top:24px;font-size:0.9rem;font-weight:700;color:#fff;margin-bottom:12px">Custom Goals</div>';
+    html+='<div style="display:flex;flex-direction:column;gap:12px">';
+    _goals.forEach(goal=>{
+      const statusCol=goal.status==='Complete'?'var(--teal)':goal.status==='In Progress'?'var(--amber)':'var(--text-faint)';
+      const catCols={Personal:'#a78bfa',Health:'#f472b6',Career:'#60a5fa',Finance:'var(--teal)',Learning:'var(--amber)',Project:'#34d399'};
+      const catCol=catCols[goal.category]||'var(--text-muted)';
+      html+='<div class="card" style="cursor:pointer" onclick="showGoalModal(\''+goal.id+'\')">';
+      html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px">';
+      html+='<div style="flex:1"><div style="font-size:0.92rem;font-weight:700;color:#fff">'+goal.title+'</div>';
+      html+='<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">';
+      html+='<span style="padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.06);color:'+catCol+';font-size:0.58rem;font-weight:600">'+goal.category+'</span>';
+      html+='<span style="padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.06);color:'+statusCol+';font-size:0.58rem;font-weight:600">'+goal.status+'</span>';
+      if(goal.targetDate)html+='<span style="padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.06);color:var(--text-faint);font-size:0.58rem">Due: '+fmtShort(goal.targetDate)+'</span>';
+      html+='</div></div>';
+      html+='<button onclick="event.stopPropagation();deleteGoal(\''+goal.id+'\')" style="padding:3px 8px;border-radius:5px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.15);color:var(--red-soft);font-size:0.55rem;cursor:pointer;font-family:var(--font);flex-shrink:0">Delete</button>';
+      html+='</div>';
+      html+='<div class="progress-bar"><div class="progress-fill" style="width:'+(goal.progress||0)+'%;background:'+(goal.progress>=100?'var(--teal)':goal.progress>=50?'var(--amber)':'var(--red-soft)')+'"></div></div>';
+      html+='<div style="font-size:0.6rem;color:var(--text-faint);margin-top:4px;text-align:right">'+(goal.progress||0)+'%</div>';
+      html+='</div>';
+    });
+    html+='</div>';
+  }
+
   el.innerHTML=html;
 }
 
