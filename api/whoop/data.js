@@ -55,7 +55,11 @@ async function whoopGet(path, accessToken) {
   const res = await fetch('https://api.prod.whoop.com/developer' + path, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
-  if (!res.ok) return null;
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => '');
+    console.error('Whoop API error', res.status, path, errBody);
+    return null;
+  }
   return res.json();
 }
 
@@ -83,12 +87,17 @@ module.exports = async function handler(req, res) {
 
     const [profile, recoveryRes, cycleRes, sleepRes, workoutRes, bodyRes] = await Promise.all([
       whoopGet('/v1/user/profile/basic', at),
-      whoopGet('/v1/recovery?start=' + encodeURIComponent(thirtyDaysAgo) + '&limit=30', at),
-      whoopGet('/v1/cycle?start=' + encodeURIComponent(thirtyDaysAgo) + '&limit=30', at),
-      whoopGet('/v1/activity/sleep?start=' + encodeURIComponent(thirtyDaysAgo) + '&limit=30', at),
-      whoopGet('/v1/activity/workout?start=' + encodeURIComponent(sevenDaysAgo) + '&limit=25', at),
-      whoopGet('/v1/body_measurement', at),
+      whoopGet('/v1/recovery?start=' + encodeURIComponent(thirtyDaysAgo) + '&end=' + encodeURIComponent(now.toISOString()) + '&limit=30', at),
+      whoopGet('/v1/cycle?start=' + encodeURIComponent(thirtyDaysAgo) + '&end=' + encodeURIComponent(now.toISOString()) + '&limit=30', at),
+      whoopGet('/v1/activity/sleep?start=' + encodeURIComponent(thirtyDaysAgo) + '&end=' + encodeURIComponent(now.toISOString()) + '&limit=30', at),
+      whoopGet('/v1/activity/workout?start=' + encodeURIComponent(sevenDaysAgo) + '&end=' + encodeURIComponent(now.toISOString()) + '&limit=25', at),
+      whoopGet('/v1/user/measurement/body', at),
     ]);
+
+    // Debug mode: ?debug=1 returns raw API responses
+    if (req.query.debug === '1') {
+      return res.status(200).json({ profile, recoveryRes, cycleRes, sleepRes, workoutRes, bodyRes });
+    }
 
     res.setHeader('Cache-Control', 'no-cache');
     return res.status(200).json({
