@@ -39,6 +39,7 @@ module.exports = async function handler(req, res) {
         updated: data?.updated || null,
         costTracking: costs?.items || null,
         weeklyIncome: costs?.weeklyIncome ?? null,
+        costsVersion: costs?.version || 0,
         costsUpdated: costs?.updated || null,
       });
     }
@@ -53,8 +54,8 @@ module.exports = async function handler(req, res) {
       }
 
       if (action === 'save_costs') {
-        const { items, weeklyIncome } = req.body;
-        await kvSet(KV_COSTS, JSON.stringify({ items, weeklyIncome, updated: new Date().toISOString() }));
+        const { items, weeklyIncome, version } = req.body;
+        await kvSet(KV_COSTS, JSON.stringify({ items, weeklyIncome, version: version || 1, updated: new Date().toISOString() }));
         return res.status(200).json({ success: true });
       }
 

@@ -964,7 +964,8 @@ async function loadFinances(){
       const d=await res.json();
       _finances=d.entries||[];
       if(d.updated)document.getElementById('finances-updated').textContent='Saved: '+fmt(d.updated);
-      if(d.costTracking&&d.costTracking.length){
+      const COST_VERSION=2;
+      if(d.costTracking&&d.costTracking.length&&d.costsVersion>=COST_VERSION){
         _costTracking=d.costTracking;
         _weeklyIncome=d.weeklyIncome??2469.54;
       }else{
@@ -977,7 +978,7 @@ async function loadFinances(){
   }catch(e){console.warn('Finances load failed',e)}
 }
 async function saveCostTracking(){
-  try{await fetch('/api/finances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save_costs',items:_costTracking,weeklyIncome:_weeklyIncome})})}catch(e){console.warn('Cost tracking save failed',e)}
+  try{await fetch('/api/finances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save_costs',items:_costTracking,weeklyIncome:_weeklyIncome,version:2})})}catch(e){console.warn('Cost tracking save failed',e)}
 }
 async function saveFinances(){
   try{await fetch('/api/finances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',entries:_finances})});document.getElementById('finances-updated').textContent='Saved: '+fmt(new Date().toISOString())}catch(e){console.warn('Finances save failed',e)}
