@@ -345,16 +345,17 @@ select.form-input{cursor:pointer;background:#1a1a1a}
 
 <!-- ═══ ACTIVE WORKOUT MODAL ═══ -->
 <div class="modal-overlay" id="workout-modal">
-  <div class="modal-backdrop"></div>
+  <div class="modal-backdrop" onclick="minimizeWorkout()"></div>
   <div class="modal-card" style="width:600px;max-height:92vh">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
       <div>
         <div class="modal-title" style="margin-bottom:2px" id="workout-modal-title">Workout</div>
         <div style="font-size:0.65rem;color:var(--text-faint)" id="workout-modal-time"></div>
       </div>
-      <div style="display:flex;gap:6px">
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn" onclick="finishWorkout()">Finish Workout</button>
-        <button class="btn btn-ghost" onclick="cancelWorkout()">Cancel</button>
+        <button class="btn btn-ghost" onclick="minimizeWorkout()">Close</button>
+        <button class="btn btn-danger" onclick="cancelWorkout()" style="font-size:0.65rem">Discard</button>
       </div>
     </div>
     <div id="workout-exercises"></div>
@@ -1031,6 +1032,7 @@ async function loadTraining(){
       _trainingLogs=d.logs||[];
       if(d.updated)document.getElementById('training-updated').textContent='Saved: '+fmt(d.updated);
       if(!d.templates||!d.templates.length)saveTrainingData();
+      restoreWorkout();
       renderTraining();
     }
   }catch(e){console.warn('Training load failed',e)}
@@ -1039,7 +1041,38 @@ async function saveTrainingData(){
   try{await fetch('/api/training',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',templates:_templates,logs:_trainingLogs})});document.getElementById('training-updated').textContent='Saved: '+fmt(new Date().toISOString())}catch(e){console.warn('Training save failed',e)}
 }
 
+function persistWorkout(){
+  if(_activeWorkout)localStorage.setItem('tom_active_workout',JSON.stringify(_activeWorkout));
+  else localStorage.removeItem('tom_active_workout');
+}
+function restoreWorkout(){
+  try{
+    const saved=localStorage.getItem('tom_active_workout');
+    if(saved){_activeWorkout=JSON.parse(saved);return true;}
+  }catch(e){}
+  return false;
+}
+function resumeWorkout(){
+  if(!_activeWorkout)return;
+  const tpl=_templates.find(t=>t.id===_activeWorkout.templateId);
+  document.getElementById('workout-modal-title').textContent='🏋️ '+(tpl?tpl.name:_activeWorkout.templateName);
+  renderWorkoutModal();
+  openModal('workout-modal');
+  clearInterval(_workoutTimer);
+  _workoutTimer=setInterval(updateWorkoutTimer,1000);
+  updateWorkoutTimer();
+}
+function minimizeWorkout(){
+  persistWorkout();
+  closeModal('workout-modal');
+  clearInterval(_workoutTimer);
+  renderTraining();
+}
 function beginWorkout(templateId){
+  if(_activeWorkout){
+    if(!confirm('You have an active workout ('+_activeWorkout.templateName+'). Discard it and start a new one?'))return;
+    clearInterval(_workoutTimer);
+  }
   const tpl=_templates.find(t=>t.id===templateId);if(!tpl)return;
   _activeWorkout={
     id:Date.now().toString(),
@@ -1049,6 +1082,7 @@ function beginWorkout(templateId){
     startTime:new Date().toISOString(),
     exercises:tpl.exercises.map(e=>({name:e.name,weight:e.weight,sets:e.sets,reps:e.reps,pb:e.pb,done:false})),
   };
+  persistWorkout();
   document.getElementById('workout-modal-title').textContent='🏋️ '+tpl.name;
   renderWorkoutModal();
   openModal('workout-modal');
@@ -1075,10 +1109,10 @@ function renderWorkoutModal(){
     const pbText=ex.weight?(ex.weight+'kg'+(ex.sets?' · '+ex.sets+'x'+ex.reps:'')):(ex.pb||'');
     html+='<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;background:rgba(255,255,255,'+(ex.done?'0.02':'0.04')+');border:1px solid rgba('+(ex.done?'45,212,168,0.15':'255,255,255,0.06')+');opacity:'+(ex.done?'0.5':'1')+'">';
     html+='<div onclick="toggleWorkoutExercise('+i+')" style="width:22px;height:22px;border-radius:6px;border:2px solid '+(ex.done?'var(--teal)':'rgba(255,255,255,0.15)')+';background:'+(ex.done?'rgba(45,212,168,0.15)':'transparent')+';cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:var(--teal)">'+(ex.done?'✓':'')+'</div>';
-    html+='<div style="flex:1;min-width:0"><div style="font-size:0.82rem;font-weight:600;color:'+(ex.done?'var(--text-muted)':'#fff')+';'+(ex.done?'text-decoration:line-through':'')+'">'+ex.name+'</div>';
-    if(pbText)html+='<div style="font-size:0.65rem;color:var(--teal);margin-top:1px">PB: '+pbText+'</div>';
+    html+='<div style="flex:1;min-width:0">';
+    html+='<div onclick="inlineEdit(this,'+i+',\'name\')" style="font-size:0.82rem;font-weight:600;color:'+(ex.done?'var(--text-muted)':'#fff')+';'+(ex.done?'text-decoration:line-through':'')+';cursor:text;padding:1px 0">'+ex.name+'</div>';
+    html+='<div onclick="inlineEdit(this,'+i+',\'pb\')" style="font-size:0.65rem;color:var(--teal);margin-top:1px;cursor:text;padding:1px 0;min-height:16px">'+(pbText?'PB: '+pbText:'tap to set PB')+'</div>';
     html+='</div>';
-    html+='<button onclick="editWorkoutPB('+i+')" style="padding:3px 8px;border-radius:5px;background:rgba(45,212,168,0.08);border:1px solid rgba(45,212,168,0.2);color:var(--teal);font-size:0.55rem;cursor:pointer;font-family:var(--font);flex-shrink:0">PB</button>';
     html+='<button onclick="removeWorkoutExercise('+i+')" style="padding:3px 6px;border-radius:5px;background:none;border:1px solid rgba(255,255,255,0.06);color:var(--text-faint);font-size:0.55rem;cursor:pointer;font-family:var(--font);flex-shrink:0;opacity:0.4">✕</button>';
     html+='</div>';
   });
@@ -1086,9 +1120,51 @@ function renderWorkoutModal(){
   el.innerHTML=html;
 }
 
+function inlineEdit(el,idx,field){
+  if(el.querySelector('input'))return;
+  const ex=_activeWorkout.exercises[idx];
+  let currentVal='';
+  if(field==='name')currentVal=ex.name;
+  else currentVal=ex.weight?(ex.weight+'kg'+(ex.sets?' '+ex.sets+'x'+ex.reps:'')):(ex.pb||'');
+  const input=document.createElement('input');
+  input.type='text';input.value=currentVal;
+  input.style.cssText='width:100%;background:rgba(255,255,255,0.08);border:1px solid rgba(45,212,168,0.3);border-radius:4px;color:#fff;font-size:inherit;font-family:var(--font);padding:3px 6px;outline:none;box-sizing:border-box';
+  el.textContent='';el.appendChild(input);
+  input.focus();input.select();
+  function save(){
+    const val=input.value.trim();
+    if(field==='name'){
+      if(val)ex.name=val;
+      persistWorkout();renderWorkoutModal();
+    } else {
+      const match=val.match(/^([\d.]+)\s*kg?\s*(.*)$/i);
+      if(match){
+        ex.weight=match[1];
+        const sr=match[2].trim();
+        const srMatch=sr.match(/^(\d+)\s*x\s*(.+)$/i);
+        if(srMatch){ex.sets=srMatch[1];ex.reps=srMatch[2];}
+        ex.pb=val;
+      } else if(val){
+        ex.pb=val;ex.weight='';ex.sets='';ex.reps='';
+      }
+      // Sync PB back to template
+      const tpl=_templates.find(t=>t.id===_activeWorkout.templateId);
+      if(tpl&&tpl.exercises[idx]){
+        const tex=tpl.exercises[idx];
+        tex.weight=ex.weight;tex.sets=ex.sets;tex.reps=ex.reps;tex.pb=ex.pb;
+      }
+      saveTrainingData();
+      persistWorkout();renderWorkoutModal();
+    }
+  }
+  input.addEventListener('blur',save);
+  input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();input.blur()}if(e.key==='Escape'){input.value=currentVal;input.blur()}});
+}
+
 function toggleWorkoutExercise(idx){
   if(!_activeWorkout)return;
   _activeWorkout.exercises[idx].done=!_activeWorkout.exercises[idx].done;
+  persistWorkout();
   renderWorkoutModal();
 }
 
@@ -1142,17 +1218,17 @@ function addWorkoutExercise(){
   if(!input||!input.value.trim())return;
   const name=input.value.trim();
   _activeWorkout.exercises.push({name,weight:'',sets:'',reps:'',pb:'',done:false});
-  // Also add to template
   const tpl=_templates.find(t=>t.id===_activeWorkout.templateId);
   if(tpl)tpl.exercises.push({name,pb:'',weight:'',sets:'',reps:''});
   input.value='';
-  saveTrainingData();
+  persistWorkout();saveTrainingData();
   renderWorkoutModal();
 }
 
 function removeWorkoutExercise(idx){
   if(!_activeWorkout)return;
   _activeWorkout.exercises.splice(idx,1);
+  persistWorkout();
   renderWorkoutModal();
 }
 
@@ -1167,15 +1243,18 @@ function finishWorkout(){
   _activeWorkout.duration=elapsed;
   _trainingLogs.unshift(_activeWorkout);
   _activeWorkout=null;
+  persistWorkout();
   closeModal('workout-modal');
   saveTrainingData();renderTraining();renderOverview();
 }
 
 function cancelWorkout(){
-  if(!confirm('Cancel this workout? Progress will be lost.'))return;
+  if(!confirm('Discard this workout? All progress will be lost.'))return;
   clearInterval(_workoutTimer);
   _activeWorkout=null;
+  persistWorkout();
   closeModal('workout-modal');
+  renderTraining();
 }
 
 function deleteTrainingLog(id){
@@ -1234,6 +1313,20 @@ function renderTraining(){
   const totalHrs=Math.round(totalMins/60*10)/10;
 
   let html='';
+
+  // ── RESUME ACTIVE WORKOUT BANNER ──
+  if(_activeWorkout){
+    const done=_activeWorkout.exercises.filter(e=>e.done).length;
+    const total=_activeWorkout.exercises.length;
+    const elapsed=Math.floor((Date.now()-new Date(_activeWorkout.startTime).getTime())/60000);
+    html+='<div class="card" onclick="resumeWorkout()" style="cursor:pointer;margin-bottom:18px;border-color:rgba(45,212,168,0.3);background:rgba(45,212,168,0.06)">';
+    html+='<div style="display:flex;align-items:center;gap:14px">';
+    html+='<div style="font-size:2rem;animation:livePulse 2s infinite">🏋️</div>';
+    html+='<div style="flex:1"><div style="font-size:1rem;font-weight:700;color:var(--teal)">Active Workout — '+_activeWorkout.templateName+'</div>';
+    html+='<div style="font-size:0.72rem;color:var(--text-muted);margin-top:3px">'+done+'/'+total+' exercises · '+elapsed+' min elapsed · Started '+new Date(_activeWorkout.startTime).toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'})+'</div></div>';
+    html+='<div style="padding:10px 20px;border-radius:8px;background:var(--teal);color:#000;font-weight:700;font-size:0.82rem;font-family:var(--font)">Resume</div>';
+    html+='</div></div>';
+  }
 
   // ── BEGIN WORKOUT CARDS ──
   html+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:24px">';
