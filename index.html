@@ -1401,11 +1401,37 @@ function renderTraining(){
       const icon=tpl?tpl.icon:'🏋️';
       const done=log.exercises?log.exercises.filter(e=>e.done).length:0;
       const total=log.exercises?log.exercises.length:0;
-      html+='<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--radius-sm);background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05)">';
+
+      // Find matching Whoop workout within 3 hours
+      let whoopMatch=null;
+      if(log.startTime&&_whoopData&&_whoopData.workouts){
+        const logStart=new Date(log.startTime).getTime();
+        whoopMatch=_whoopData.workouts.find(w=>{
+          if(!w.start)return false;
+          return Math.abs(new Date(w.start).getTime()-logStart)<3*3600000;
+        });
+      }
+
+      html+='<div style="padding:10px 12px;border-radius:var(--radius-sm);background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05)">';
+      html+='<div style="display:flex;align-items:center;gap:12px">';
       html+='<div style="font-size:1.2rem">'+icon+'</div>';
       html+='<div style="flex:1"><div style="font-size:0.82rem;font-weight:600;color:#fff">'+log.templateName+'</div>';
       html+='<div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px">'+fmtShort(log.date)+' · '+(log.duration||0)+' min · '+done+'/'+total+' exercises</div></div>';
       html+='<button onclick="deleteTrainingLog(\''+log.id+'\')" style="padding:2px 6px;border-radius:4px;background:none;border:1px solid rgba(239,68,68,0.15);color:var(--red-soft);font-size:0.55rem;cursor:pointer;font-family:var(--font)">✕</button>';
+      html+='</div>';
+
+      if(whoopMatch&&whoopMatch.score){
+        const sc=whoopMatch.score;
+        const cals=sc.kilojoule?Math.round(sc.kilojoule*0.239):null;
+        html+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.04)">';
+        html+='<div style="font-size:0.55rem;color:var(--text-faint);display:flex;align-items:center;gap:3px">♡ WHOOP</div>';
+        if(sc.strain)html+='<div style="padding:3px 7px;border-radius:4px;background:rgba(45,212,168,0.08);font-size:0.6rem"><span style="color:var(--teal);font-weight:600">'+sc.strain.toFixed(1)+'</span> <span style="color:var(--text-faint)">strain</span></div>';
+        if(cals)html+='<div style="padding:3px 7px;border-radius:4px;background:rgba(255,255,255,0.04);font-size:0.6rem"><span style="color:var(--amber);font-weight:600">'+cals+'</span> <span style="color:var(--text-faint)">cal</span></div>';
+        if(sc.average_heart_rate)html+='<div style="padding:3px 7px;border-radius:4px;background:rgba(255,255,255,0.04);font-size:0.6rem"><span style="color:var(--red-soft);font-weight:600">'+sc.average_heart_rate+'</span> <span style="color:var(--text-faint)">avg HR</span></div>';
+        if(sc.max_heart_rate)html+='<div style="padding:3px 7px;border-radius:4px;background:rgba(255,255,255,0.04);font-size:0.6rem"><span style="color:var(--red-soft);font-weight:600">'+sc.max_heart_rate+'</span> <span style="color:var(--text-faint)">max HR</span></div>';
+        html+='</div>';
+      }
+
       html+='</div>';
     });
     html+='</div></div>';
@@ -1547,19 +1573,75 @@ function renderWhoop(){
   // Recent workouts
   if(workouts.length){
     html+='<div class="card"><div class="card-header"><span class="card-title">Recent Workouts</span></div>';
-    html+='<div style="display:flex;flex-direction:column;gap:6px">';
+    html+='<div style="display:flex;flex-direction:column;gap:8px">';
     const sportIcons={running:'🏃',cycling:'🚴',swimming:'🏊',weightlifting:'🏋️',tennis:'🎾',yoga:'🧘',hiking:'🥾',walking:'🚶',rowing:'🚣',sauna:'🧖',crossfit:'⚡'};
     workouts.slice(0,10).forEach(w=>{
-      const wStrain=w.score?.strain?.toFixed(1)||'—';
+      const sc=w.score;
+      const wStrain=sc?.strain?.toFixed(1)||'—';
       const dur=w.start&&w.end?Math.round((new Date(w.end)-new Date(w.start))/60000):null;
       const sport=w.sport_name?(w.sport_name.charAt(0).toUpperCase()+w.sport_name.slice(1)):'Workout';
       const icon=sportIcons[w.sport_name]||'💪';
       const date=w.start?fmtShort(w.start):'';
-      html+='<div style="display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:var(--radius-sm);background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05)">';
-      html+='<div style="font-size:1.1rem">'+icon+'</div>';
-      html+='<div style="flex:1"><div style="font-size:0.8rem;font-weight:600;color:#fff">'+sport+'</div>';
+      const cals=sc?.kilojoule?Math.round(sc.kilojoule*0.239):null;
+      const avgHR=sc?.average_heart_rate;
+      const maxHR=sc?.max_heart_rate;
+      const dist=sc?.distance_meter?((sc.distance_meter/1000).toFixed(1)+'km'):null;
+      const zones=sc?.zone_durations;
+
+      // Match to Training tab workout (within 3 hours)
+      let linkedTraining=null;
+      if(w.start&&_trainingLogs.length){
+        const wStart=new Date(w.start).getTime();
+        linkedTraining=_trainingLogs.find(tl=>{
+          if(!tl.startTime)return false;
+          const diff=Math.abs(new Date(tl.startTime).getTime()-wStart);
+          return diff<3*3600000;
+        });
+      }
+
+      html+='<div style="padding:12px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05)">';
+      html+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">';
+      html+='<div style="font-size:1.3rem">'+icon+'</div>';
+      html+='<div style="flex:1"><div style="font-size:0.88rem;font-weight:700;color:#fff">'+sport+'</div>';
       html+='<div style="font-size:0.62rem;color:var(--text-muted)">'+date+(dur?' · '+dur+' min':'')+'</div></div>';
-      html+='<div style="text-align:right"><div style="font-size:0.85rem;font-weight:700;color:var(--teal)">'+wStrain+'</div><div style="font-size:0.5rem;color:var(--text-faint)">STRAIN</div></div>';
+      html+='<div style="text-align:right"><div style="font-size:1rem;font-weight:700;color:var(--teal)">'+wStrain+'</div><div style="font-size:0.5rem;color:var(--text-faint)">STRAIN</div></div>';
+      html+='</div>';
+
+      // Stats row
+      html+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:'+(zones?'8':'0')+'px">';
+      if(cals)html+='<div style="padding:4px 8px;border-radius:5px;background:rgba(255,255,255,0.04);font-size:0.65rem"><span style="color:var(--amber);font-weight:600">'+cals+'</span> <span style="color:var(--text-faint)">cal</span></div>';
+      if(avgHR)html+='<div style="padding:4px 8px;border-radius:5px;background:rgba(255,255,255,0.04);font-size:0.65rem"><span style="color:var(--red-soft);font-weight:600">'+avgHR+'</span> <span style="color:var(--text-faint)">avg HR</span></div>';
+      if(maxHR)html+='<div style="padding:4px 8px;border-radius:5px;background:rgba(255,255,255,0.04);font-size:0.65rem"><span style="color:var(--red-soft);font-weight:600">'+maxHR+'</span> <span style="color:var(--text-faint)">max HR</span></div>';
+      if(dist)html+='<div style="padding:4px 8px;border-radius:5px;background:rgba(255,255,255,0.04);font-size:0.65rem"><span style="color:var(--teal);font-weight:600">'+dist+'</span> <span style="color:var(--text-faint)">dist</span></div>';
+      html+='</div>';
+
+      // HR zones bar
+      if(zones){
+        const zoneColors=['#4a9eff','#2dd4a8','#34d399','#fbbf24','#f97316','#ef4444'];
+        const zoneLabels=['Rest','Light','Moderate','Hard','Very Hard','Max'];
+        const total=(zones.zone_zero_milli||0)+(zones.zone_one_milli||0)+(zones.zone_two_milli||0)+(zones.zone_three_milli||0)+(zones.zone_four_milli||0)+(zones.zone_five_milli||0);
+        if(total>0){
+          html+='<div style="font-size:0.55rem;color:var(--text-faint);margin-bottom:3px">HR ZONES</div>';
+          html+='<div style="display:flex;height:8px;border-radius:4px;overflow:hidden;gap:1px">';
+          [zones.zone_zero_milli,zones.zone_one_milli,zones.zone_two_milli,zones.zone_three_milli,zones.zone_four_milli,zones.zone_five_milli].forEach((z,i)=>{
+            if(z>0){const pct=((z/total)*100).toFixed(1);html+='<div title="'+zoneLabels[i]+': '+Math.round(z/60000)+'min" style="width:'+pct+'%;background:'+zoneColors[i]+'"></div>';}
+          });
+          html+='</div>';
+          html+='<div style="display:flex;justify-content:space-between;margin-top:2px;font-size:0.45rem;color:var(--text-faint)">';
+          [zones.zone_zero_milli,zones.zone_one_milli,zones.zone_two_milli,zones.zone_three_milli,zones.zone_four_milli,zones.zone_five_milli].forEach((z,i)=>{
+            if(z>0)html+='<span style="color:'+zoneColors[i]+'">'+Math.round(z/60000)+'m</span>';
+          });
+          html+='</div>';
+        }
+      }
+
+      // Linked training session
+      if(linkedTraining){
+        const done=linkedTraining.exercises?linkedTraining.exercises.filter(e=>e.done).length:0;
+        const tot=linkedTraining.exercises?linkedTraining.exercises.length:0;
+        html+='<div style="margin-top:8px;padding:6px 10px;border-radius:6px;background:rgba(45,212,168,0.06);border:1px solid rgba(45,212,168,0.15);font-size:0.65rem;color:var(--teal)">🔗 Linked: '+linkedTraining.templateName+' — '+done+'/'+tot+' exercises</div>';
+      }
+
       html+='</div>';
     });
     html+='</div></div>';
