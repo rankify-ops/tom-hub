@@ -1665,7 +1665,7 @@ function showWorkoutDetail(logId){
     const cals=sc.kilojoule?Math.round(sc.kilojoule*0.239):null;
     const wDur=whoopMatch.start&&whoopMatch.end?Math.round((new Date(whoopMatch.end)-new Date(whoopMatch.start))/60000):null;
     const zones=sc.zone_durations;
-    const sportName=whoopMatch.sport_name?(whoopMatch.sport_name.charAt(0).toUpperCase()+whoopMatch.sport_name.slice(1)):'Workout';
+    const nsm=normSport(whoopMatch.sport_name);const sportName=nsm?(nsm.charAt(0).toUpperCase()+nsm.slice(1)):'Workout';
 
     h+='<div style="padding:12px;border-radius:8px;background:rgba(45,212,168,0.04);border:1px solid rgba(45,212,168,0.12);margin-bottom:16px">';
     h+='<div style="font-size:0.65rem;color:var(--teal);font-weight:600;margin-bottom:10px">♡ WHOOP · '+sportName+(wDur?' · '+wDur+' min':'')+'</div>';
@@ -1770,6 +1770,8 @@ async function loadWhoop(){
     if(_whoopData&&_whoopData.connected)fetch('/api/whoop/sync').catch(()=>{});
   }catch(e){console.warn('Whoop load failed',e)}
 }
+function normSport(s){if(!s)return'';s=s.toLowerCase();if(s.includes('sauna'))return'sauna';return s;}
+
 function renderWhoop(){
   const el=document.getElementById('whoop-content');if(!el)return;
   if(_whoopData?.updated)document.getElementById('whoop-updated').textContent='Synced: '+fmt(_whoopData.updated);
@@ -1846,7 +1848,7 @@ function renderWhoop(){
   const weekStart=new Date(Date.now()-((new Date().getDay()||7)-1)*86400000).toISOString().split('T')[0];
   const weekWorkouts=workouts.filter(w=>w.start&&w.start.split('T')[0]>=weekStart);
   const sportCount={weightlifting:0,sauna:0,running:0,tennis:0};
-  weekWorkouts.forEach(w=>{if(sportCount.hasOwnProperty(w.sport_name))sportCount[w.sport_name]++});
+  weekWorkouts.forEach(w=>{const ns=normSport(w.sport_name);if(sportCount.hasOwnProperty(ns))sportCount[ns]++});
   const goals=[{sport:'Weightlifting',icon:'🏋️',done:sportCount.weightlifting,target:3},{sport:'Sauna',icon:'🧖',done:sportCount.sauna,target:3},{sport:'Running',icon:'🏃',done:sportCount.running,target:2},{sport:'Tennis',icon:'🎾',done:sportCount.tennis,target:2}];
 
   html+='<div style="margin-bottom:18px"><div style="font-size:0.78rem;font-weight:700;color:#fff;margin-bottom:10px">Goals This Week</div>';
@@ -1969,8 +1971,8 @@ function renderWhoop(){
         const sc=w.score;
         const wStrain=sc?.strain?.toFixed(1)||'—';
         const dur=w.start&&w.end?Math.round((new Date(w.end)-new Date(w.start))/60000):null;
-        const sport=w.sport_name?(w.sport_name.charAt(0).toUpperCase()+w.sport_name.slice(1)):'Workout';
-        const icon=sportIcons[w.sport_name]||'💪';
+        const ns=normSport(w.sport_name);const sport=ns?(ns.charAt(0).toUpperCase()+ns.slice(1)):'Workout';
+        const icon=sportIcons[ns]||'💪';
         const date=w.start?fmtShort(w.start):'';
         const cals=sc?.kilojoule?Math.round(sc.kilojoule*0.239):null;
         const zones=sc?.zone_durations;
@@ -2020,8 +2022,8 @@ function renderWhoop(){
       workouts.slice(0,15).forEach(w=>{
         const sc=w.score;
         const dur=w.start&&w.end?Math.round((new Date(w.end)-new Date(w.start))/60000):null;
-        const sport=w.sport_name?(w.sport_name.charAt(0).toUpperCase()+w.sport_name.slice(1)):'Workout';
-        const icon=sportIcons[w.sport_name]||'💪';
+        const ns=normSport(w.sport_name);const sport=ns?(ns.charAt(0).toUpperCase()+ns.slice(1)):'Workout';
+        const icon=sportIcons[ns]||'💪';
         const cals=sc?.kilojoule?Math.round(sc.kilojoule*0.239):null;
 
         html+='<div onclick="showWhoopWorkoutDetail(\''+w.id+'\')" style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.04);cursor:pointer">';
@@ -2073,7 +2075,7 @@ function renderWhoop(){
       html+='<div style="min-width:45px;text-align:center"><span style="color:#fff">'+(sleepHrs||'—')+'h</span><div style="font-size:0.45rem;color:var(--text-faint)">SLEEP</div></div>';
       html+='<div style="min-width:40px;text-align:center"><span style="color:var(--teal);font-weight:600">'+(strainVal!=null?strainVal.toFixed(1):'—')+'</span><div style="font-size:0.45rem;color:var(--text-faint)">STRAIN</div></div>';
       if(ws.length){
-        const wList=ws.map(w=>{const icon={running:'🏃',tennis:'🎾',weightlifting:'🏋️',sauna:'🧖'}[w.sport]||'💪';return icon+' '+(w.duration_min||'?')+'m'}).join(' ');
+        const wList=ws.map(w=>{const ns=normSport(w.sport);const icon={running:'🏃',tennis:'🎾',weightlifting:'🏋️',sauna:'🧖'}[ns]||'💪';return icon+' '+(w.duration_min||'?')+'m'}).join(' ');
         html+='<div style="flex:1;font-size:0.6rem;color:var(--text-secondary);text-align:right">'+wList+'</div>';
       } else {
         html+='<div style="flex:1"></div>';
@@ -2185,8 +2187,8 @@ function showWhoopWorkoutDetail(workoutId){
   const w=workouts.find(x=>String(x.id)===String(workoutId));if(!w)return;
   const sc=w.score;
   const sportIcons={running:'🏃',cycling:'🚴',swimming:'🏊',weightlifting:'🏋️',tennis:'🎾',yoga:'🧘',hiking:'🥾',walking:'🚶',rowing:'🚣',sauna:'🧖',crossfit:'⚡'};
-  const sport=w.sport_name?(w.sport_name.charAt(0).toUpperCase()+w.sport_name.slice(1)):'Workout';
-  const icon=sportIcons[w.sport_name]||'💪';
+  const ns=normSport(w.sport_name);const sport=ns?(ns.charAt(0).toUpperCase()+ns.slice(1)):'Workout';
+  const icon=sportIcons[ns]||'💪';
   const dur=w.start&&w.end?Math.round((new Date(w.end)-new Date(w.start))/60000):null;
   const cals=sc?.kilojoule?Math.round(sc.kilojoule*0.239):null;
 
