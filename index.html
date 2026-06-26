@@ -245,6 +245,7 @@ select.form-input{cursor:pointer;background:#1a1a1a}
       <div class="nav-item" data-tab="goals"><span class="nav-icon">⊕</span><span>Goals</span></div>
       <div class="nav-item" data-tab="finances"><span class="nav-icon">◇</span><span>Finances</span></div>
       <div class="nav-item" data-tab="whoop"><span class="nav-icon">♡</span><span>Training & Recovery</span></div>
+      <div class="nav-item" data-tab="properties"><span class="nav-icon">🏠</span><span>Investment Properties</span></div>
     </nav>
     <div class="sidebar-links">
       <div class="sidebar-links-title">Quick Links</div>
@@ -274,6 +275,7 @@ select.form-input{cursor:pointer;background:#1a1a1a}
             <span class="quick-link" onclick="switchTab('goals')">⊕ Goals</span>
             <span class="quick-link" onclick="switchTab('finances')">◇ Finances</span>
             <span class="quick-link" onclick="switchTab('whoop')">♡ Training & Recovery</span>
+            <span class="quick-link" onclick="switchTab('properties')">🏠 Properties</span>
           </div>
         </div>
         <div class="card">
@@ -343,7 +345,53 @@ select.form-input{cursor:pointer;background:#1a1a1a}
       <div id="whoop-content"><div class="empty-state"><div class="icon">♡</div><h3>Loading...</h3></div></div>
     </div>
 
+    <!-- ═══ PROPERTIES TAB ═══ -->
+    <div class="tab-panel" id="tab-properties">
+      <div class="section-header">
+        <h2>Investment Properties</h2>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div class="updated" id="properties-updated"></div>
+          <button class="btn" onclick="showPropertyModal()">+ Add Property</button>
+        </div>
+      </div>
+      <div id="properties-content"></div>
+    </div>
+
   </main>
+</div>
+
+<!-- ═══ PROPERTY MODAL ═══ -->
+<div id="property-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;display:none;align-items:center;justify-content:center">
+  <div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:24px;width:90%;max-width:520px;max-height:85vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 style="margin:0;font-size:1rem;color:#fff" id="property-modal-title">Add Property</h3>
+      <button onclick="closePropertyModal()" style="background:none;border:none;color:var(--text-faint);font-size:1.2rem;cursor:pointer">&times;</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <input id="prop-name" placeholder="Property name / address" class="input" style="width:100%">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <select id="prop-status" class="input"><option value="researching">Researching</option><option value="watching">Watching</option><option value="offer">Offer Made</option><option value="owned">Owned</option><option value="passed">Passed</option></select>
+        <select id="prop-type" class="input"><option value="house">House</option><option value="unit">Unit/Apartment</option><option value="townhouse">Townhouse</option><option value="land">Land</option><option value="duplex">Duplex</option></select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <input id="prop-price" type="number" placeholder="Price / Value $" class="input">
+        <input id="prop-rent" type="number" placeholder="Weekly Rent $" class="input">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <input id="prop-deposit" type="number" placeholder="Deposit $" class="input">
+        <input id="prop-rate" type="number" step="0.01" placeholder="Interest Rate %" class="input">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+        <input id="prop-beds" type="number" placeholder="Beds" class="input">
+        <input id="prop-baths" type="number" placeholder="Baths" class="input">
+        <input id="prop-cars" type="number" placeholder="Cars" class="input">
+      </div>
+      <input id="prop-suburb" placeholder="Suburb / Location" class="input" style="width:100%">
+      <input id="prop-url" placeholder="Listing URL" class="input" style="width:100%">
+      <textarea id="prop-notes" placeholder="Notes" class="input" rows="3" style="width:100%;resize:vertical"></textarea>
+      <button class="btn" onclick="saveProperty()" style="width:100%;margin-top:4px">Save Property</button>
+    </div>
+  </div>
 </div>
 
 <!-- ═══ ACTIVE WORKOUT MODAL ═══ -->
@@ -564,7 +612,7 @@ let _activeWorkout=null;
 
 // ─── Load All Data ───
 async function loadAll(){
-  await Promise.all([loadChecklists(),loadNotes(),loadGoals(),loadFinances(),loadTraining(),loadWhoop()]);
+  await Promise.all([loadChecklists(),loadNotes(),loadGoals(),loadFinances(),loadTraining(),loadWhoop(),loadProperties()]);
   renderOverview();
 }
 
@@ -2280,6 +2328,159 @@ function showWhoopWorkoutDetail(workoutId){
 // ════════════════════════════════════════
 // OVERVIEW
 // ════════════════════════════════════════
+// ════════════════════════════════════════
+// INVESTMENT PROPERTIES
+// ════════════════════════════════════════
+let _properties=[];
+async function loadProperties(){
+  try{
+    const res=await fetch('/api/properties?t='+Date.now());
+    if(res.ok){const d=await res.json();_properties=d.properties||[];if(d.updated)document.getElementById('properties-updated').textContent='Saved: '+fmt(d.updated);renderProperties()}
+  }catch(e){console.warn('Properties load failed',e)}
+}
+async function saveProperties(){
+  try{await fetch('/api/properties',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',properties:_properties})});document.getElementById('properties-updated').textContent='Saved: '+fmt(new Date().toISOString())}catch(e){console.warn('Properties save failed',e)}
+}
+
+let _editingPropertyId=null;
+function showPropertyModal(id){
+  _editingPropertyId=id||null;
+  const m=document.getElementById('property-modal');
+  m.style.display='flex';
+  document.getElementById('property-modal-title').textContent=id?'Edit Property':'Add Property';
+  const p=id?_properties.find(x=>x.id===id):{};
+  document.getElementById('prop-name').value=p.name||'';
+  document.getElementById('prop-status').value=p.status||'researching';
+  document.getElementById('prop-type').value=p.type||'house';
+  document.getElementById('prop-price').value=p.price||'';
+  document.getElementById('prop-rent').value=p.rent||'';
+  document.getElementById('prop-deposit').value=p.deposit||'';
+  document.getElementById('prop-rate').value=p.rate||'';
+  document.getElementById('prop-beds').value=p.beds||'';
+  document.getElementById('prop-baths').value=p.baths||'';
+  document.getElementById('prop-cars').value=p.cars||'';
+  document.getElementById('prop-suburb').value=p.suburb||'';
+  document.getElementById('prop-url').value=p.url||'';
+  document.getElementById('prop-notes').value=p.notes||'';
+}
+function closePropertyModal(){document.getElementById('property-modal').style.display='none';_editingPropertyId=null}
+function saveProperty(){
+  const data={
+    name:document.getElementById('prop-name').value.trim(),
+    status:document.getElementById('prop-status').value,
+    type:document.getElementById('prop-type').value,
+    price:parseFloat(document.getElementById('prop-price').value)||0,
+    rent:parseFloat(document.getElementById('prop-rent').value)||0,
+    deposit:parseFloat(document.getElementById('prop-deposit').value)||0,
+    rate:parseFloat(document.getElementById('prop-rate').value)||0,
+    beds:parseInt(document.getElementById('prop-beds').value)||0,
+    baths:parseInt(document.getElementById('prop-baths').value)||0,
+    cars:parseInt(document.getElementById('prop-cars').value)||0,
+    suburb:document.getElementById('prop-suburb').value.trim(),
+    url:document.getElementById('prop-url').value.trim(),
+    notes:document.getElementById('prop-notes').value.trim(),
+  };
+  if(!data.name)return;
+  if(_editingPropertyId){
+    const p=_properties.find(x=>x.id===_editingPropertyId);
+    if(p)Object.assign(p,data,{modified:new Date().toISOString()});
+  } else {
+    _properties.unshift({id:Date.now().toString(),created:new Date().toISOString(),modified:new Date().toISOString(),...data});
+  }
+  closePropertyModal();
+  saveProperties();renderProperties();renderOverview();
+}
+function deleteProperty(id){
+  if(!confirm('Delete this property?'))return;
+  _properties=_properties.filter(p=>p.id!==id);
+  saveProperties();renderProperties();renderOverview();
+}
+
+function renderProperties(){
+  const el=document.getElementById('properties-content');
+  if(!_properties.length){
+    el.innerHTML='<div class="empty-state"><div class="icon">🏠</div><h3>No properties yet</h3><p>Add your first investment property to start tracking</p></div>';
+    return;
+  }
+
+  const statusColors={researching:'#96c7f2',watching:'#e9c162',offer:'#f97316',owned:'#2dd4a8',passed:'#8b8b8b'};
+  const statusLabels={researching:'Researching',watching:'Watching',offer:'Offer Made',owned:'Owned',passed:'Passed'};
+  const typeLabels={house:'House',unit:'Unit/Apartment',townhouse:'Townhouse',land:'Land',duplex:'Duplex'};
+
+  // Summary tiles
+  const owned=_properties.filter(p=>p.status==='owned');
+  const totalValue=owned.reduce((s,p)=>s+p.price,0);
+  const totalRentWk=owned.reduce((s,p)=>s+p.rent,0);
+  const totalRentYr=totalRentWk*52;
+  const avgYield=totalValue?((totalRentYr/totalValue)*100):0;
+
+  let html='<div class="metrics-grid" style="margin-bottom:16px">';
+  html+='<div class="card metric-tile"><div class="metric-value">'+_properties.length+'</div><div class="metric-label">Total Properties</div></div>';
+  html+='<div class="card metric-tile"><div class="metric-value teal">'+owned.length+'</div><div class="metric-label">Owned</div></div>';
+  html+='<div class="card metric-tile"><div class="metric-value">$'+(totalValue>=1e6?(totalValue/1e6).toFixed(2)+'M':totalValue.toLocaleString())+'</div><div class="metric-label">Portfolio Value</div></div>';
+  html+='<div class="card metric-tile"><div class="metric-value teal">$'+fmt2(totalRentWk)+'</div><div class="metric-label">Rent /wk</div></div>';
+  html+='<div class="card metric-tile"><div class="metric-value" style="color:var(--amber)">'+avgYield.toFixed(1)+'%</div><div class="metric-label">Avg Yield</div></div>';
+  html+='</div>';
+
+  // Property cards
+  html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px">';
+  _properties.forEach(p=>{
+    const sc=statusColors[p.status]||'#96c7f2';
+    const mortgage=p.price&&p.deposit?(p.price-p.deposit):0;
+    const weeklyMortgage=mortgage&&p.rate?((mortgage*(p.rate/100/12))/(1-Math.pow(1+p.rate/100/12,-360)))*12/52:0;
+    const cashflow=p.rent-weeklyMortgage;
+    const yieldPct=p.price?((p.rent*52/p.price)*100):0;
+
+    html+='<div class="card" style="padding:16px;border-left:3px solid '+sc+'">';
+    html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">';
+    html+='<div><div style="font-size:0.85rem;font-weight:700;color:#fff">'+p.name+'</div>';
+    if(p.suburb)html+='<div style="font-size:0.65rem;color:var(--text-faint);margin-top:2px">📍 '+p.suburb+'</div>';
+    html+='</div>';
+    html+='<div style="display:flex;gap:6px;align-items:center">';
+    html+='<span style="padding:2px 8px;border-radius:4px;font-size:0.6rem;background:'+sc+'22;color:'+sc+';border:1px solid '+sc+'44">'+statusLabels[p.status]+'</span>';
+    html+='<span style="padding:2px 8px;border-radius:4px;font-size:0.6rem;background:rgba(255,255,255,0.06);color:var(--text-muted);border:1px solid rgba(255,255,255,0.08)">'+typeLabels[p.type]+'</span>';
+    html+='</div></div>';
+
+    // Specs
+    if(p.beds||p.baths||p.cars){
+      html+='<div style="display:flex;gap:12px;font-size:0.7rem;color:var(--text-secondary);margin-bottom:10px">';
+      if(p.beds)html+='<span>🛏 '+p.beds+'</span>';
+      if(p.baths)html+='<span>🚿 '+p.baths+'</span>';
+      if(p.cars)html+='<span>🚗 '+p.cars+'</span>';
+      html+='</div>';
+    }
+
+    // Financials
+    html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:10px;border-radius:8px;background:rgba(255,255,255,0.03);margin-bottom:8px">';
+    html+='<div style="text-align:center"><div style="font-size:0.55rem;color:var(--text-faint)">Price</div><div style="font-size:0.78rem;font-weight:700;color:#fff">$'+(p.price>=1e6?(p.price/1e6).toFixed(2)+'M':p.price?p.price.toLocaleString():'—')+'</div></div>';
+    html+='<div style="text-align:center"><div style="font-size:0.55rem;color:var(--text-faint)">Rent /wk</div><div style="font-size:0.78rem;font-weight:700;color:var(--teal)">$'+fmt2(p.rent)+'</div></div>';
+    html+='<div style="text-align:center"><div style="font-size:0.55rem;color:var(--text-faint)">Yield</div><div style="font-size:0.78rem;font-weight:700;color:var(--amber)">'+yieldPct.toFixed(1)+'%</div></div>';
+    html+='</div>';
+
+    if(mortgage>0&&p.rate){
+      html+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:10px;border-radius:8px;background:rgba(255,255,255,0.03);margin-bottom:8px">';
+      html+='<div style="text-align:center"><div style="font-size:0.55rem;color:var(--text-faint)">Mortgage</div><div style="font-size:0.78rem;font-weight:600;color:var(--text-secondary)">$'+mortgage.toLocaleString()+'</div></div>';
+      html+='<div style="text-align:center"><div style="font-size:0.55rem;color:var(--text-faint)">Repayment /wk</div><div style="font-size:0.78rem;font-weight:600;color:var(--red-soft)">$'+fmt2(weeklyMortgage)+'</div></div>';
+      html+='<div style="text-align:center"><div style="font-size:0.55rem;color:var(--text-faint)">Cashflow /wk</div><div style="font-size:0.78rem;font-weight:700;color:'+(cashflow>=0?'var(--teal)':'var(--red-soft)')+'">$'+fmt2(cashflow)+'</div></div>';
+      html+='</div>';
+    }
+
+    if(p.notes){
+      html+='<div style="font-size:0.68rem;color:var(--text-muted);padding:6px 0;border-top:1px solid rgba(255,255,255,0.04)">'+p.notes+'</div>';
+    }
+
+    html+='<div style="display:flex;gap:8px;margin-top:8px">';
+    html+='<button class="btn btn-ghost" onclick="showPropertyModal(\''+p.id+'\')" style="font-size:0.65rem;flex:1">Edit</button>';
+    if(p.url)html+='<a href="'+p.url+'" target="_blank" class="btn btn-ghost" style="font-size:0.65rem;text-decoration:none;text-align:center">🔗 Listing</a>';
+    html+='<button class="btn btn-ghost" onclick="deleteProperty(\''+p.id+'\')" style="font-size:0.65rem;color:var(--red-soft)">Delete</button>';
+    html+='</div>';
+    html+='</div>';
+  });
+  html+='</div>';
+
+  el.innerHTML=html;
+}
+
 function renderOverview(){
   const totalChecklistItems=_checklists.reduce((s,l)=>s+l.items.length,0);
   const doneChecklistItems=_checklists.reduce((s,l)=>s+l.items.filter(i=>i.done).length,0);
@@ -2380,6 +2581,28 @@ function renderOverview(){
     });
   } else {
     panels+='<div style="color:var(--text-faint);font-size:0.75rem;padding:8px 0">No goals yet</div>';
+  }
+  panels+='</div>';
+
+  // Properties snapshot
+  const ownedProps=_properties.filter(p=>p.status==='owned');
+  const propValue=ownedProps.reduce((s,p)=>s+p.price,0);
+  const propRentWk=ownedProps.reduce((s,p)=>s+p.rent,0);
+  panels+='<div class="card" style="cursor:pointer" onclick="switchTab(\'properties\')">';
+  panels+='<div class="card-header"><span class="card-title">🏠 Properties</span><span style="font-size:0.65rem;color:var(--text-faint)">'+_properties.length+' tracked</span></div>';
+  if(_properties.length){
+    panels+='<div style="display:flex;gap:12px;margin:10px 0">';
+    panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Owned</div><div style="font-weight:700;color:var(--teal)">'+ownedProps.length+'</div></div>';
+    panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Value</div><div style="font-weight:700;color:#fff">$'+(propValue>=1e6?(propValue/1e6).toFixed(2)+'M':propValue.toLocaleString())+'</div></div>';
+    panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Rent /wk</div><div style="font-weight:700;color:var(--teal)">$'+fmt2(propRentWk)+'</div></div>';
+    panels+='</div>';
+    _properties.slice(0,3).forEach(p=>{
+      const sc={researching:'#96c7f2',watching:'#e9c162',offer:'#f97316',owned:'#2dd4a8',passed:'#8b8b8b'}[p.status]||'#96c7f2';
+      panels+='<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:0.7rem;border-top:1px solid rgba(255,255,255,0.04)">';
+      panels+='<span style="color:var(--text-secondary)">'+p.name+'</span><span style="padding:1px 6px;border-radius:3px;font-size:0.55rem;background:'+sc+'22;color:'+sc+'">'+p.status+'</span></div>';
+    });
+  } else {
+    panels+='<div style="color:var(--text-faint);font-size:0.75rem;padding:8px 0">No properties yet</div>';
   }
   panels+='</div>';
 
