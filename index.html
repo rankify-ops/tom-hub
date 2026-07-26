@@ -1140,6 +1140,25 @@ let _weeklyIncome=2469.54;
 
 function fmtDate(d){if(!d)return'–';const p=d.split('-');return p[2]+'/'+p[1]+'/'+p[0].slice(2);}
 
+function advanceRenewals(){
+  const now=new Date();now.setHours(0,0,0,0);
+  _costTracking.forEach(c=>{
+    if(!c.renewal||c.status==='paused')return;
+    let d=new Date(c.renewal);
+    if(d>=now)return;
+    const cy=c.cycle;
+    while(d<now){
+      if(cy==='Weekly')d.setDate(d.getDate()+7);
+      else if(cy==='Fortnightly')d.setDate(d.getDate()+14);
+      else if(cy==='Monthly')d.setMonth(d.getMonth()+1);
+      else if(cy==='6 Monthly')d.setMonth(d.getMonth()+6);
+      else if(cy==='Annual')d.setFullYear(d.getFullYear()+1);
+      else break;
+    }
+    c.renewal=d.toISOString().split('T')[0];
+  });
+}
+
 function deriveCosts(c){
   let m=c.monthly;
   if(!m&&c.annual)m=c.annual/12;
@@ -1195,6 +1214,7 @@ let _finDueYear=new Date().getFullYear();
 
 function renderFinances(){
   const el=document.getElementById('finances-content');if(!el)return;
+  advanceRenewals();
 
   const weeklyIncome=_weeklyIncome;
   const monthlyIncome=weeklyIncome*52/12;
