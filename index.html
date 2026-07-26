@@ -1189,6 +1189,10 @@ function _initPieHover(id,data,total){
   });
 }
 
+let _finCatFilter='All';
+let _finDueMonth=new Date().getMonth();
+let _finDueYear=new Date().getFullYear();
+
 function renderFinances(){
   const el=document.getElementById('finances-content');if(!el)return;
 
@@ -1206,33 +1210,6 @@ function renderFinances(){
   const weeklyNet=weeklyIncome-totalWeekly-weeklyLiving;
   const monthlyNet=monthlyIncome-totalMonthly-monthlyLiving;
   const annualNet=annualIncome-totalAnnual-annualLiving;
-
-
-  let costHtml='<div class="card" style="margin-bottom:20px;padding:20px">';
-  costHtml+='<div class="card-header" style="margin-bottom:14px"><span class="card-title">Cost Tracking</span><span style="font-size:0.6rem;color:var(--text-faint);margin-left:8px">from ClickUp</span></div>';
-
-  costHtml+='<div class="metrics-grid" style="margin-bottom:16px;grid-template-columns:repeat(4,1fr)">';
-  costHtml+='<div class="metric-tile" style="padding:10px;grid-column:span 4"><div style="display:flex;justify-content:center;align-items:baseline;gap:6px"><div class="metric-value" style="font-size:1.3rem;color:var(--teal)">$'+fmt2(weeklyIncome)+'</div><div class="metric-label" style="font-size:0.6rem">/week net income</div></div></div>';
-
-  costHtml+='<div class="metric-tile" style="padding:10px"><div class="metric-value" style="font-size:0.95rem;color:var(--red-soft)">$'+fmt2(totalWeekly)+'</div><div class="metric-label">Weekly Costs</div></div>';
-  costHtml+='<div class="metric-tile" style="padding:10px"><div class="metric-value" style="font-size:0.95rem;color:var(--red-soft)">$'+fmt2(totalMonthly)+'</div><div class="metric-label">Monthly Costs</div></div>';
-  costHtml+='<div class="metric-tile" style="padding:10px"><div class="metric-value" style="font-size:0.95rem;color:var(--amber)">$'+fmt2(totalAnnual)+'</div><div class="metric-label">Annual Costs</div></div>';
-  costHtml+='<div class="metric-tile" style="padding:10px"><div class="metric-value" style="font-size:0.95rem">'+activeItems.length+' <span style="color:var(--text-faint);font-size:0.7rem">/ '+_costTracking.filter(c=>c.status==='paused').length+' paused</span></div><div class="metric-label">Subscriptions</div></div>';
-
-  costHtml+='<div class="metric-tile" style="padding:10px;grid-column:span 4;border-top:1px solid rgba(255,255,255,0.06);margin-top:4px;padding-top:12px"><div style="display:flex;justify-content:center;gap:24px">';
-  costHtml+='<div style="text-align:center"><div style="font-size:0.85rem;font-weight:600;color:var(--amber)">$'+fmt2(weeklyLiving)+'</div><div style="font-size:0.55rem;color:var(--text-faint);margin-top:2px">Living /week</div></div>';
-  costHtml+='<div style="text-align:center"><div style="font-size:0.85rem;font-weight:600;color:var(--amber)">$'+fmt2(monthlyLiving)+'</div><div style="font-size:0.55rem;color:var(--text-faint);margin-top:2px">Living /month</div></div>';
-  costHtml+='<div style="text-align:center"><div style="font-size:0.85rem;font-weight:600;color:var(--amber)">$'+fmt2(annualLiving)+'</div><div style="font-size:0.55rem;color:var(--text-faint);margin-top:2px">Living /year</div></div>';
-  costHtml+='</div><div style="font-size:0.5rem;color:var(--text-faint);text-align:center;margin-top:4px">Food, fuel & essentials estimate</div></div>';
-
-  costHtml+='<div class="metric-tile" style="padding:10px;grid-column:span 4;border-top:1px solid rgba(255,255,255,0.06);margin-top:4px;padding-top:12px"><div style="display:flex;justify-content:center;gap:24px">';
-  costHtml+='<div style="text-align:center"><div style="font-size:0.95rem;font-weight:700;color:'+(weeklyNet>=0?'var(--teal)':'var(--red-soft)')+'">$'+fmt2(weeklyNet)+'</div><div style="font-size:0.55rem;color:var(--text-faint);margin-top:2px">Surplus /week</div></div>';
-  costHtml+='<div style="text-align:center"><div style="font-size:0.95rem;font-weight:700;color:'+(monthlyNet>=0?'var(--teal)':'var(--red-soft)')+'">$'+fmt2(monthlyNet)+'</div><div style="font-size:0.55rem;color:var(--text-faint);margin-top:2px">Surplus /month</div></div>';
-  costHtml+='<div style="text-align:center"><div style="font-size:0.95rem;font-weight:700;color:'+(annualNet>=0?'var(--teal)':'var(--red-soft)')+'">$'+fmt2(annualNet)+'</div><div style="font-size:0.55rem;color:var(--text-faint);margin-top:2px">Surplus /year</div></div>';
-  costHtml+='</div></div>';
-  costHtml+='</div>';
-
-  costHtml+='</div>';
 
   const catGroups=[
     {label:'Investments',cats:['Investment'],color:'#e9c162',icon:'📈'},
@@ -1255,7 +1232,64 @@ function renderFinances(){
     grouped.push({label:'Other',cats:[],color:'#888',icon:'📋',items:derived,totalMonthly:totalM,totalAnnual:totalM*12,totalWeekly:totalM*12/52});
   }
 
-  // Pie chart
+  // Summary tiles
+  let h='<div class="metrics-grid" style="margin-bottom:16px;grid-template-columns:repeat(4,1fr)">';
+  h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:var(--teal)">$'+fmt2(monthlyIncome)+'</div><div class="metric-label">Monthly Income</div></div>';
+  h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:var(--red-soft)">$'+fmt2(totalMonthly+monthlyLiving)+'</div><div class="metric-label">Total Due /mo</div></div>';
+  h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:'+(monthlyNet>=0?'var(--teal)':'var(--red-soft)')+'">$'+fmt2(Math.abs(monthlyNet))+'</div><div class="metric-label">'+(monthlyNet>=0?'Surplus':'Deficit')+' /mo</div></div>';
+  h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem">'+activeItems.length+'</div><div class="metric-label">Active Subs</div></div>';
+  h+='</div>';
+
+  // Secondary summary row
+  h+='<div class="card" style="padding:14px;margin-bottom:16px"><div style="display:flex;justify-content:space-around;flex-wrap:wrap;gap:12px">';
+  h+='<div style="text-align:center"><div style="font-size:0.85rem;font-weight:600;color:var(--teal)">$'+fmt2(weeklyIncome)+'</div><div style="font-size:0.55rem;color:var(--text-faint)">Income /wk</div></div>';
+  h+='<div style="text-align:center"><div style="font-size:0.85rem;font-weight:600;color:var(--red-soft)">$'+fmt2(totalWeekly)+'</div><div style="font-size:0.55rem;color:var(--text-faint)">Subs /wk</div></div>';
+  h+='<div style="text-align:center"><div style="font-size:0.85rem;font-weight:600;color:var(--amber)">$'+fmt2(weeklyLiving)+'</div><div style="font-size:0.55rem;color:var(--text-faint)">Living /wk</div></div>';
+  h+='<div style="text-align:center"><div style="font-size:0.85rem;font-weight:600;color:'+(weeklyNet>=0?'var(--teal)':'var(--red-soft)')+'">$'+fmt2(Math.abs(weeklyNet))+'</div><div style="font-size:0.55rem;color:var(--text-faint)">Surplus /wk</div></div>';
+  h+='<div style="text-align:center"><div style="font-size:0.85rem;font-weight:600;color:var(--amber)">$'+fmt2(totalAnnual)+'</div><div style="font-size:0.55rem;color:var(--text-faint)">Subs /yr</div></div>';
+  h+='<div style="text-align:center"><div style="font-size:0.85rem;font-weight:600;color:'+(annualNet>=0?'var(--teal)':'var(--red-soft)')+'">$'+fmt2(Math.abs(annualNet))+'</div><div style="font-size:0.55rem;color:var(--text-faint)">Surplus /yr</div></div>';
+  h+='</div></div>';
+
+  // Due This Month section
+  const mNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const dueItems=_costTracking.filter(c=>{
+    if(c.status==='paused')return false;
+    if(!c.renewal)return c.cycle==='Monthly'||c.cycle==='Weekly'||c.cycle==='Fortnightly';
+    const rd=new Date(c.renewal);
+    if(c.cycle==='Monthly'||c.cycle==='Weekly'||c.cycle==='Fortnightly')return true;
+    if(c.cycle==='Annual')return rd.getMonth()===_finDueMonth;
+    if(c.cycle==='6 Monthly'){const m=rd.getMonth();return m===_finDueMonth||((m+6)%12)===_finDueMonth;}
+    return rd.getMonth()===_finDueMonth&&rd.getFullYear()===_finDueYear;
+  });
+  const dueTotal=dueItems.reduce((s,c)=>{const d=deriveCosts(c);return s+(c.cycle==='Annual'?d.annual:c.cycle==='6 Monthly'?d.sixMonth:d.monthly);},0);
+
+  h+='<div class="card" style="padding:20px;margin-bottom:16px">';
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">';
+  h+='<button onclick="_finDueMonth--;if(_finDueMonth<0){_finDueMonth=11;_finDueYear--;}renderFinances()" style="background:none;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:var(--text-secondary);padding:4px 10px;cursor:pointer;font-family:var(--font);font-size:0.7rem">← Prev</button>';
+  h+='<span style="font-size:0.9rem;font-weight:700;color:#fff">Due in '+mNames[_finDueMonth]+' '+_finDueYear+'</span>';
+  h+='<button onclick="_finDueMonth++;if(_finDueMonth>11){_finDueMonth=0;_finDueYear++;}renderFinances()" style="background:none;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:var(--text-secondary);padding:4px 10px;cursor:pointer;font-family:var(--font);font-size:0.7rem">Next →</button>';
+  h+='</div>';
+  h+='<div style="text-align:center;margin-bottom:14px"><span style="font-size:1.4rem;font-weight:700;color:var(--red-soft)">$'+fmt2(dueTotal)+'</span><span style="font-size:0.65rem;color:var(--text-faint);margin-left:6px">total due</span></div>';
+  if(dueItems.length){
+    h+='<div style="display:flex;flex-direction:column;gap:6px">';
+    dueItems.sort((a,b)=>{const da=deriveCosts(a),db=deriveCosts(b);return db.monthly-da.monthly;}).forEach(c=>{
+      const d=deriveCosts(c);
+      const amt=c.cycle==='Annual'?d.annual:c.cycle==='6 Monthly'?d.sixMonth:d.monthly;
+      const grp=catGroups.find(g=>g.cats.includes(c.category));
+      const col=grp?grp.color:'#888';
+      h+='<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.03)">';
+      h+='<div style="width:4px;height:28px;border-radius:2px;background:'+col+'"></div>';
+      h+='<div style="flex:1;min-width:0"><div style="font-size:0.75rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.name+'</div><div style="font-size:0.55rem;color:var(--text-faint)">'+c.cycle+(c.renewal?' · Renews '+fmtDate(c.renewal):'')+'</div></div>';
+      h+='<div style="font-size:0.8rem;font-weight:700;color:#fff">$'+fmt2(amt)+'</div>';
+      h+='</div>';
+    });
+    h+='</div>';
+  } else {
+    h+='<div style="text-align:center;font-size:0.75rem;color:var(--text-faint);padding:20px 0">No items due this month</div>';
+  }
+  h+='</div>';
+
+  // Category breakdown with percentage bars + pie chart grid
   const pieData=[...grouped.filter(g=>g.totalMonthly>0),{label:'Living Expenses',color:'#f97316',totalMonthly:monthlyLiving}];
   const pieTotal=pieData.reduce((s,d)=>s+d.totalMonthly,0);
   let angle=0;
@@ -1266,17 +1300,32 @@ function renderFinances(){
     return{...d,pct,startAngle,endAngle:angle};
   });
 
-  costHtml+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">';
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">';
 
-  // Pie chart card - interactive
+  // Percentage bars card
+  h+='<div class="card" style="padding:20px">';
+  h+='<div class="card-header" style="margin-bottom:14px"><span class="card-title">Category Breakdown</span></div>';
+  pieData.forEach(d=>{
+    const pct=Math.round(d.totalMonthly/pieTotal*100);
+    h+='<div style="margin-bottom:10px">';
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">';
+    h+='<span style="font-size:0.75rem;color:var(--text-secondary)">'+d.label+'</span>';
+    h+='<span style="font-size:0.75rem;font-weight:600;color:#fff">$'+fmt2(d.totalMonthly)+' <span style="color:var(--text-faint);font-weight:400;font-size:0.65rem">'+pct+'%</span></span>';
+    h+='</div>';
+    h+='<div style="height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+d.color+';border-radius:3px;transition:width 0.3s"></div></div>';
+    h+='</div>';
+  });
+  h+='</div>';
+
+  // Pie chart card
   const pieId='pie-'+Date.now();
-  costHtml+='<div class="card" style="padding:20px;grid-row:span 3">';
-  costHtml+='<div class="card-header" style="margin-bottom:12px"><span class="card-title">Cost Breakdown</span></div>';
-  costHtml+='<div style="position:relative;display:flex;justify-content:center">';
-  costHtml+='<svg id="'+pieId+'" viewBox="0 0 300 300" style="width:100%;max-width:400px;height:auto">';
+  h+='<div class="card" style="padding:20px">';
+  h+='<div class="card-header" style="margin-bottom:12px"><span class="card-title">Cost Breakdown</span></div>';
+  h+='<div style="position:relative;display:flex;justify-content:center">';
+  h+='<svg id="'+pieId+'" viewBox="0 0 300 300" style="width:100%;max-width:280px;height:auto">';
   slices.forEach((s,i)=>{
     if(s.pct<=0)return;
-    if(s.pct>=0.999){costHtml+='<circle cx="150" cy="150" r="120" fill="'+s.color+'" data-slice="'+i+'"/>';return;}
+    if(s.pct>=0.999){h+='<circle cx="150" cy="150" r="120" fill="'+s.color+'" data-slice="'+i+'"/>';return;}
     const r=120;
     const startRad=(s.startAngle-90)*Math.PI/180;
     const endRad=(s.endAngle-90)*Math.PI/180;
@@ -1284,171 +1333,72 @@ function renderFinances(){
     const x2=150+r*Math.cos(endRad),y2=150+r*Math.sin(endRad);
     const large=s.pct>0.5?1:0;
     const midAngle=((s.startAngle+s.endAngle)/2-90)*Math.PI/180;
-    costHtml+='<path d="M150,150 L'+x1.toFixed(2)+','+y1.toFixed(2)+' A'+r+','+r+' 0 '+large+',1 '+x2.toFixed(2)+','+y2.toFixed(2)+' Z" fill="'+s.color+'" stroke="rgba(0,0,0,0.4)" stroke-width="1" data-slice="'+i+'" data-mid="'+midAngle.toFixed(4)+'" style="cursor:pointer;transition:transform 0.2s,filter 0.2s;transform-origin:150px 150px"/>';
+    h+='<path d="M150,150 L'+x1.toFixed(2)+','+y1.toFixed(2)+' A'+r+','+r+' 0 '+large+',1 '+x2.toFixed(2)+','+y2.toFixed(2)+' Z" fill="'+s.color+'" stroke="rgba(0,0,0,0.4)" stroke-width="1" data-slice="'+i+'" data-mid="'+midAngle.toFixed(4)+'" style="cursor:pointer;transition:transform 0.2s,filter 0.2s;transform-origin:150px 150px"/>';
   });
-  costHtml+='<circle cx="150" cy="150" r="65" fill="var(--card-bg,#1a1a2e)" style="pointer-events:none"/>';
-  costHtml+='<text id="'+pieId+'-center-val" x="150" y="144" text-anchor="middle" fill="#fff" font-size="18" font-weight="700" style="pointer-events:none">$'+fmt2(pieTotal)+'</text>';
-  costHtml+='<text id="'+pieId+'-center-lbl" x="150" y="164" text-anchor="middle" fill="var(--text-faint)" font-size="10" style="pointer-events:none">/month total</text>';
-  costHtml+='</svg>';
-  costHtml+='<div id="'+pieId+'-tip" style="position:absolute;pointer-events:none;display:none;background:rgba(0,0,0,0.85);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 12px;font-size:0.75rem;color:#fff;white-space:nowrap;z-index:10;box-shadow:0 4px 20px rgba(0,0,0,0.4)"></div>';
-  costHtml+='</div>';
-
+  h+='<circle cx="150" cy="150" r="65" fill="var(--card-bg,#1a1a2e)" style="pointer-events:none"/>';
+  h+='<text id="'+pieId+'-center-val" x="150" y="144" text-anchor="middle" fill="#fff" font-size="18" font-weight="700" style="pointer-events:none">$'+fmt2(pieTotal)+'</text>';
+  h+='<text id="'+pieId+'-center-lbl" x="150" y="164" text-anchor="middle" fill="var(--text-faint)" font-size="10" style="pointer-events:none">/month total</text>';
+  h+='</svg>';
+  h+='<div id="'+pieId+'-tip" style="position:absolute;pointer-events:none;display:none;background:rgba(0,0,0,0.85);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 12px;font-size:0.75rem;color:#fff;white-space:nowrap;z-index:10;box-shadow:0 4px 20px rgba(0,0,0,0.4)"></div>';
+  h+='</div>';
   // Pie legend
-  costHtml+='<div style="display:flex;flex-direction:column;gap:8px;margin-top:16px">';
+  h+='<div style="display:flex;flex-direction:column;gap:4px;margin-top:12px">';
   pieData.forEach((d,i)=>{
     const pct=Math.round(d.totalMonthly/pieTotal*100);
-    costHtml+='<div data-legend="'+i+'" style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;transition:background 0.2s" onmouseenter="pieHover('+i+')" onmouseleave="pieUnhover()">';
-    costHtml+='<div style="width:12px;height:12px;border-radius:3px;background:'+d.color+';flex-shrink:0"></div>';
-    costHtml+='<div style="flex:1;font-size:0.75rem;color:var(--text-secondary)">'+d.label+'</div>';
-    costHtml+='<div style="font-size:0.75rem;font-weight:600;color:#fff">$'+fmt2(d.totalMonthly)+'</div>';
-    costHtml+='<div style="font-size:0.65rem;color:var(--text-faint);width:35px;text-align:right">'+pct+'%</div>';
-    costHtml+='</div>';
+    h+='<div data-legend="'+i+'" style="display:flex;align-items:center;gap:8px;padding:4px 8px;border-radius:6px;cursor:pointer;transition:background 0.2s" onmouseenter="pieHover('+i+')" onmouseleave="pieUnhover()">';
+    h+='<div style="width:10px;height:10px;border-radius:3px;background:'+d.color+';flex-shrink:0"></div>';
+    h+='<div style="flex:1;font-size:0.7rem;color:var(--text-secondary)">'+d.label+'</div>';
+    h+='<div style="font-size:0.65rem;color:var(--text-faint)">'+pct+'%</div>';
+    h+='</div>';
   });
-  costHtml+='</div></div>';
+  h+='</div>';
+  h+='</div>';
+  h+='</div>';
 
-  // Category cards
-  grouped.forEach(g=>{
-    if(!g.items.length)return;
-    costHtml+='<div class="card" style="padding:16px">';
-    costHtml+='<div class="card-header" style="margin-bottom:10px"><span class="card-title">'+g.icon+' '+g.label+'</span><span style="font-size:0.75rem;font-weight:700;color:'+g.color+'">$'+fmt2(g.totalMonthly)+'/mo</span></div>';
-    costHtml+='<div style="display:flex;gap:12px;margin-bottom:10px;font-size:0.6rem;color:var(--text-faint)">';
-    costHtml+='<span>$'+fmt2(g.totalWeekly)+'/wk</span>';
-    costHtml+='<span>$'+fmt2(g.totalAnnual)+'/yr</span>';
-    costHtml+='</div>';
-    costHtml+='<div style="display:flex;flex-direction:column;gap:4px">';
-    g.items.forEach(c=>{
-      const isPaused=c.status==='paused';
-      costHtml+='<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;background:rgba(255,255,255,0.03)'+(isPaused?';opacity:0.5':'')+'">';
-      costHtml+='<div style="flex:1;min-width:0">';
-      costHtml+='<div style="font-size:0.75rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.name+(isPaused?' <span style="color:var(--text-faint);font-weight:400;font-size:0.55rem">(PAUSED)</span>':'')+'</div>';
-      costHtml+='<div style="font-size:0.55rem;color:var(--text-muted);margin-top:1px">'+c.cycle+' · '+c.payment+(c.renewal?' · '+fmtDate(c.renewal):'')+'</div>';
-      costHtml+='</div>';
-      costHtml+='<div style="text-align:right;flex-shrink:0">';
-      costHtml+='<div style="font-size:0.75rem;font-weight:700;color:#fff">$'+fmt2(c.monthly)+'<span style="font-size:0.5rem;color:var(--text-faint);font-weight:400">/mo</span></div>';
-      costHtml+='<div style="font-size:0.5rem;color:var(--text-faint)">$'+fmt2(c.weekly)+'/wk · $'+fmt2(c.annual)+'/yr</div>';
-      costHtml+='</div>';
-      costHtml+='</div>';
-    });
-    costHtml+='</div></div>';
+  // Category filter tabs
+  const filterTabs=['All','Active','Paused',...catGroups.map(g=>g.label)];
+  h+='<div class="card" style="padding:20px">';
+  h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">';
+  filterTabs.forEach(tab=>{
+    const isActive=_finCatFilter===tab;
+    h+='<button onclick="_finCatFilter=\''+tab+'\';renderFinances()" style="padding:6px 14px;border-radius:6px;font-size:0.7rem;font-family:var(--font);cursor:pointer;border:1px solid '+(isActive?'var(--teal)':'rgba(255,255,255,0.1)')+';background:'+(isActive?'var(--teal)':'none')+';color:'+(isActive?'#000':'var(--text-secondary)')+';font-weight:'+(isActive?'600':'400')+';transition:all 0.2s">'+tab+'</button>';
   });
+  h+='</div>';
 
-  costHtml+='</div>';
+  // Filtered subscription table
+  let filteredItems=_costTracking;
+  if(_finCatFilter==='Active')filteredItems=_costTracking.filter(c=>c.status==='active');
+  else if(_finCatFilter==='Paused')filteredItems=_costTracking.filter(c=>c.status==='paused');
+  else if(_finCatFilter!=='All'){
+    const grp=catGroups.find(g=>g.label===_finCatFilter);
+    if(grp)filteredItems=_costTracking.filter(c=>grp.cats.includes(c.category));
+  }
 
-  // Full list table
-  costHtml+='<div class="card" style="margin-top:16px;padding:20px">';
-  costHtml+='<div class="card-header" style="margin-bottom:12px"><span class="card-title">All Subscriptions</span><span style="font-size:0.6rem;color:var(--text-faint);margin-left:8px">'+_costTracking.length+' items</span></div>';
-  costHtml+='<div style="overflow-x:auto">';
-  costHtml+='<table class="data-table" style="min-width:900px;width:100%"><thead><tr>';
-  costHtml+='<th>Name</th><th>Category</th><th>Billing Cycle</th><th style="text-align:right">Weekly</th><th style="text-align:right">Monthly</th><th style="text-align:right">6 Monthly</th><th style="text-align:right">Annual</th><th>Renewal</th><th>Payment Method</th><th>Login</th>';
-  costHtml+='</tr></thead><tbody>';
-  _costTracking.forEach(c=>{
+  h+='<div style="font-size:0.65rem;color:var(--text-faint);margin-bottom:10px">'+filteredItems.length+' items</div>';
+  h+='<div style="overflow-x:auto">';
+  h+='<table class="data-table" style="min-width:900px;width:100%"><thead><tr>';
+  h+='<th>Name</th><th>Category</th><th>Cycle</th><th style="text-align:right">Weekly</th><th style="text-align:right">Monthly</th><th style="text-align:right">Annual</th><th>Renewal</th><th>Payment</th><th>Login</th>';
+  h+='</tr></thead><tbody>';
+  filteredItems.forEach(c=>{
     const d=deriveCosts(c);
     const isPaused=c.status==='paused';
-    costHtml+='<tr style="'+(isPaused?'opacity:0.5':'')+'">';
-    costHtml+='<td style="color:#fff;font-weight:600;white-space:nowrap">'+c.name+(isPaused?' <span style="color:var(--text-faint);font-weight:400;font-size:0.55rem">(PAUSED)</span>':'')+'</td>';
-    costHtml+='<td>'+(c.category?'<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.65rem;background:'+c.catColor+'22;color:'+c.catColor+';border:1px solid '+c.catColor+'44">'+c.category+'</span>':'–')+'</td>';
+    h+='<tr style="'+(isPaused?'opacity:0.5':'')+'">';
+    h+='<td style="color:#fff;font-weight:600;white-space:nowrap">'+c.name+(isPaused?' <span style="color:var(--text-faint);font-weight:400;font-size:0.55rem">(PAUSED)</span>':'')+'</td>';
+    h+='<td>'+(c.category?'<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.65rem;background:'+(c.catColor||'#888')+'22;color:'+(c.catColor||'#888')+';border:1px solid '+(c.catColor||'#888')+'44">'+c.category+'</span>':'–')+'</td>';
     const cycleColors={Weekly:'#FF4081',Fortnightly:'#92ceac','6 Monthly':'#aec0f5'};
     const cc=cycleColors[c.cycle]||'#7C4DFF';
-    costHtml+='<td><span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.65rem;background:'+cc+'22;color:'+cc+';border:1px solid '+cc+'44">'+c.cycle+'</span></td>';
-    costHtml+='<td style="text-align:right">$'+fmt2(d.weekly)+'</td>';
-    costHtml+='<td style="text-align:right;font-weight:600">$'+fmt2(d.monthly)+'</td>';
-    costHtml+='<td style="text-align:right">$'+fmt2(d.sixMonth)+'</td>';
-    costHtml+='<td style="text-align:right;font-weight:600">$'+fmt2(d.annual)+'</td>';
-    costHtml+='<td style="white-space:nowrap">'+fmtDate(c.renewal)+'</td>';
-    costHtml+='<td><span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.65rem;background:'+c.payColor+'22;color:'+c.payColor+';border:1px solid '+c.payColor+'44;white-space:nowrap">'+c.payment+'</span></td>';
-    costHtml+='<td>'+(c.url?'<a href="'+c.url+'" target="_blank" style="color:var(--teal);font-size:0.65rem;text-decoration:none" title="'+c.url+'">🔗</a>':'–')+'</td>';
-    costHtml+='</tr>';
+    h+='<td><span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.65rem;background:'+cc+'22;color:'+cc+';border:1px solid '+cc+'44">'+c.cycle+'</span></td>';
+    h+='<td style="text-align:right">$'+fmt2(d.weekly)+'</td>';
+    h+='<td style="text-align:right;font-weight:600">$'+fmt2(d.monthly)+'</td>';
+    h+='<td style="text-align:right;font-weight:600">$'+fmt2(d.annual)+'</td>';
+    h+='<td style="white-space:nowrap">'+fmtDate(c.renewal)+'</td>';
+    h+='<td><span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.65rem;background:'+(c.payColor||'#888')+'22;color:'+(c.payColor||'#888')+';border:1px solid '+(c.payColor||'#888')+'44;white-space:nowrap">'+c.payment+'</span></td>';
+    h+='<td>'+(c.url?'<a href="'+c.url+'" target="_blank" style="color:var(--teal);font-size:0.65rem;text-decoration:none" title="'+c.url+'">🔗</a>':'–')+'</td>';
+    h+='</tr>';
   });
-  costHtml+='</tbody></table></div></div>';
+  h+='</tbody></table></div></div>';
 
-  if(!_finances.length){
-    el.innerHTML=costHtml;
-    _initPieHover(pieId,pieData,pieTotal);
-    return;
-  }
-  const sorted=[..._finances].sort((a,b)=>new Date(b.date)-new Date(a.date));
-  const totalIncome=_finances.filter(e=>e.type==='income').reduce((s,e)=>s+e.amount,0);
-  const totalExpense=_finances.filter(e=>e.type==='expense').reduce((s,e)=>s+e.amount,0);
-  const balance=totalIncome-totalExpense;
-
-  // Monthly summary
-  const months={};
-  _finances.forEach(e=>{
-    const m=e.date.substring(0,7);
-    if(!months[m])months[m]={income:0,expense:0};
-    months[m][e.type]+=e.amount;
-  });
-  const monthKeys=Object.keys(months).sort().slice(-6);
-  const maxMonth=Math.max(...monthKeys.map(m=>Math.max(months[m].income,months[m].expense)),1);
-
-  // Category breakdown (expenses)
-  const cats={};
-  _finances.filter(e=>e.type==='expense').forEach(e=>{cats[e.category]=(cats[e.category]||0)+e.amount});
-  const catEntries=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
-
-  let html='<div class="metrics-grid" style="margin-bottom:16px">';
-  html+='<div class="card metric-tile"><div class="metric-value teal">'+$(totalIncome)+'</div><div class="metric-label">Total Income</div></div>';
-  html+='<div class="card metric-tile"><div class="metric-value" style="color:var(--red-soft)">'+$(totalExpense)+'</div><div class="metric-label">Total Expenses</div></div>';
-  html+='<div class="card metric-tile"><div class="metric-value" style="color:'+(balance>=0?'var(--teal)':'var(--red-soft)')+'">'+$(Math.abs(balance))+'</div><div class="metric-label">'+(balance>=0?'Net Positive':'Net Negative')+'</div></div>';
-  html+='<div class="card metric-tile"><div class="metric-value">'+_finances.length+'</div><div class="metric-label">Entries</div></div>';
-  html+='</div>';
-
-  html+='<div class="finance-grid" style="margin-bottom:16px">';
-  // Monthly bar chart
-  html+='<div class="card"><div class="card-header"><span class="card-title">Monthly Summary</span></div>';
-  html+='<div style="display:flex;align-items:flex-end;gap:8px;height:120px;padding-top:10px">';
-  monthKeys.forEach(m=>{
-    const inc=months[m].income;
-    const exp=months[m].expense;
-    const incH=Math.round((inc/maxMonth)*100);
-    const expH=Math.round((exp/maxMonth)*100);
-    const label=m.substring(5);
-    html+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">';
-    html+='<div style="display:flex;gap:2px;align-items:flex-end;height:100px;width:100%">';
-    html+='<div style="flex:1;height:'+incH+'px;background:var(--teal);border-radius:3px 3px 0 0;min-height:2px" title="Income: '+$(inc)+'"></div>';
-    html+='<div style="flex:1;height:'+expH+'px;background:var(--red-soft);border-radius:3px 3px 0 0;min-height:2px" title="Expense: '+$(exp)+'"></div>';
-    html+='</div>';
-    html+='<div style="font-size:0.55rem;color:var(--text-faint)">'+label+'</div>';
-    html+='</div>';
-  });
-  html+='</div>';
-  html+='<div style="display:flex;gap:12px;margin-top:8px;font-size:0.6rem">';
-  html+='<span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--teal)"></span><span style="color:var(--text-muted)">Income</span></span>';
-  html+='<span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:var(--red-soft)"></span><span style="color:var(--text-muted)">Expense</span></span>';
-  html+='</div></div>';
-
-  // Category breakdown
-  html+='<div class="card"><div class="card-header"><span class="card-title">Expense Categories</span></div>';
-  if(catEntries.length){
-    catEntries.forEach(([cat,amt])=>{
-      const pct=Math.round((amt/totalExpense)*100);
-      html+='<div style="margin-bottom:8px">';
-      html+='<div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:3px"><span style="color:var(--text-secondary)">'+cat+'</span><span style="color:#fff;font-weight:600">'+$(amt)+' <span style="color:var(--text-faint);font-weight:400">'+pct+'%</span></span></div>';
-      html+='<div class="progress-bar" style="height:4px"><div class="progress-fill" style="width:'+pct+'%"></div></div>';
-      html+='</div>';
-    });
-  } else {
-    html+='<div style="font-size:0.78rem;color:var(--text-faint)">No expenses recorded</div>';
-  }
-  html+='</div></div>';
-
-  // Transactions table
-  html+='<div class="card" style="margin-top:0"><div class="card-header"><span class="card-title">All Transactions</span></div>';
-  html+='<table class="data-table"><thead><tr><th>Date</th><th>Description</th><th>Category</th><th style="text-align:right">Amount</th><th></th></tr></thead><tbody>';
-  sorted.forEach(entry=>{
-    const isIncome=entry.type==='income';
-    const amtCol=isIncome?'var(--teal)':'var(--red-soft)';
-    const sign=isIncome?'+':'-';
-    html+='<tr>';
-    html+='<td>'+fmtShort(entry.date)+'</td>';
-    html+='<td style="color:#fff">'+entry.description+'</td>';
-    html+='<td><span class="content-tag">'+entry.category+'</span></td>';
-    html+='<td style="text-align:right;color:'+amtCol+';font-weight:600">'+sign+$(entry.amount)+'</td>';
-    html+='<td style="text-align:right"><button onclick="showFinanceModal(\''+entry.id+'\')" style="padding:2px 6px;border-radius:4px;background:none;border:1px solid rgba(255,255,255,0.06);color:var(--text-faint);font-size:0.55rem;cursor:pointer;font-family:var(--font);margin-right:4px">Edit</button><button onclick="deleteFinance(\''+entry.id+'\')" style="padding:2px 6px;border-radius:4px;background:none;border:1px solid rgba(239,68,68,0.15);color:var(--red-soft);font-size:0.55rem;cursor:pointer;font-family:var(--font)">✕</button></td>';
-    html+='</tr>';
-  });
-  html+='</tbody></table></div>';
-  el.innerHTML=costHtml+html;
+  el.innerHTML=h;
   _initPieHover(pieId,pieData,pieTotal);
 }
 
