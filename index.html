@@ -1263,33 +1263,7 @@ function renderFinances(){
   });
   const dueTotal=dueItems.reduce((s,c)=>{const d=deriveCosts(c);return s+(c.cycle==='Annual'?d.annual:c.cycle==='6 Monthly'?d.sixMonth:d.monthly);},0);
 
-  h+='<div class="card" style="padding:20px;margin-bottom:16px">';
-  h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">';
-  h+='<button onclick="_finDueMonth--;if(_finDueMonth<0){_finDueMonth=11;_finDueYear--;}renderFinances()" style="background:none;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:var(--text-secondary);padding:4px 10px;cursor:pointer;font-family:var(--font);font-size:0.7rem">← Prev</button>';
-  h+='<span style="font-size:0.9rem;font-weight:700;color:#fff">Due in '+mNames[_finDueMonth]+' '+_finDueYear+'</span>';
-  h+='<button onclick="_finDueMonth++;if(_finDueMonth>11){_finDueMonth=0;_finDueYear++;}renderFinances()" style="background:none;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:var(--text-secondary);padding:4px 10px;cursor:pointer;font-family:var(--font);font-size:0.7rem">Next →</button>';
-  h+='</div>';
-  h+='<div style="text-align:center;margin-bottom:14px"><span style="font-size:1.4rem;font-weight:700;color:var(--red-soft)">$'+fmt2(dueTotal)+'</span><span style="font-size:0.65rem;color:var(--text-faint);margin-left:6px">total due</span></div>';
-  if(dueItems.length){
-    h+='<div style="display:flex;flex-direction:column;gap:6px">';
-    dueItems.sort((a,b)=>{const da=deriveCosts(a),db=deriveCosts(b);return db.monthly-da.monthly;}).forEach(c=>{
-      const d=deriveCosts(c);
-      const amt=c.cycle==='Annual'?d.annual:c.cycle==='6 Monthly'?d.sixMonth:d.monthly;
-      const grp=catGroups.find(g=>g.cats.includes(c.category));
-      const col=grp?grp.color:'#888';
-      h+='<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.03)">';
-      h+='<div style="width:4px;height:28px;border-radius:2px;background:'+col+'"></div>';
-      h+='<div style="flex:1;min-width:0"><div style="font-size:0.75rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.name+'</div><div style="font-size:0.55rem;color:var(--text-faint)">'+c.cycle+(c.renewal?' · Renews '+fmtDate(c.renewal):'')+'</div></div>';
-      h+='<div style="font-size:0.8rem;font-weight:700;color:#fff">$'+fmt2(amt)+'</div>';
-      h+='</div>';
-    });
-    h+='</div>';
-  } else {
-    h+='<div style="text-align:center;font-size:0.75rem;color:var(--text-faint);padding:20px 0">No items due this month</div>';
-  }
-  h+='</div>';
-
-  // Category breakdown with percentage bars + pie chart grid
+  // Pie data setup
   const pieData=[...grouped.filter(g=>g.totalMonthly>0),{label:'Living Expenses',color:'#f97316',totalMonthly:monthlyLiving}];
   const pieTotal=pieData.reduce((s,d)=>s+d.totalMonthly,0);
   let angle=0;
@@ -1300,27 +1274,13 @@ function renderFinances(){
     return{...d,pct,startAngle,endAngle:angle};
   });
 
+  // Two-column: Pie chart (left) + Due This Month (right)
   h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">';
 
-  // Percentage bars card
-  h+='<div class="card" style="padding:20px">';
-  h+='<div class="card-header" style="margin-bottom:14px"><span class="card-title">Category Breakdown</span></div>';
-  pieData.forEach(d=>{
-    const pct=Math.round(d.totalMonthly/pieTotal*100);
-    h+='<div style="margin-bottom:10px">';
-    h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">';
-    h+='<span style="font-size:0.75rem;color:var(--text-secondary)">'+d.label+'</span>';
-    h+='<span style="font-size:0.75rem;font-weight:600;color:#fff">$'+fmt2(d.totalMonthly)+' <span style="color:var(--text-faint);font-weight:400;font-size:0.65rem">'+pct+'%</span></span>';
-    h+='</div>';
-    h+='<div style="height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+d.color+';border-radius:3px;transition:width 0.3s"></div></div>';
-    h+='</div>';
-  });
-  h+='</div>';
-
-  // Pie chart card
+  // LEFT: Monthly Subscription Breakdown (pie + legend)
   const pieId='pie-'+Date.now();
   h+='<div class="card" style="padding:20px">';
-  h+='<div class="card-header" style="margin-bottom:12px"><span class="card-title">Cost Breakdown</span></div>';
+  h+='<div class="card-header" style="margin-bottom:12px"><span class="card-title">Monthly Subscription Breakdown</span></div>';
   h+='<div style="position:relative;display:flex;justify-content:center">';
   h+='<svg id="'+pieId+'" viewBox="0 0 300 300" style="width:100%;max-width:280px;height:auto">';
   slices.forEach((s,i)=>{
@@ -1341,17 +1301,49 @@ function renderFinances(){
   h+='</svg>';
   h+='<div id="'+pieId+'-tip" style="position:absolute;pointer-events:none;display:none;background:rgba(0,0,0,0.85);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 12px;font-size:0.75rem;color:#fff;white-space:nowrap;z-index:10;box-shadow:0 4px 20px rgba(0,0,0,0.4)"></div>';
   h+='</div>';
-  // Pie legend
-  h+='<div style="display:flex;flex-direction:column;gap:4px;margin-top:12px">';
+  // Legend with percentage bars
+  h+='<div style="display:flex;flex-direction:column;gap:8px;margin-top:16px">';
   pieData.forEach((d,i)=>{
     const pct=Math.round(d.totalMonthly/pieTotal*100);
-    h+='<div data-legend="'+i+'" style="display:flex;align-items:center;gap:8px;padding:4px 8px;border-radius:6px;cursor:pointer;transition:background 0.2s" onmouseenter="pieHover('+i+')" onmouseleave="pieUnhover()">';
+    h+='<div data-legend="'+i+'" onmouseenter="pieHover('+i+')" onmouseleave="pieUnhover()" style="cursor:pointer">';
+    h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">';
     h+='<div style="width:10px;height:10px;border-radius:3px;background:'+d.color+';flex-shrink:0"></div>';
     h+='<div style="flex:1;font-size:0.7rem;color:var(--text-secondary)">'+d.label+'</div>';
-    h+='<div style="font-size:0.65rem;color:var(--text-faint)">'+pct+'%</div>';
+    h+='<div style="font-size:0.7rem;font-weight:600;color:#fff">$'+fmt2(d.totalMonthly)+'</div>';
+    h+='<div style="font-size:0.6rem;color:var(--text-faint);width:30px;text-align:right">'+pct+'%</div>';
+    h+='</div>';
+    h+='<div style="height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;margin-left:18px"><div style="height:100%;width:'+pct+'%;background:'+d.color+';border-radius:2px"></div></div>';
     h+='</div>';
   });
   h+='</div>';
+  h+='</div>';
+
+  // RIGHT: Due This Month
+  h+='<div class="card" style="padding:20px">';
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">';
+  h+='<span style="font-size:0.9rem;font-weight:700;color:#fff">Due in '+mNames[_finDueMonth]+'</span>';
+  h+='<div style="display:flex;align-items:center;gap:8px">';
+  h+='<button onclick="_finDueMonth--;if(_finDueMonth<0){_finDueMonth=11;_finDueYear--;}renderFinances()" style="background:none;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:var(--text-secondary);padding:4px 10px;cursor:pointer;font-family:var(--font);font-size:0.7rem">←</button>';
+  h+='<button onclick="_finDueMonth++;if(_finDueMonth>11){_finDueMonth=0;_finDueYear++;}renderFinances()" style="background:none;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:var(--text-secondary);padding:4px 10px;cursor:pointer;font-family:var(--font);font-size:0.7rem">→</button>';
+  h+='<span style="font-size:1.1rem;font-weight:700;color:var(--red-soft)">$'+fmt2(dueTotal)+'</span>';
+  h+='</div></div>';
+  if(dueItems.length){
+    h+='<div style="display:flex;flex-direction:column;gap:6px;max-height:500px;overflow-y:auto">';
+    dueItems.sort((a,b)=>{const da=deriveCosts(a),db=deriveCosts(b);return db.monthly-da.monthly;}).forEach(c=>{
+      const d=deriveCosts(c);
+      const amt=c.cycle==='Annual'?d.annual:c.cycle==='6 Monthly'?d.sixMonth:d.monthly;
+      const grp=catGroups.find(g=>g.cats.includes(c.category));
+      const col=grp?grp.color:'#888';
+      h+='<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.03)">';
+      h+='<div style="width:4px;height:28px;border-radius:2px;background:'+col+'"></div>';
+      h+='<div style="flex:1;min-width:0"><div style="font-size:0.75rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.name+'</div><div style="font-size:0.55rem;color:var(--text-faint)">'+c.cycle+(c.renewal?' · '+fmtDate(c.renewal):'')+(c.payment?' · '+c.payment:'')+'</div></div>';
+      h+='<div style="font-size:0.8rem;font-weight:700;color:#fff">$'+fmt2(amt)+'</div>';
+      h+='</div>';
+    });
+    h+='</div>';
+  } else {
+    h+='<div style="text-align:center;font-size:0.75rem;color:var(--text-faint);padding:20px 0">No items due this month</div>';
+  }
   h+='</div>';
   h+='</div>';
 
