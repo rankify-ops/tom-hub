@@ -254,7 +254,7 @@ select.form-input{cursor:pointer;background:#1a1a1a}
       <a href="https://mail.google.com" class="sidebar-link" target="_blank">✉ Gmail</a>
       <a href="https://calendar.google.com" class="sidebar-link" target="_blank">▤ Calendar</a>
     </div>
-    <div class="sidebar-footer"><div class="domain">tomshub.vercel.app</div><div style="margin-top:3px">Tom's Hub © 2026</div></div>
+    <div class="sidebar-footer"><div class="domain">tomshub.vercel.app</div><div style="margin-top:3px">Tom's Hub © <script>document.write(new Date().getFullYear())</script></div></div>
   </aside>
 
   <main class="main">
@@ -314,7 +314,7 @@ select.form-input{cursor:pointer;background:#1a1a1a}
     <!-- ═══ GOALS TAB ═══ -->
     <div class="tab-panel" id="tab-goals">
       <div class="section-header">
-        <h2>2026 Goals</h2>
+        <h2 id="goals-year-heading">Goals</h2>
         <div style="display:flex;gap:8px;align-items:center">
           <div class="updated" id="goals-updated"></div>
           <button class="btn btn-ghost" onclick="loadGoals()" style="font-size:0.68rem">Refresh</button>
@@ -972,6 +972,7 @@ function apply2026Statuses(statuses){
 
 function renderGoals(){
   const el=document.getElementById('goals-content');if(!el)return;
+  const yh=document.getElementById('goals-year-heading');if(yh)yh.textContent=new Date().getFullYear()+' Goals';
 
   const allItems=_2026Goals.flatMap(c=>c.items);
   const total=allItems.length;
@@ -1061,7 +1062,7 @@ async function loadFinances(){
       }else{
         _costTracking=[..._defaultCosts];
         _weeklyIncome=2469.54;
-        saveCostTracking();
+        advanceRenewals();
       }
       renderFinances();
     }
@@ -1142,6 +1143,7 @@ function fmtDate(d){if(!d)return'–';const p=d.split('-');return p[2]+'/'+p[1]+
 
 function advanceRenewals(){
   const now=new Date();now.setHours(0,0,0,0);
+  let changed=false;
   _costTracking.forEach(c=>{
     if(!c.renewal||c.status==='paused')return;
     let d=new Date(c.renewal);
@@ -1156,7 +1158,9 @@ function advanceRenewals(){
       else break;
     }
     c.renewal=d.toISOString().split('T')[0];
+    changed=true;
   });
+  if(changed)saveCostTracking();
 }
 
 function deriveCosts(c){
@@ -1208,6 +1212,7 @@ function _initPieHover(id,data,total){
   });
 }
 
+const _weeklyLiving=350;
 let _finCatFilter='All';
 let _finDueMonth=new Date().getMonth();
 let _finDueYear=new Date().getFullYear();
@@ -1224,7 +1229,7 @@ function renderFinances(){
   const totalMonthly=activeDerived.reduce((s,d)=>s+d.monthly,0);
   const totalWeekly=activeDerived.reduce((s,d)=>s+d.weekly,0);
   const totalAnnual=activeDerived.reduce((s,d)=>s+d.annual,0);
-  const weeklyLiving=350;
+  const weeklyLiving=_weeklyLiving;
   const monthlyLiving=weeklyLiving*52/12;
   const annualLiving=weeklyLiving*52;
   const weeklyNet=weeklyIncome-totalWeekly-weeklyLiving;
@@ -2633,14 +2638,22 @@ function renderOverview(){
   const totalChecklistItems=_checklists.reduce((s,l)=>s+l.items.length,0);
   const doneChecklistItems=_checklists.reduce((s,l)=>s+l.items.filter(i=>i.done).length,0);
   const checklistPct=totalChecklistItems?Math.round(doneChecklistItems/totalChecklistItems*100):0;
-  const activeGoals=_goals.filter(g=>g.status!=='Complete').length;
-  const completedGoals=_goals.filter(g=>g.status==='Complete').length;
-  const avgGoalProgress=_goals.length?Math.round(_goals.reduce((s,g)=>s+g.progress,0)/_goals.length):0;
+  const lifeGoalItems=_2026Goals.flatMap(c=>c.items);
+  const lifeGoalsDone=lifeGoalItems.filter(i=>i.status==='done').length;
+  const lifeGoalsTotal=lifeGoalItems.length;
+  const customActive=_goals.filter(g=>g.status!=='Complete').length;
+  const customDone=_goals.filter(g=>g.status==='Complete').length;
+  const activeGoals=customActive+(lifeGoalsTotal-lifeGoalsDone);
+  const completedGoals=customDone+lifeGoalsDone;
+  const totalGoals=_goals.length+lifeGoalsTotal;
+  const customProg=_goals.length?_goals.reduce((s,g)=>s+g.progress,0):0;
+  const lifeProg=lifeGoalsTotal?(lifeGoalsDone/lifeGoalsTotal*100):0;
+  const avgGoalProgress=totalGoals?Math.round((customProg+lifeProg)/(totalGoals?_goals.length+(lifeGoalsTotal?1:0):1)):0;
 
   // Finance data
   const activeItems=_costTracking.filter(c=>c.status==='active');
   const totalMonthly=activeItems.reduce((s,c)=>s+deriveCosts(c).monthly,0);
-  const monthlyLiving=350*52/12;
+  const monthlyLiving=_weeklyLiving*52/12;
   const monthlyIncome=_weeklyIncome*52/12;
   const surplus=monthlyIncome-totalMonthly-monthlyLiving;
 
@@ -2717,7 +2730,7 @@ function renderOverview(){
 
   // Goals snapshot
   panels+='<div class="card" style="cursor:pointer" onclick="switchTab(\'goals\')">';
-  panels+='<div class="card-header"><span class="card-title">🎯 Goals</span><span style="font-size:0.65rem;color:var(--text-faint)">'+completedGoals+'/'+_goals.length+' complete</span></div>';
+  panels+='<div class="card-header"><span class="card-title">🎯 Goals</span><span style="font-size:0.65rem;color:var(--text-faint)">'+completedGoals+'/'+totalGoals+' complete</span></div>';
   if(_goals.length){
     panels+='<div style="margin:8px 0"><div style="height:6px;border-radius:3px;background:rgba(255,255,255,0.08);overflow:hidden"><div style="height:100%;width:'+avgGoalProgress+'%;background:var(--teal);border-radius:3px;transition:width 0.3s"></div></div>';
     panels+='<div style="text-align:right;font-size:0.6rem;color:var(--text-faint);margin-top:3px">Avg progress: '+avgGoalProgress+'%</div></div>';
