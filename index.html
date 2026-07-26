@@ -2523,8 +2523,18 @@ function deleteProperty(id){
 
 function renderProperties(){
   const el=document.getElementById('properties-content');
+
+  // 33/286 The Esplanade — always visible
+  const _domOwing=4545;
+  let html='<div class="card" style="padding:20px;margin-bottom:16px;border-left:3px solid var(--teal);cursor:pointer" onclick="document.getElementById(\'prop-info-modal\').style.display=\'flex\'">';
+  html+='<div style="display:flex;justify-content:space-between;align-items:center">';
+  html+='<div><div style="font-size:0.9rem;font-weight:700;color:#fff">🏠 33/286 The Esplanade, Miami</div>';
+  html+='<div style="font-size:0.65rem;color:var(--text-faint);margin-top:3px">Loan to Dom · Contacts · Property Info</div></div>';
+  html+='<div style="text-align:right"><div style="font-size:0.55rem;color:var(--text-faint)">Owing to Dom</div><div style="font-size:1rem;font-weight:700;color:var(--amber)">$'+fmt2(_domOwing)+'</div></div>';
+  html+='</div></div>';
+
   if(!_properties.length){
-    el.innerHTML='<div class="empty-state"><div class="icon">🏠</div><h3>No properties yet</h3><p>Add your first investment property to start tracking</p></div>';
+    el.innerHTML=html;
     return;
   }
 
@@ -2602,15 +2612,6 @@ function renderProperties(){
     html+='</div>';
   });
   html+='</div>';
-
-  // 33/286 The Esplanade — Property Info Card
-  html+='<div class="card" style="padding:20px;margin-top:16px;border-left:3px solid var(--teal);cursor:pointer" onclick="document.getElementById(\'prop-info-modal\').style.display=\'flex\'">';
-  html+='<div style="display:flex;justify-content:space-between;align-items:center">';
-  html+='<div><div style="font-size:0.9rem;font-weight:700;color:#fff">33/286 The Esplanade, Miami</div>';
-  html+='<div style="font-size:0.65rem;color:var(--text-faint);margin-top:3px">Loan to Dom · Contacts · Property Info</div></div>';
-  const _domOwing=4545;
-  html+='<div style="text-align:right"><div style="font-size:0.55rem;color:var(--text-faint)">Owing to Dom</div><div style="font-size:1rem;font-weight:700;color:var(--amber)">$'+fmt2(_domOwing)+'</div></div>';
-  html+='</div></div>';
 
   el.innerHTML=html;
 }
