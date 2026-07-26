@@ -435,6 +435,123 @@ select.form-input{cursor:pointer;background:#1a1a1a}
   </div>
 </div>
 
+<!-- ═══ PROPERTY INFO MODAL — 33/286 The Esplanade ═══ -->
+<div id="prop-info-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center" onclick="if(event.target===this)closePropInfo()">
+  <div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:28px;width:92%;max-width:700px;max-height:88vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <h3 style="margin:0;font-size:1.05rem;color:#fff">🏠 33/286 The Esplanade, Miami</h3>
+      <button onclick="closePropInfo()" style="background:none;border:none;color:var(--text-faint);font-size:1.3rem;cursor:pointer">&times;</button>
+    </div>
+
+    <!-- Dom Loan Tracker -->
+    <div style="margin-bottom:24px">
+      <div style="font-size:0.8rem;font-weight:700;color:#fff;margin-bottom:12px;display:flex;align-items:center;gap:8px">💰 Loan to Dom <span style="font-size:0.65rem;font-weight:400;color:var(--text-faint)">Property contribution balance</span></div>
+      <div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:16px;margin-bottom:12px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px">
+          <div style="text-align:center"><div style="font-size:0.55rem;color:var(--text-faint)">Dom Paid</div><div style="font-size:0.9rem;font-weight:700;color:#fff">$47,350.00</div></div>
+          <div style="text-align:center"><div style="font-size:0.55rem;color:var(--text-faint)">Paid Back (Offset)</div><div style="font-size:0.9rem;font-weight:700;color:var(--teal)">$21,169.70</div></div>
+          <div style="text-align:center"><div style="font-size:0.55rem;color:var(--text-faint)">Split Owing</div><div style="font-size:0.9rem;font-weight:700;color:var(--amber)">$13,090.00</div></div>
+        </div>
+      </div>
+      <div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.7">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;justify-content:space-between;padding:6px 10px;border-radius:6px;background:rgba(255,255,255,0.03)"><span style="color:var(--teal)">Paid $2,500</span><span style="color:var(--text-faint)">27 Jan 2026</span><span style="font-weight:600;color:#fff">→ $10,590.00</span></div>
+          <div style="display:flex;justify-content:space-between;padding:6px 10px;border-radius:6px;background:rgba(255,255,255,0.03)"><span style="color:var(--red-soft)">Europe flights borrowed +$2,655</span><span style="color:var(--text-faint)">22 Mar 2026</span><span style="font-weight:600;color:#fff">→ $13,245.00</span></div>
+          <div style="display:flex;justify-content:space-between;padding:6px 10px;border-radius:6px;background:rgba(255,255,255,0.03)"><span style="color:var(--teal)">Photo shoot discount -$200</span><span style="color:var(--text-faint)">22 Mar 2026</span><span style="font-weight:600;color:#fff">→ $13,045.00</span></div>
+          <div style="display:flex;justify-content:space-between;padding:6px 10px;border-radius:6px;background:rgba(255,255,255,0.03)"><span style="color:var(--teal)">Paid $4,000</span><span style="color:var(--text-faint)">1 Apr 2026</span><span style="font-weight:600;color:#fff">→ $9,045.00</span></div>
+          <div style="display:flex;justify-content:space-between;padding:6px 10px;border-radius:6px;background:rgba(255,255,255,0.03)"><span style="color:var(--teal)">Paid $2,500</span><span style="color:var(--text-faint)">18 Jun 2026</span><span style="font-weight:600;color:#fff">→ $6,545.00</span></div>
+          <div style="display:flex;justify-content:space-between;padding:6px 10px;border-radius:6px;background:rgba(45,212,168,0.08);border:1px solid rgba(45,212,168,0.15)"><span style="color:var(--teal)">Paid $2,000</span><span style="color:var(--text-faint)">12 Jul 2026</span><span style="font-weight:700;color:var(--amber)">→ $4,545.00</span></div>
+        </div>
+      </div>
+      <div style="margin-top:14px;padding:12px;border-radius:8px;background:rgba(233,193,98,0.08);border:1px solid rgba(233,193,98,0.15);text-align:center">
+        <div style="font-size:0.6rem;color:var(--text-faint)">Current Amount Owing to Dom</div>
+        <div style="font-size:1.4rem;font-weight:700;color:var(--amber)">$4,545.00</div>
+      </div>
+    </div>
+
+    <!-- Contacts -->
+    <div style="font-size:0.8rem;font-weight:700;color:#fff;margin-bottom:12px">📇 Property Contacts</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+
+      <!-- Real Estate Agent (Renting) -->
+      <div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:14px">
+        <div style="font-size:0.6rem;color:var(--teal);font-weight:600;margin-bottom:6px">RENTAL AGENT</div>
+        <div style="font-size:0.8rem;font-weight:700;color:#fff">Jessica Robertson</div>
+        <div style="font-size:0.65rem;color:var(--text-faint);margin-bottom:8px">New Client Manager — PRD Burleigh Heads</div>
+        <div style="display:flex;flex-direction:column;gap:4px;font-size:0.65rem">
+          <a href="tel:0423522274" style="color:var(--text-secondary);text-decoration:none">📞 0423 522 274</a>
+          <a href="mailto:PRD@BURLEIGHHEADS.COM.AU" style="color:var(--teal);text-decoration:none">✉ PRD@BURLEIGHHEADS.COM.AU</a>
+        </div>
+      </div>
+
+      <!-- Real Estate Agent (Sale) -->
+      <div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:14px">
+        <div style="font-size:0.6rem;color:var(--amber);font-weight:600;margin-bottom:6px">SALE AGENT</div>
+        <div style="font-size:0.8rem;font-weight:700;color:#fff">Vince Cosentino</div>
+        <div style="font-size:0.65rem;color:var(--text-faint);margin-bottom:8px">Crasto Properties</div>
+        <div style="display:flex;flex-direction:column;gap:4px;font-size:0.65rem">
+          <a href="tel:0418197592" style="color:var(--text-secondary);text-decoration:none">📞 0418 197 592</a>
+          <a href="mailto:vincecosentino@crasto.com.au" style="color:var(--teal);text-decoration:none">✉ vincecosentino@crasto.com.au</a>
+          <a href="https://www.crasto.com.au" target="_blank" style="color:var(--text-faint);text-decoration:none">🌐 crasto.com.au</a>
+        </div>
+      </div>
+
+      <!-- Body Corp -->
+      <div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:14px">
+        <div style="font-size:0.6rem;color:#b6b6ff;font-weight:600;margin-bottom:6px">BODY CORPORATE</div>
+        <div style="font-size:0.8rem;font-weight:700;color:#fff">Montarna Clancy King</div>
+        <div style="font-size:0.65rem;color:var(--text-faint);margin-bottom:8px">Strata Assistant — Capitol Body Corporate</div>
+        <div style="display:flex;flex-direction:column;gap:4px;font-size:0.65rem">
+          <a href="tel:0736223900" style="color:var(--text-secondary);text-decoration:none">📞 07 3622 3900</a>
+          <a href="mailto:montarna.clancyking@capitolbca.com.au" style="color:var(--teal);text-decoration:none">✉ montarna.clancyking@capitolbca.com.au</a>
+          <a href="https://www.capitolbca.com.au" target="_blank" style="color:var(--text-faint);text-decoration:none">🌐 capitolbca.com.au</a>
+          <span style="color:var(--red-soft);font-size:0.6rem;margin-top:4px">🚨 After hours: 1300 015 597</span>
+        </div>
+      </div>
+
+      <!-- Bank Loan -->
+      <div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:14px">
+        <div style="font-size:0.6rem;color:#e9c162;font-weight:600;margin-bottom:6px">BANK — COMMONWEALTH</div>
+        <div style="font-size:0.8rem;font-weight:700;color:#fff">Josef Fehringer</div>
+        <div style="font-size:0.65rem;color:var(--text-faint);margin-bottom:8px">Executive Home Lender — Qld CBD</div>
+        <div style="display:flex;flex-direction:column;gap:4px;font-size:0.65rem">
+          <a href="tel:0481437763" style="color:var(--text-secondary);text-decoration:none">📞 0481 437 763</a>
+          <a href="mailto:josef.fehringer@cba.com.au" style="color:var(--teal);text-decoration:none">✉ josef.fehringer@cba.com.au</a>
+        </div>
+        <div style="border-top:1px solid rgba(255,255,255,0.06);margin-top:10px;padding-top:8px">
+          <div style="font-size:0.65rem;color:var(--text-faint);margin-bottom:4px">Associate:</div>
+          <div style="font-size:0.75rem;font-weight:600;color:#fff">Renata Silva</div>
+          <div style="font-size:0.6rem;color:var(--text-faint)">Senior Retail Lending Associate</div>
+          <div style="display:flex;flex-direction:column;gap:3px;font-size:0.65rem;margin-top:4px">
+            <a href="tel:0499846536" style="color:var(--text-secondary);text-decoration:none">📞 0499 846 536</a>
+            <a href="mailto:renata.silva@cba.com.au" style="color:var(--teal);text-decoration:none">✉ renata.silva@cba.com.au</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Solicitor -->
+      <div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:14px;grid-column:span 2">
+        <div style="font-size:0.6rem;color:#92ceac;font-weight:600;margin-bottom:6px">SOLICITOR / CONVEYANCER</div>
+        <div style="font-size:0.8rem;font-weight:700;color:#fff">Sharon Hogan</div>
+        <div style="font-size:0.65rem;color:var(--text-faint);margin-bottom:8px">Senior Conveyancing Paralegal (NSW & QLD) — Steindls Lawyers & Notary</div>
+        <div style="display:flex;gap:20px;font-size:0.65rem">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <a href="tel:0436890989" style="color:var(--text-secondary);text-decoration:none">📞 0436 890 989</a>
+            <a href="tel:0755709500" style="color:var(--text-secondary);text-decoration:none">📞 Office: (07) 5570 9500</a>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <a href="mailto:shogan@steindls.com.au" style="color:var(--teal);text-decoration:none">✉ shogan@steindls.com.au</a>
+            <a href="https://www.steindls.com.au" target="_blank" style="color:var(--text-faint);text-decoration:none">🌐 steindls.com.au</a>
+          </div>
+          <span style="color:var(--text-faint)">PO Box 605, Surfers Paradise QLD 4217</span>
+        </div>
+      </div>
+    </div>
+
+    <button onclick="closePropInfo()" class="btn" style="width:100%;margin-top:8px">Close</button>
+  </div>
+</div>
+
 <!-- ═══ ACTIVE WORKOUT MODAL ═══ -->
 <div class="modal-overlay" id="workout-modal">
   <div class="modal-backdrop" onclick="minimizeWorkout()"></div>
@@ -2486,8 +2603,19 @@ function renderProperties(){
   });
   html+='</div>';
 
+  // 33/286 The Esplanade — Property Info Card
+  html+='<div class="card" style="padding:20px;margin-top:16px;border-left:3px solid var(--teal);cursor:pointer" onclick="document.getElementById(\'prop-info-modal\').style.display=\'flex\'">';
+  html+='<div style="display:flex;justify-content:space-between;align-items:center">';
+  html+='<div><div style="font-size:0.9rem;font-weight:700;color:#fff">33/286 The Esplanade, Miami</div>';
+  html+='<div style="font-size:0.65rem;color:var(--text-faint);margin-top:3px">Loan to Dom · Contacts · Property Info</div></div>';
+  const _domOwing=4545;
+  html+='<div style="text-align:right"><div style="font-size:0.55rem;color:var(--text-faint)">Owing to Dom</div><div style="font-size:1rem;font-weight:700;color:var(--amber)">$'+fmt2(_domOwing)+'</div></div>';
+  html+='</div></div>';
+
   el.innerHTML=html;
 }
+
+function closePropInfo(){document.getElementById('prop-info-modal').style.display='none'}
 
 // ════════════════════════════════════════
 // LICENSES & CERTS
