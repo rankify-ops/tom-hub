@@ -2549,7 +2549,7 @@ function renderProperties(){
   const totalRentYr=totalRentWk*52;
   const avgYield=totalValue?((totalRentYr/totalValue)*100):0;
 
-  let html='<div class="metrics-grid" style="margin-bottom:16px">';
+  html+='<div class="metrics-grid" style="margin-bottom:16px">';
   html+='<div class="card metric-tile"><div class="metric-value">'+_properties.length+'</div><div class="metric-label">Total Properties</div></div>';
   html+='<div class="card metric-tile"><div class="metric-value teal">'+owned.length+'</div><div class="metric-label">Owned</div></div>';
   html+='<div class="card metric-tile"><div class="metric-value">$'+(totalValue>=1e6?(totalValue/1e6).toFixed(2)+'M':totalValue.toLocaleString())+'</div><div class="metric-label">Portfolio Value</div></div>';
