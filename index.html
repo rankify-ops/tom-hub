@@ -435,6 +435,34 @@ select.form-input{cursor:pointer;background:#1a1a1a}
   </div>
 </div>
 
+<!-- ═══ CALORIE LOG MODAL ═══ -->
+<div id="cal-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center" onclick="if(event.target===this)closeCalModal()">
+  <div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:24px;width:92%;max-width:480px;max-height:85vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 style="margin:0;font-size:1rem;color:#fff" id="cal-modal-title">Log Food</h3>
+      <button onclick="closeCalModal()" style="background:none;border:none;color:var(--text-faint);font-size:1.2rem;cursor:pointer">&times;</button>
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:0.65rem;color:var(--text-faint);display:block;margin-bottom:4px">Food / Meal</label>
+      <input type="text" id="cal-food-name" class="form-input" placeholder="e.g. Chicken breast, rice..." style="width:100%;padding:8px 10px;font-size:0.8rem">
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:0.65rem;color:var(--text-faint);display:block;margin-bottom:4px">Calories</label>
+      <input type="number" id="cal-food-cals" class="form-input" placeholder="e.g. 450" style="width:100%;padding:8px 10px;font-size:0.8rem">
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:0.65rem;color:var(--text-faint);display:block;margin-bottom:4px">Protein (g) — optional</label>
+      <input type="number" id="cal-food-protein" class="form-input" placeholder="e.g. 35" style="width:100%;padding:8px 10px;font-size:0.8rem">
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px">
+      <input type="checkbox" id="cal-save-food" style="accent-color:var(--teal)">
+      <label for="cal-save-food" style="font-size:0.7rem;color:var(--text-secondary)">Save to My Foods for quick add</label>
+    </div>
+    <button onclick="logCalEntry()" class="btn" style="width:100%;margin-bottom:12px">Log Food</button>
+    <div id="cal-saved-foods-list"></div>
+  </div>
+</div>
+
 <!-- ═══ ACTIVE WORKOUT MODAL ═══ -->
 <div class="modal-overlay" id="workout-modal">
   <div class="modal-backdrop" onclick="minimizeWorkout()"></div>
@@ -653,7 +681,7 @@ let _activeWorkout=null;
 
 // ─── Load All Data ───
 async function loadAll(){
-  await Promise.all([loadChecklists(),loadNotes(),loadGoals(),loadFinances(),loadTraining(),loadWhoop(),loadProperties(),loadLicenses()]);
+  await Promise.all([loadChecklists(),loadNotes(),loadGoals(),loadFinances(),loadTraining(),loadWhoop(),loadProperties(),loadLicenses(),loadCalories()]);
   renderOverview();
 }
 
@@ -1832,7 +1860,7 @@ function renderWhoop(){
   const el=document.getElementById('whoop-content');if(!el)return;
   if(_whoopData?.updated)document.getElementById('whoop-updated').textContent='Synced: '+fmt(_whoopData.updated);
 
-  let html='';
+  let html=renderCalorieSection();
 
   // ── RESUME ACTIVE WORKOUT BANNER ──
   if(_activeWorkout){
@@ -2332,6 +2360,171 @@ function showWhoopWorkoutDetail(workoutId){
     setTimeout(()=>switchTab('whoop'),300);
   }
 })();
+
+// ════════════════════════════════════════
+// CALORIES
+// ════════════════════════════════════════
+let _calSavedFoods=[];
+let _calLogs={};
+let _calSettings={height:186,weight:88,age:31,activityMultiplier:1.55,deficitGoal:500};
+
+function calcTDEE(){
+  const s=_calSettings;
+  const bmr=10*s.weight+6.25*s.height-5*s.age+5;
+  return Math.round(bmr*s.activityMultiplier);
+}
+function getTodayCalsBurned(){
+  const today=new Date().toISOString().split('T')[0];
+  let burned=0;
+  const workouts=_whoopData?.workouts||[];
+  workouts.forEach(w=>{
+    if(!w.start)return;
+    const d=w.start.split('T')[0];
+    if(d===today&&w.score?.kilojoule){burned+=Math.round(w.score.kilojoule/4.184);}
+  });
+  const todayLogs=_trainingLogs.filter(l=>l.date===today);
+  todayLogs.forEach(l=>{
+    const dur=getWhoopDuration(l)||45;
+    if(!workouts.some(w=>w.start&&w.start.split('T')[0]===today)){burned+=Math.round(dur*6);}
+  });
+  return burned;
+}
+function getTodayCals(){
+  const today=new Date().toISOString().split('T')[0];
+  const entries=_calLogs[today]||[];
+  return{entries,total:entries.reduce((s,e)=>s+e.calories,0),protein:entries.reduce((s,e)=>s+(e.protein||0),0)};
+}
+
+async function loadCalories(){
+  try{
+    const res=await fetch('/api/calories?t='+Date.now());
+    if(res.ok){
+      const d=await res.json();
+      _calSavedFoods=d.savedFoods||[];
+      _calLogs=d.logs||{};
+      _calSettings=d.settings||_calSettings;
+    }
+  }catch(e){console.warn('Calories load failed',e)}
+}
+async function saveCalories(){
+  try{await fetch('/api/calories',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',savedFoods:_calSavedFoods,logs:_calLogs,settings:_calSettings})})}catch(e){console.warn('Calories save failed',e)}
+}
+
+function openCalModal(){
+  document.getElementById('cal-modal').style.display='flex';
+  document.getElementById('cal-food-name').value='';
+  document.getElementById('cal-food-cals').value='';
+  document.getElementById('cal-food-protein').value='';
+  document.getElementById('cal-save-food').checked=false;
+  renderSavedFoodsList();
+  document.getElementById('cal-food-name').focus();
+}
+function closeCalModal(){document.getElementById('cal-modal').style.display='none'}
+
+function renderSavedFoodsList(){
+  const el=document.getElementById('cal-saved-foods-list');
+  if(!_calSavedFoods.length){el.innerHTML='';return;}
+  let h='<div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:12px;margin-top:4px">';
+  h+='<div style="font-size:0.7rem;font-weight:600;color:var(--text-secondary);margin-bottom:8px">⚡ Quick Add from Saved</div>';
+  h+='<div style="display:flex;flex-direction:column;gap:4px">';
+  _calSavedFoods.forEach((f,i)=>{
+    h+='<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:6px;background:rgba(255,255,255,0.03);cursor:pointer" onclick="quickAddFood('+i+')">';
+    h+='<div style="flex:1;min-width:0"><div style="font-size:0.75rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+f.name+'</div></div>';
+    h+='<div style="font-size:0.7rem;color:var(--amber);font-weight:600">'+f.calories+' cal</div>';
+    if(f.protein)h+='<div style="font-size:0.6rem;color:var(--text-faint)">'+f.protein+'g P</div>';
+    h+='<button onclick="event.stopPropagation();deleteSavedFood('+i+')" style="background:none;border:none;color:var(--red-soft);font-size:0.7rem;cursor:pointer;padding:2px">✕</button>';
+    h+='</div>';
+  });
+  h+='</div></div>';
+  el.innerHTML=h;
+}
+
+function quickAddFood(idx){
+  const f=_calSavedFoods[idx];if(!f)return;
+  const today=new Date().toISOString().split('T')[0];
+  if(!_calLogs[today])_calLogs[today]=[];
+  _calLogs[today].push({id:Date.now().toString(),name:f.name,calories:f.calories,protein:f.protein||0,time:new Date().toISOString()});
+  saveCalories();closeCalModal();renderWhoop();
+}
+
+function deleteSavedFood(idx){
+  _calSavedFoods.splice(idx,1);
+  saveCalories();renderSavedFoodsList();
+}
+
+function logCalEntry(){
+  const name=document.getElementById('cal-food-name').value.trim();
+  const cals=parseInt(document.getElementById('cal-food-cals').value);
+  const protein=parseInt(document.getElementById('cal-food-protein').value)||0;
+  const save=document.getElementById('cal-save-food').checked;
+  if(!name||!cals||cals<=0)return;
+  const today=new Date().toISOString().split('T')[0];
+  if(!_calLogs[today])_calLogs[today]=[];
+  _calLogs[today].push({id:Date.now().toString(),name,calories:cals,protein,time:new Date().toISOString()});
+  if(save&&!_calSavedFoods.some(f=>f.name.toLowerCase()===name.toLowerCase())){
+    _calSavedFoods.push({name,calories:cals,protein});
+  }
+  saveCalories();closeCalModal();renderWhoop();
+}
+
+function deleteCalEntry(id){
+  const today=new Date().toISOString().split('T')[0];
+  if(_calLogs[today])_calLogs[today]=_calLogs[today].filter(e=>e.id!==id);
+  saveCalories();renderWhoop();
+}
+
+function renderCalorieSection(){
+  const tdee=calcTDEE();
+  const burned=getTodayCalsBurned();
+  const {entries,total,protein}=getTodayCals();
+  const adjustedTDEE=tdee+burned;
+  const target=adjustedTDEE-_calSettings.deficitGoal;
+  const remaining=target-total;
+  const pct=target>0?Math.min(Math.round(total/target*100),100):0;
+  const barColor=remaining<0?'var(--red-soft)':remaining<300?'var(--amber)':'var(--teal)';
+
+  let h='<div class="card" style="padding:20px;margin-bottom:16px">';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">';
+  h+='<div style="font-size:0.9rem;font-weight:700;color:#fff">🔥 Calorie Tracker</div>';
+  h+='<button onclick="openCalModal()" class="btn" style="font-size:0.7rem">+ Log Food</button>';
+  h+='</div>';
+
+  // Summary tiles
+  h+='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px">';
+  h+='<div style="text-align:center;padding:10px;border-radius:8px;background:rgba(255,255,255,0.03)"><div style="font-size:0.5rem;color:var(--text-faint)">Base TDEE</div><div style="font-size:0.85rem;font-weight:700;color:#fff">'+tdee+'</div></div>';
+  h+='<div style="text-align:center;padding:10px;border-radius:8px;background:rgba(255,255,255,0.03)"><div style="font-size:0.5rem;color:var(--text-faint)">Workout Burned</div><div style="font-size:0.85rem;font-weight:700;color:var(--teal)">+'+burned+'</div></div>';
+  h+='<div style="text-align:center;padding:10px;border-radius:8px;background:rgba(255,255,255,0.03)"><div style="font-size:0.5rem;color:var(--text-faint)">Target (−'+_calSettings.deficitGoal+')</div><div style="font-size:0.85rem;font-weight:700;color:var(--amber)">'+target+'</div></div>';
+  h+='<div style="text-align:center;padding:10px;border-radius:8px;background:rgba(255,255,255,0.03)"><div style="font-size:0.5rem;color:var(--text-faint)">Eaten Today</div><div style="font-size:0.85rem;font-weight:700;color:'+(total>target?'var(--red-soft)':'#fff')+'">'+total+'</div></div>';
+  h+='<div style="text-align:center;padding:10px;border-radius:8px;background:rgba('+( remaining<0?'239,68,68':'45,212,168')+',0.08);border:1px solid rgba('+(remaining<0?'239,68,68':'45,212,168')+',0.15)"><div style="font-size:0.5rem;color:var(--text-faint)">Remaining</div><div style="font-size:0.85rem;font-weight:700;color:'+barColor+'">'+remaining+'</div></div>';
+  h+='</div>';
+
+  // Progress bar
+  h+='<div style="margin-bottom:16px">';
+  h+='<div style="display:flex;justify-content:space-between;font-size:0.6rem;color:var(--text-faint);margin-bottom:4px"><span>'+total+' / '+target+' cal</span><span>'+pct+'%</span></div>';
+  h+='<div style="height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+barColor+';border-radius:4px;transition:width 0.3s"></div></div>';
+  if(protein>0)h+='<div style="font-size:0.6rem;color:var(--text-faint);margin-top:4px">Protein: '+protein+'g</div>';
+  h+='</div>';
+
+  // Today's food log
+  if(entries.length){
+    h+='<div style="font-size:0.7rem;font-weight:600;color:var(--text-secondary);margin-bottom:8px">Today\'s Log</div>';
+    h+='<div style="display:flex;flex-direction:column;gap:4px">';
+    entries.forEach(e=>{
+      const time=new Date(e.time);
+      const ts=time.getHours().toString().padStart(2,'0')+':'+time.getMinutes().toString().padStart(2,'0');
+      h+='<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;background:rgba(255,255,255,0.03)">';
+      h+='<div style="font-size:0.6rem;color:var(--text-faint);min-width:35px">'+ts+'</div>';
+      h+='<div style="flex:1;font-size:0.75rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+e.name+'</div>';
+      h+='<div style="font-size:0.7rem;font-weight:600;color:var(--amber)">'+e.calories+'</div>';
+      if(e.protein)h+='<div style="font-size:0.6rem;color:var(--text-faint)">'+e.protein+'g P</div>';
+      h+='<button onclick="deleteCalEntry(\''+e.id+'\')" style="background:none;border:none;color:var(--red-soft);font-size:0.6rem;cursor:pointer;padding:2px">✕</button>';
+      h+='</div>';
+    });
+    h+='</div>';
+  }
+  h+='</div>';
+  return h;
+}
 
 // ════════════════════════════════════════
 // OVERVIEW
