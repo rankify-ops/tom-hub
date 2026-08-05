@@ -2366,7 +2366,7 @@ function showWhoopWorkoutDetail(workoutId){
 // ════════════════════════════════════════
 let _calSavedFoods=[];
 let _calLogs={};
-let _calSettings={height:186,weight:88,age:31,activityMultiplier:1.55,deficitGoal:500};
+let _calSettings={height:186,weight:88,age:31,activityMultiplier:1.55,deficitGoal:500,proteinGoal:180};
 
 function calcTDEE(){
   const s=_calSettings;
@@ -2498,11 +2498,21 @@ function renderCalorieSection(){
   h+='<div style="text-align:center;padding:10px;border-radius:8px;background:rgba('+( remaining<0?'239,68,68':'45,212,168')+',0.08);border:1px solid rgba('+(remaining<0?'239,68,68':'45,212,168')+',0.15)"><div style="font-size:0.5rem;color:var(--text-faint)">Remaining</div><div style="font-size:0.85rem;font-weight:700;color:'+barColor+'">'+remaining+'</div></div>';
   h+='</div>';
 
-  // Progress bar
+  // Progress bars
+  const proteinGoal=_calSettings.proteinGoal||180;
+  const proteinRemaining=proteinGoal-protein;
+  const proteinPct=proteinGoal>0?Math.min(Math.round(protein/proteinGoal*100),100):0;
+  const proteinBarColor=protein>=proteinGoal?'var(--teal)':protein>=proteinGoal*0.7?'var(--amber)':'var(--red-soft)';
+
   h+='<div style="margin-bottom:16px">';
-  h+='<div style="display:flex;justify-content:space-between;font-size:0.6rem;color:var(--text-faint);margin-bottom:4px"><span>'+total+' / '+target+' cal</span><span>'+pct+'%</span></div>';
+  h+='<div style="display:flex;justify-content:space-between;font-size:0.6rem;color:var(--text-faint);margin-bottom:4px"><span>🔥 '+total+' / '+target+' cal</span><span>'+pct+'%</span></div>';
   h+='<div style="height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+barColor+';border-radius:4px;transition:width 0.3s"></div></div>';
-  if(protein>0)h+='<div style="font-size:0.6rem;color:var(--text-faint);margin-top:4px">Protein: '+protein+'g</div>';
+  h+='<div style="display:flex;justify-content:space-between;font-size:0.6rem;color:var(--text-faint);margin-bottom:4px;margin-top:10px"><span>💪 '+protein+'g / '+proteinGoal+'g protein</span><span>'+proteinPct+'%</span></div>';
+  h+='<div style="height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden"><div style="height:100%;width:'+proteinPct+'%;background:'+proteinBarColor+';border-radius:4px;transition:width 0.3s"></div></div>';
+  h+='<div style="display:flex;gap:12px;margin-top:6px;font-size:0.6rem;color:var(--text-faint)">';
+  h+='<span>Cal remaining: <b style="color:'+barColor+'">'+remaining+'</b></span>';
+  h+='<span>Protein remaining: <b style="color:'+proteinBarColor+'">'+(proteinRemaining>0?proteinRemaining+'g':'✓ Hit')+'</b></span>';
+  h+='</div>';
   h+='</div>';
 
   // Today's food log
