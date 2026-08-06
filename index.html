@@ -454,6 +454,21 @@ select.form-input{cursor:pointer;background:#1a1a1a}
       <h3 style="margin:0;font-size:1rem;color:#fff" id="cal-modal-title">Log Food</h3>
       <button onclick="closeCalModal()" style="background:none;border:none;color:var(--text-faint);font-size:1.2rem;cursor:pointer">&times;</button>
     </div>
+    <div id="cal-quick-calcs" style="margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.06)">
+      <div style="font-size:0.65rem;color:var(--text-faint);margin-bottom:6px">⚡ QUICK CALC</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap" id="cal-quick-calc-btns"></div>
+      <div id="cal-quick-calc-input" style="display:none;margin-top:10px">
+        <div style="display:flex;gap:8px;align-items:center">
+          <span id="cal-qc-icon" style="font-size:1.2rem"></span>
+          <input type="number" id="cal-qc-grams" class="form-input" placeholder="Grams" style="flex:1;padding:8px 10px;font-size:0.85rem" oninput="updateQuickCalc()">
+          <div style="text-align:right;min-width:80px">
+            <div style="font-size:0.8rem;font-weight:700;color:var(--amber)" id="cal-qc-cals">0 cal</div>
+            <div style="font-size:0.65rem;color:var(--text-faint)" id="cal-qc-protein">0g protein</div>
+          </div>
+        </div>
+        <button onclick="logQuickCalc()" class="btn" style="width:100%;margin-top:8px">Log</button>
+      </div>
+    </div>
     <div style="margin-bottom:12px">
       <label style="font-size:0.65rem;color:var(--text-faint);display:block;margin-bottom:4px">Food / Meal</label>
       <input type="text" id="cal-food-name" class="form-input" placeholder="e.g. Chicken breast, rice..." style="width:100%;padding:8px 10px;font-size:0.8rem">
@@ -2376,6 +2391,56 @@ function showWhoopWorkoutDetail(workoutId){
 // ════════════════════════════════════════
 // CALORIES
 // ════════════════════════════════════════
+const _quickCalcItems=[
+  {key:'steak',icon:'🥩',label:'Grass-fed Steak',calPer100:217,protPer100:26},
+  {key:'chicken',icon:'🍗',label:'Chicken Breast',calPer100:165,protPer100:31},
+  {key:'rice',icon:'🍚',label:'White Rice (cooked)',calPer100:130,protPer100:2.7},
+  {key:'eggs',icon:'🥚',label:'Eggs',calPer100:155,protPer100:13},
+];
+let _activeQC=null;
+
+function renderQuickCalcBtns(){
+  const el=document.getElementById('cal-quick-calc-btns');if(!el)return;
+  el.innerHTML=_quickCalcItems.map(item=>
+    '<button onclick="selectQuickCalc(\''+item.key+'\')" style="padding:6px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.08);background:'+(_activeQC===item.key?'rgba(45,212,168,0.12)':'rgba(255,255,255,0.04)')+';color:'+(_activeQC===item.key?'var(--teal)':'#fff')+';cursor:pointer;font-family:var(--font);font-size:0.75rem;font-weight:'+(_activeQC===item.key?'600':'400')+';display:flex;align-items:center;gap:4px">'+item.icon+' '+item.label+'</button>'
+  ).join('');
+}
+
+function selectQuickCalc(key){
+  const item=_quickCalcItems.find(i=>i.key===key);if(!item)return;
+  _activeQC=key;
+  renderQuickCalcBtns();
+  const wrap=document.getElementById('cal-quick-calc-input');
+  wrap.style.display='block';
+  document.getElementById('cal-qc-icon').textContent=item.icon;
+  const inp=document.getElementById('cal-qc-grams');
+  inp.value='';
+  document.getElementById('cal-qc-cals').textContent='0 cal';
+  document.getElementById('cal-qc-protein').textContent='0g protein';
+  inp.focus();
+}
+
+function updateQuickCalc(){
+  const item=_quickCalcItems.find(i=>i.key===_activeQC);if(!item)return;
+  const g=parseFloat(document.getElementById('cal-qc-grams').value)||0;
+  const cal=Math.round(g*item.calPer100/100);
+  const prot=Math.round(g*item.protPer100/100);
+  document.getElementById('cal-qc-cals').textContent=cal+' cal';
+  document.getElementById('cal-qc-protein').textContent=prot+'g protein';
+}
+
+function logQuickCalc(){
+  const item=_quickCalcItems.find(i=>i.key===_activeQC);if(!item)return;
+  const g=parseFloat(document.getElementById('cal-qc-grams').value);
+  if(!g||g<=0)return;
+  const cal=Math.round(g*item.calPer100/100);
+  const prot=Math.round(g*item.protPer100/100);
+  const today=new Date().toISOString().split('T')[0];
+  if(!_calLogs[today])_calLogs[today]=[];
+  _calLogs[today].push({id:Date.now().toString(),name:item.icon+' '+item.label+' ('+g+'g)',calories:cal,protein:prot,time:new Date().toISOString()});
+  saveCalories();closeCalModal();renderWhoop();
+}
+
 let _calSavedFoods=[];
 let _calLogs={};
 let _calSettings={height:186,weight:88,age:31,activityMultiplier:1.55,deficitGoal:500,proteinGoal:180};
@@ -2429,6 +2494,9 @@ function openCalModal(){
   document.getElementById('cal-food-cals').value='';
   document.getElementById('cal-food-protein').value='';
   document.getElementById('cal-save-food').checked=false;
+  _activeQC=null;
+  document.getElementById('cal-quick-calc-input').style.display='none';
+  renderQuickCalcBtns();
   renderSavedFoodsList();
   document.getElementById('cal-food-name').focus();
 }
