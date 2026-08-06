@@ -69,6 +69,9 @@ body{font-family:var(--font);color:var(--text);min-height:100vh;overflow-x:hidde
 .card{background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur)) saturate(1.3);-webkit-backdrop-filter:blur(var(--glass-blur)) saturate(1.3);border:1px solid var(--glass-border);border-radius:var(--radius);padding:22px;position:relative;overflow:hidden;transition:all var(--transition);box-shadow:var(--glass-shadow)}
 .card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,0.1) 50%,transparent 100%)}
 .card:hover{border-color:rgba(255,255,255,0.18);box-shadow:0 8px 40px rgba(0,0,0,0.25)}
+.card .card{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(255,255,255,0.06);box-shadow:none}
+.card .card::before{display:none}
+.card .card:hover{box-shadow:none}
 .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
 .card-title{font-family:var(--font);font-size:0.95rem;font-weight:600;color:var(--black);letter-spacing:0}
 .card-badge{font-size:0.6rem;padding:3px 10px;border-radius:20px;letter-spacing:0.08em;text-transform:uppercase;font-weight:600}
@@ -469,6 +472,22 @@ select.form-input{cursor:pointer;background:#1a1a1a}
     </div>
     <button onclick="logCalEntry()" class="btn" style="width:100%;margin-bottom:12px">Log Food</button>
     <div id="cal-saved-foods-list"></div>
+  </div>
+</div>
+
+<!-- ═══ WEIGHT LOG MODAL ═══ -->
+<div id="weight-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:1000;align-items:center;justify-content:center" onclick="if(event.target===this)closeWeightModal()">
+  <div style="background:#1a1a2e;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:24px;width:92%;max-width:360px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 style="font-size:1rem;font-weight:700;color:#fff;margin:0">⚖️ Log Weight</h3>
+      <button onclick="closeWeightModal()" style="background:none;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer">&times;</button>
+    </div>
+    <div style="margin-bottom:16px">
+      <label style="font-size:0.65rem;color:var(--text-faint);display:block;margin-bottom:4px">Weight (kg)</label>
+      <input type="number" id="weight-modal-input" step="0.1" class="form-input" placeholder="e.g. 87.5" style="width:100%;padding:10px 12px;font-size:0.9rem">
+    </div>
+    <div id="weight-modal-status" style="font-size:0.7rem;color:var(--text-faint);margin-bottom:12px"></div>
+    <button onclick="logWeightFromModal()" class="btn" style="width:100%;padding:10px">Log Weight</button>
   </div>
 </div>
 
@@ -1865,6 +1884,26 @@ async function loadWhoop(){
 }
 function normSport(s){if(!s)return'';s=s.toLowerCase();if(s.includes('sauna'))return'sauna';return s;}
 
+function _rangeFilter(storageKey,current){
+  const opts=[{k:'7d',l:'7 Days'},{k:'thisweek',l:'This Week'},{k:'30d',l:'30 Days'},{k:'all',l:'All'}];
+  let h='<div style="display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap">';
+  opts.forEach(o=>{
+    const active=current===o.k;
+    h+='<button onclick="event.stopPropagation();localStorage.setItem(\''+storageKey+'\',\''+o.k+'\');renderWhoop()" style="padding:4px 10px;border-radius:5px;border:1px solid rgba(255,255,255,'+(active?'0.2':'0.06')+');background:'+(active?'rgba(45,212,168,0.1)':'transparent')+';color:'+(active?'var(--teal)':'var(--text-faint)')+';font-size:0.6rem;cursor:pointer;font-family:var(--font);font-weight:'+(active?'600':'400')+'">'+o.l+'</button>';
+  });
+  h+='</div>';
+  return h;
+}
+function _filterByRange(items,range,getDate){
+  const now=new Date();const todayStr=now.toISOString().split('T')[0];
+  let cutoff='';
+  if(range==='7d'){const d=new Date(now);d.setDate(d.getDate()-7);cutoff=d.toISOString().split('T')[0];}
+  else if(range==='30d'){const d=new Date(now);d.setDate(d.getDate()-30);cutoff=d.toISOString().split('T')[0];}
+  else if(range==='thisweek'){const day=now.getDay()||7;const d=new Date(now);d.setDate(d.getDate()-(day-1));cutoff=d.toISOString().split('T')[0];}
+  else return items;
+  return items.filter(item=>{const ds=getDate(item);if(!ds)return false;const dateStr=ds.split('T')[0];return dateStr>=cutoff;});
+}
+
 function renderWhoop(){
   const el=document.getElementById('whoop-content');if(!el)return;
   if(_whoopData?.updated)document.getElementById('whoop-updated').textContent='Synced: '+fmt(_whoopData.updated);
@@ -1891,14 +1930,14 @@ function renderWhoop(){
   const _secToggle=k=>"localStorage.setItem('whoop_sec_"+k+"',localStorage.getItem('whoop_sec_"+k+"')==='1'?'0':'1');renderWhoop()";
   const _secHead=(title,key,extra)=>{
     const open=_sec(key);
-    let h='<div class="card" style="margin-bottom:'+(open?'0':'12')+'px;border-bottom-left-radius:'+(open?'0':'var(--radius-sm)')+';border-bottom-right-radius:'+(open?'0':'var(--radius-sm)')+';cursor:pointer;padding:14px 16px" onclick="'+_secToggle(key)+'">';
+    let h='<div style="margin-bottom:'+(open?'0':'12')+'px;border-bottom-left-radius:'+(open?'0':'var(--radius-sm)')+';border-bottom-right-radius:'+(open?'0':'var(--radius-sm)')+';border-top-left-radius:var(--radius-sm);border-top-right-radius:var(--radius-sm);cursor:pointer;padding:14px 16px;background:rgba(255,255,255,0.08);border:1px solid var(--glass-border)" onclick="'+_secToggle(key)+'">';
     h+='<div style="display:flex;justify-content:space-between;align-items:center">';
     h+='<div style="font-size:0.85rem;font-weight:700;color:#fff">'+title+'</div>';
     h+='<div style="display:flex;align-items:center;gap:8px">';
     if(extra)h+=extra;
     h+='<span style="font-size:0.7rem;color:var(--text-faint);transition:transform 0.2s;display:inline-block;transform:rotate('+(open?'90':'0')+'deg)">▸</span>';
     h+='</div></div></div>';
-    if(open)h+='<div class="card" style="margin-bottom:12px;border-top-left-radius:0;border-top-right-radius:0;border-top:1px solid rgba(255,255,255,0.04);padding:16px">';
+    if(open)h+='<div style="margin-bottom:12px;border-bottom-left-radius:var(--radius-sm);border-bottom-right-radius:var(--radius-sm);border-top:1px solid rgba(255,255,255,0.04);padding:16px;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-top:none">';
     return{h,open};
   };
 
@@ -1939,19 +1978,37 @@ function renderWhoop(){
     html+='</div>';
   }
 
-  // ══ 2. QUICK ACTIONS ══
+  // ══ 2. CALORIES TODAY (always visible) ══
+  {const today=new Date().toISOString().split('T')[0];
+  const {total:calTotal,protein:calProt}=getDateCals(today);
+  const tdee=calcTDEE();const burned=getTodayCalsBurned();
+  const calTarget=tdee+burned-_calSettings.deficitGoal;
+  const calRemaining=calTarget-calTotal;
+  const proteinGoal=_calSettings.proteinGoal||180;
+  const calPct=calTarget>0?Math.min(Math.round(calTotal/calTarget*100),100):0;
+  const calBarCol=calRemaining<0?'var(--red-soft)':calRemaining<300?'var(--amber)':'var(--teal)';
+  const protPct=proteinGoal>0?Math.min(Math.round(calProt/proteinGoal*100),100):0;
+  const protBarCol=calProt>=proteinGoal?'var(--teal)':calProt>=proteinGoal*0.7?'var(--amber)':'var(--red-soft)';
+  const todayW=_weightLogs.find(l=>l.date===today);
+  html+='<div class="card" style="padding:14px 16px;margin-bottom:14px">';
+  html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
+  html+='<div style="font-size:0.85rem;font-weight:700;color:#fff">🔥 Today</div>';
+  html+='<div style="display:flex;gap:6px;align-items:center">';
+  if(todayW)html+='<span style="font-size:0.65rem;color:var(--text-faint)">⚖️ '+todayW.kg+'kg</span>';
+  html+='<span style="font-size:0.75rem;font-weight:700;color:'+calBarCol+'">'+calTotal+' / '+calTarget+' cal</span>';
+  html+='</div></div>';
+  html+='<div style="display:flex;gap:8px;margin-bottom:6px">';
+  html+='<div style="flex:1"><div style="font-size:0.5rem;color:var(--text-faint);margin-bottom:2px">Calories '+calPct+'%</div><div style="height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden"><div style="height:100%;width:'+calPct+'%;background:'+calBarCol+';border-radius:3px;transition:width 0.3s"></div></div></div>';
+  html+='<div style="flex:1"><div style="font-size:0.5rem;color:var(--text-faint);margin-bottom:2px">Protein '+calProt+'g/'+proteinGoal+'g</div><div style="height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden"><div style="height:100%;width:'+protPct+'%;background:'+protBarCol+';border-radius:3px;transition:width 0.3s"></div></div></div>';
+  html+='</div>';
+  html+='<div style="font-size:0.6rem;color:var(--text-faint)">Remaining: <b style="color:'+calBarCol+'">'+calRemaining+' cal</b> · <b style="color:'+protBarCol+'">'+(proteinGoal-calProt>0?(proteinGoal-calProt)+'g protein':'✓ Protein hit')+'</b></div>';
+  html+='</div>';}
+
+  // ══ 3. QUICK ACTIONS ══
   html+='<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">';
   html+='<button onclick="showWorkoutPicker()" class="btn" style="padding:10px 18px;font-size:0.78rem;gap:6px;display:flex;align-items:center">🏋️ Start Workout</button>';
   html+='<button onclick="openCalModal()" class="btn" style="padding:10px 18px;font-size:0.78rem;gap:6px;display:flex;align-items:center">🍽️ Log Food</button>';
-  html+='<button onclick="document.getElementById(\'weight-input-quick\').focus()" class="btn" style="padding:10px 18px;font-size:0.78rem;gap:6px;display:flex;align-items:center">⚖️ Log Weight</button>';
-  html+='</div>';
-
-  // Inline weight quick-input
-  const today=new Date().toISOString().split('T')[0];
-  const todayW=_weightLogs.find(l=>l.date===today);
-  html+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:14px">';
-  html+='<input id="weight-input-quick" type="number" step="0.1" placeholder="'+(todayW?todayW.kg+'kg':'Weight (kg)')+'" style="flex:1;max-width:140px;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);color:#fff;font-size:0.75rem;font-family:var(--font)" onkeydown="if(event.key===\'Enter\'){const v=parseFloat(this.value);if(v>30){document.getElementById(\'weight-input\').value=this.value;logWeight();this.value=\'\'}}">';
-  html+='<span style="font-size:0.65rem;color:var(--text-faint)">'+(todayW?'Today: '+todayW.kg+'kg':'No weigh-in today')+'</span>';
+  html+='<button onclick="openWeightModal()" class="btn" style="padding:10px 18px;font-size:0.78rem;gap:6px;display:flex;align-items:center">⚖️ Log Weight</button>';
   html+='</div>';
 
   // ── WHOOP NOT CONNECTED ──
@@ -2028,18 +2085,22 @@ function renderWhoop(){
 
   // ══ 5. COLLAPSIBLE: RECENT WORKOUTS (Whoop) ══
   if(workouts.length){
-    const sec=_secHead('💪 Recent Workouts','recentworkouts','<span style="font-size:0.6rem;color:var(--text-faint)" onclick="event.stopPropagation()">'+workouts.length+' recorded</span>');
+    const sec=_secHead('💪 Workouts','recentworkouts','<span style="font-size:0.6rem;color:var(--text-faint)" onclick="event.stopPropagation()">'+workouts.length+' recorded</span>');
     html+=sec.h;
     if(sec.open){
+      const wRange=localStorage.getItem('whoop_workout_range')||'7d';
       const wView=localStorage.getItem('whoop_workout_view')||'cards';
+      html+=_rangeFilter('whoop_workout_range',wRange);
+      const filteredWorkouts=_filterByRange(workouts,wRange,w=>w.start);
       html+='<div style="display:flex;gap:4px;margin-bottom:12px">';
       html+='<button onclick="event.stopPropagation();localStorage.setItem(\'whoop_workout_view\',\'cards\');renderWhoop()" style="padding:4px 10px;border-radius:5px;border:1px solid rgba(255,255,255,'+(wView==='cards'?'0.2':'0.06')+');background:'+(wView==='cards'?'rgba(255,255,255,0.08)':'transparent')+';color:'+(wView==='cards'?'#fff':'var(--text-faint)')+';font-size:0.6rem;cursor:pointer;font-family:var(--font)">Cards</button>';
       html+='<button onclick="event.stopPropagation();localStorage.setItem(\'whoop_workout_view\',\'list\');renderWhoop()" style="padding:4px 10px;border-radius:5px;border:1px solid rgba(255,255,255,'+(wView==='list'?'0.2':'0.06')+');background:'+(wView==='list'?'rgba(255,255,255,0.08)':'transparent')+';color:'+(wView==='list'?'#fff':'var(--text-faint)')+';font-size:0.6rem;cursor:pointer;font-family:var(--font)">List</button>';
       html+='</div>';
+      html+='<div style="font-size:0.6rem;color:var(--text-faint);margin-bottom:8px">'+filteredWorkouts.length+' workouts</div>';
 
       if(wView==='cards'){
         html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">';
-        workouts.slice(0,10).forEach(w=>{
+        filteredWorkouts.forEach(w=>{
           const sc=w.score;const wStrain=sc?.strain?.toFixed(1)||'—';
           const dur=w.start&&w.end?Math.round((new Date(w.end)-new Date(w.start))/60000):null;
           const ns=normSport(w.sport_name);const sport=ns?(ns.charAt(0).toUpperCase()+ns.slice(1)):'Workout';
@@ -2063,7 +2124,7 @@ function renderWhoop(){
         html+='</div>';
       } else {
         html+='<div style="display:flex;flex-direction:column;gap:4px">';
-        workouts.slice(0,15).forEach(w=>{
+        filteredWorkouts.forEach(w=>{
           const sc=w.score;const dur=w.start&&w.end?Math.round((new Date(w.end)-new Date(w.start))/60000):null;
           const ns=normSport(w.sport_name);const sport=ns?(ns.charAt(0).toUpperCase()+ns.slice(1)):'Workout';
           const icon=sportIcons[ns]||'💪';const cals=sc?.kilojoule?Math.round(sc.kilojoule*0.239):null;
@@ -2105,8 +2166,12 @@ function renderWhoop(){
     const sec=_secHead('📅 Daily Log','dailylog','<span style="font-size:0.6rem;color:var(--text-faint)" onclick="event.stopPropagation()">'+days.length+' days</span>');
     html+=sec.h;
     if(sec.open){
+      const dlRange=localStorage.getItem('whoop_dailylog_range')||'7d';
+      html+=_rangeFilter('whoop_dailylog_range',dlRange);
+      const filteredDays=_filterByRange(days.map(d=>({date:d})),dlRange,x=>x.date).map(x=>x.date);
+      html+='<div style="font-size:0.6rem;color:var(--text-faint);margin-bottom:8px">'+filteredDays.length+' days</div>';
       html+='<div style="display:flex;flex-direction:column;gap:4px">';
-      days.slice(0,30).forEach(date=>{
+      filteredDays.forEach(date=>{
         const d=_whoopHistory[date];const rec=d.recovery;const sl=d.sleep;const st=d.strain;const ws=d.workouts||[];
         const recSc=rec?.score;const hrvVal=rec?.hrv?Math.round(rec.hrv):null;const slHrs=sl?.total_hours;const strainVal=st?.score;
         function rc(s){if(s==null)return'var(--text-faint)';if(s>=67)return'var(--teal)';if(s>=34)return'var(--amber)';return'var(--red-soft)'}
@@ -2141,6 +2206,11 @@ function renderWhoop(){
       html+='<div class="card metric-tile"><div class="metric-value">'+totalHrs+'h</div><div class="metric-label">Total Hours</div></div>';
       html+='</div>';
 
+      const tRange=localStorage.getItem('whoop_training_range')||'30d';
+      html+=_rangeFilter('whoop_training_range',tRange);
+      const filteredTraining=_filterByRange(_trainingLogs,tRange,l=>l.date);
+      html+='<div style="font-size:0.6rem;color:var(--text-faint);margin-bottom:8px">'+filteredTraining.length+' sessions</div>';
+
       const viewMode=localStorage.getItem('training_view')||'cards';
       html+='<div style="display:flex;gap:4px;margin-bottom:12px">';
       html+='<button onclick="event.stopPropagation();localStorage.setItem(\'training_view\',\'cards\');renderWhoop()" style="padding:4px 10px;border-radius:5px;border:1px solid rgba(255,255,255,'+(viewMode==='cards'?'0.2':'0.06')+');background:'+(viewMode==='cards'?'rgba(255,255,255,0.08)':'transparent')+';color:'+(viewMode==='cards'?'#fff':'var(--text-faint)')+';font-size:0.6rem;cursor:pointer;font-family:var(--font)">Cards</button>';
@@ -2149,7 +2219,7 @@ function renderWhoop(){
 
       if(viewMode==='cards'){
         html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">';
-        _trainingLogs.slice(0,20).forEach(log=>{
+        filteredTraining.forEach(log=>{
           const tpl=_templates.find(t=>t.id===log.templateId);const icon=tpl?tpl.icon:'🏋️';
           const done=log.exercises?log.exercises.filter(e=>e.done).length:0;const total=log.exercises?log.exercises.length:0;
           const pct=total?Math.round((done/total)*100):0;const whoopMatch=findWhoopMatch(log);const sc=whoopMatch?.score;
@@ -2166,7 +2236,7 @@ function renderWhoop(){
         html+='</div>';
       } else {
         html+='<div style="display:flex;flex-direction:column;gap:4px">';
-        _trainingLogs.slice(0,30).forEach(log=>{
+        filteredTraining.forEach(log=>{
           const tpl=_templates.find(t=>t.id===log.templateId);const icon=tpl?tpl.icon:'🏋️';
           const done=log.exercises?log.exercises.filter(e=>e.done).length:0;const total=log.exercises?log.exercises.length:0;
           const whoopMatch=findWhoopMatch(log);const sc=whoopMatch?.score;const cals=sc?.kilojoule?Math.round(sc.kilojoule*0.239):null;
@@ -2570,10 +2640,33 @@ async function saveWeight(){
   try{await fetch('/api/weight',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',logs:_weightLogs})})}catch(e){console.warn('Weight save failed',e)}
 }
 
+function openWeightModal(){
+  const today=new Date().toISOString().split('T')[0];
+  const todayW=_weightLogs.find(l=>l.date===today);
+  const modal=document.getElementById('weight-modal');
+  const input=document.getElementById('weight-modal-input');
+  const status=document.getElementById('weight-modal-status');
+  input.value='';
+  input.placeholder=todayW?todayW.kg+'kg':'e.g. 87.5';
+  status.textContent=todayW?'Today: '+todayW.kg+'kg — entering a new value will update it':'No weigh-in logged today';
+  modal.style.display='flex';
+  setTimeout(()=>input.focus(),100);
+}
+function closeWeightModal(){document.getElementById('weight-modal').style.display='none'}
+function logWeightFromModal(){
+  const input=document.getElementById('weight-modal-input');
+  const val=parseFloat(input?.value);
+  if(!val||val<30||val>300)return;
+  const today=new Date().toISOString().split('T')[0];
+  const existing=_weightLogs.findIndex(l=>l.date===today);
+  if(existing>=0)_weightLogs[existing].kg=val;
+  else _weightLogs.push({date:today,kg:val});
+  _weightLogs.sort((a,b)=>a.date.localeCompare(b.date));
+  saveWeight();closeWeightModal();renderWhoop();
+}
 function logWeight(){
   const input=document.getElementById('weight-input');
-  const quickInput=document.getElementById('weight-input-quick');
-  const val=parseFloat(input?.value)||parseFloat(quickInput?.value);
+  const val=parseFloat(input?.value);
   if(!val||val<30||val>300)return;
   const today=new Date().toISOString().split('T')[0];
   const existing=_weightLogs.findIndex(l=>l.date===today);
@@ -2581,7 +2674,6 @@ function logWeight(){
   else _weightLogs.push({date:today,kg:val});
   _weightLogs.sort((a,b)=>a.date.localeCompare(b.date));
   if(input)input.value='';
-  if(quickInput)quickInput.value='';
   saveWeight();renderWhoop();
 }
 
