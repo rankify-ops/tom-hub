@@ -2025,6 +2025,7 @@ function renderWhoop(){
   html+='<button onclick="showWorkoutPicker()" class="btn" style="padding:10px 18px;font-size:0.78rem;gap:6px;display:flex;align-items:center">🏋️ Start Workout</button>';
   html+='<button onclick="openCalModal()" class="btn" style="padding:10px 18px;font-size:0.78rem;gap:6px;display:flex;align-items:center">🍽️ Log Food</button>';
   html+='<button onclick="openWeightModal()" class="btn" style="padding:10px 18px;font-size:0.78rem;gap:6px;display:flex;align-items:center">⚖️ Log Weight</button>';
+  if(whoopConnected)html+='<button id="backfill-btn" onclick="whoopBackfill()" class="btn" style="padding:10px 18px;font-size:0.78rem;gap:6px;display:flex;align-items:center;opacity:0.7">🔄 Sync All History</button>';
   html+='</div>';
 
   // ── WHOOP NOT CONNECTED ──
@@ -2704,6 +2705,24 @@ async function saveWeight(){
   try{await fetch('/api/weight',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',logs:_weightLogs})})}catch(e){console.warn('Weight save failed',e)}
 }
 
+async function whoopBackfill(){
+  const btn=document.getElementById('backfill-btn');
+  if(btn){btn.disabled=true;btn.textContent='Syncing...';}
+  try{
+    const r=await fetch('/api/whoop/backfill');
+    const d=await r.json();
+    if(d.success){
+      if(btn)btn.textContent='✓ '+d.backfilled.totalWorkoutsInHistory+' workouts across '+d.backfilled.totalDaysInHistory+' days';
+      const hr=await fetch('/api/whoop/history');
+      const hd=await hr.json();
+      if(hd.history)_whoopHistory=hd.history;
+      renderWhoop();
+    }else{
+      if(btn)btn.textContent='Error: '+(d.error||'unknown');
+    }
+  }catch(e){if(btn)btn.textContent='Failed';}
+  setTimeout(()=>{if(btn){btn.disabled=false;btn.textContent='🔄 Sync All History';}},5000);
+}
 function openWeightModal(){
   const today=_ld();
   const todayW=_weightLogs.find(l=>l.date===today);

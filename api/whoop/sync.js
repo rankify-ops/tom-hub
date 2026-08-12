@@ -70,9 +70,9 @@ module.exports = async function handler(req, res) {
 
     const at = tokens.access_token;
 
-    // Fetch last 3 days to catch any late-scored data
+    // Fetch last 7 days to catch any late-scored data and prevent gaps
     const now = new Date();
-    const threeDaysAgo = new Date(now - 3 * 86400000).toISOString();
+    const threeDaysAgo = new Date(now - 7 * 86400000).toISOString();
 
     const [recoveryRes, cycleRes, sleepRes, workoutRes, bodyRes] = await Promise.all([
       whoopGet('/v2/recovery?start=' + encodeURIComponent(threeDaysAgo) + '&end=' + encodeURIComponent(now.toISOString()) + '&limit=10', at),
