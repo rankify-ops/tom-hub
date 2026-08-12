@@ -1761,9 +1761,25 @@ function deleteTrainingLog(id){
 }
 
 function findWhoopMatch(log){
-  if(!log.startTime||!_whoopData||!_whoopData.workouts)return null;
+  if(!log.startTime)return null;
   const logStart=new Date(log.startTime).getTime();
-  return _whoopData.workouts.find(w=>w.start&&Math.abs(new Date(w.start).getTime()-logStart)<3*3600000)||null;
+  const logDate=_ld(new Date(log.startTime));
+  // Check live API data first (has full score object)
+  if(_whoopData&&_whoopData.workouts){
+    const m=_whoopData.workouts.find(w=>w.start&&Math.abs(new Date(w.start).getTime()-logStart)<3*3600000);
+    if(m)return m;
+  }
+  // Fall back to history (accumulated KV data)
+  if(_whoopHistory&&_whoopHistory[logDate]&&_whoopHistory[logDate].workouts){
+    const hw=_whoopHistory[logDate].workouts.find(w=>w.start&&Math.abs(new Date(w.start).getTime()-logStart)<3*3600000);
+    if(hw)return {id:hw.id,start:hw.start,end:hw.end,sport_name:hw.sport,score:{strain:hw.strain,average_heart_rate:hw.avg_hr,max_heart_rate:hw.max_hr,kilojoule:hw.kilojoule,distance_meter:hw.distance_m}};
+  }
+  // Last resort: match by date alone if only one workout that day
+  if(_whoopHistory&&_whoopHistory[logDate]&&_whoopHistory[logDate].workouts&&_whoopHistory[logDate].workouts.length===1){
+    const hw=_whoopHistory[logDate].workouts[0];
+    return {id:hw.id,start:hw.start,end:hw.end,sport_name:hw.sport,score:{strain:hw.strain,average_heart_rate:hw.avg_hr,max_heart_rate:hw.max_hr,kilojoule:hw.kilojoule,distance_meter:hw.distance_m}};
+  }
+  return null;
 }
 function getWhoopDuration(log){
   const m=findWhoopMatch(log);
