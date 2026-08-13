@@ -2121,12 +2121,21 @@ function renderWhoop(){
     const isSauna=s=>{const n=normSport(s);return n==='sauna'||n==='infrared-sauna'};
     const allWorkouts=[];
     // Pull from Whoop history (most complete source)
+    const seenWhoopIds=new Set();
     if(_whoopHistory){Object.keys(_whoopHistory).forEach(date=>{
       const ws=_whoopHistory[date].workouts||[];
       ws.filter(w=>!isSauna(w.sport)).forEach(w=>{
         const ns=normSport(w.sport);
+        if(w.id)seenWhoopIds.add(String(w.id));
         allWorkouts.push({source:'whoop',date,sport:ns,sportLabel:ns?(ns.charAt(0).toUpperCase()+ns.slice(1)):'Workout',icon:sportIcons[ns]||'💪',duration:w.duration_min||null,strain:w.strain||null,trainingLog:null,whoopId:w.id||null,whoopScore:{strain:w.strain,average_heart_rate:w.avg_hr,max_heart_rate:w.max_hr,kilojoule:w.kilojoule,distance_meter:w.distance_m},whoopStart:w.start,whoopEnd:w.end});
       });
+    });}
+    // Also pull from live API data (catches today's workouts before sync completes)
+    if(_whoopData&&_whoopData.workouts){_whoopData.workouts.filter(w=>!isSauna(w.sport_name)).forEach(w=>{
+      if(w.id&&seenWhoopIds.has(String(w.id)))return;
+      const ns=normSport(w.sport_name);const date=w.start?_ld(new Date(w.start)):_ld();
+      const dur=w.start&&w.end?Math.round((new Date(w.end)-new Date(w.start))/60000):null;
+      allWorkouts.push({source:'whoop',date,sport:ns,sportLabel:ns?(ns.charAt(0).toUpperCase()+ns.slice(1)):'Workout',icon:sportIcons[ns]||'💪',duration:dur,strain:w.score?.strain||null,trainingLog:null,whoopId:w.id||null,whoopScore:w.score||null,whoopStart:w.start,whoopEnd:w.end});
     });}
     // Add training logs that don't already have a Whoop history match
     _trainingLogs.forEach(log=>{
@@ -2200,13 +2209,21 @@ function renderWhoop(){
   // ══ 5b. COLLAPSIBLE: RECOVERY (sauna sessions) ══
   {
     const isSauna=s=>{const n=normSport(s);return n==='sauna'||n==='infrared-sauna'};
-    const saunaLogs=[];
+    const saunaLogs=[];const seenSaunaIds=new Set();
     if(_whoopHistory){Object.keys(_whoopHistory).forEach(date=>{
       const ws=_whoopHistory[date].workouts||[];
       ws.filter(w=>isSauna(w.sport)).forEach(w=>{
         const ns=normSport(w.sport);
+        if(w.id)seenSaunaIds.add(String(w.id));
         saunaLogs.push({date,type:ns==='infrared-sauna'?'Infrared Sauna':'Sauna',duration:w.duration_min||null,strain:w.strain||null});
       });
+    });}
+    // Also pull from live API
+    if(_whoopData&&_whoopData.workouts){_whoopData.workouts.filter(w=>isSauna(w.sport_name)).forEach(w=>{
+      if(w.id&&seenSaunaIds.has(String(w.id)))return;
+      const ns=normSport(w.sport_name);const date=w.start?_ld(new Date(w.start)):_ld();
+      const dur=w.start&&w.end?Math.round((new Date(w.end)-new Date(w.start))/60000):null;
+      saunaLogs.push({date,type:ns==='infrared-sauna'?'Infrared Sauna':'Sauna',duration:dur,strain:w.score?.strain||null});
     });}
     saunaLogs.sort((a,b)=>b.date.localeCompare(a.date));
 
