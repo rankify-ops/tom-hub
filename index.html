@@ -2452,7 +2452,7 @@ const _quickCalcItems=[
   {key:'steak',icon:'🥩',label:'Grass-fed Steak',calPer100:217,protPer100:26},
   {key:'chicken',icon:'🍗',label:'Chicken Breast',calPer100:165,protPer100:31},
   {key:'rice',icon:'🍚',label:'White Rice (cooked)',calPer100:130,protPer100:2.7},
-  {key:'eggs',icon:'🥚',label:'Eggs',calPer100:155,protPer100:13},
+  {key:'eggs',icon:'🥚',label:'Egg (large, ½ tbsp butter)',perUnit:true,calPerUnit:128,protPerUnit:7,unitLabel:'egg'},
 ];
 let _activeQC=null;
 
@@ -2471,30 +2471,37 @@ function selectQuickCalc(key){
   wrap.style.display='block';
   document.getElementById('cal-qc-icon').textContent=item.icon;
   const inp=document.getElementById('cal-qc-grams');
-  inp.value='';
-  document.getElementById('cal-qc-cals').textContent='0 cal';
-  document.getElementById('cal-qc-protein').textContent='0g protein';
+  inp.value=item.perUnit?'1':'';
+  inp.placeholder=item.perUnit?'How many '+item.unitLabel+'s?':'Grams';
+  if(item.perUnit){
+    document.getElementById('cal-qc-cals').textContent=item.calPerUnit+' cal';
+    document.getElementById('cal-qc-protein').textContent=item.protPerUnit+'g protein';
+  }else{
+    document.getElementById('cal-qc-cals').textContent='0 cal';
+    document.getElementById('cal-qc-protein').textContent='0g protein';
+  }
   inp.focus();
 }
 
 function updateQuickCalc(){
   const item=_quickCalcItems.find(i=>i.key===_activeQC);if(!item)return;
-  const g=parseFloat(document.getElementById('cal-qc-grams').value)||0;
-  const cal=Math.round(g*item.calPer100/100);
-  const prot=Math.round(g*item.protPer100/100);
+  const v=parseFloat(document.getElementById('cal-qc-grams').value)||0;
+  const cal=item.perUnit?Math.round(v*item.calPerUnit):Math.round(v*item.calPer100/100);
+  const prot=item.perUnit?Math.round(v*item.protPerUnit):Math.round(v*item.protPer100/100);
   document.getElementById('cal-qc-cals').textContent=cal+' cal';
   document.getElementById('cal-qc-protein').textContent=prot+'g protein';
 }
 
 function logQuickCalc(){
   const item=_quickCalcItems.find(i=>i.key===_activeQC);if(!item)return;
-  const g=parseFloat(document.getElementById('cal-qc-grams').value);
-  if(!g||g<=0)return;
-  const cal=Math.round(g*item.calPer100/100);
-  const prot=Math.round(g*item.protPer100/100);
+  const v=parseFloat(document.getElementById('cal-qc-grams').value);
+  if(!v||v<=0)return;
+  const cal=item.perUnit?Math.round(v*item.calPerUnit):Math.round(v*item.calPer100/100);
+  const prot=item.perUnit?Math.round(v*item.protPerUnit):Math.round(v*item.protPer100/100);
+  const label=item.perUnit?item.icon+' '+v+' '+item.unitLabel+(v>1?'s':'')+' (butter)':item.icon+' '+item.label+' ('+v+'g)';
   const today=_ld();
   if(!_calLogs[today])_calLogs[today]=[];
-  _calLogs[today].push({id:Date.now().toString(),name:item.icon+' '+item.label+' ('+g+'g)',calories:cal,protein:prot,time:new Date().toISOString()});
+  _calLogs[today].push({id:Date.now().toString(),name:label,calories:cal,protein:prot,time:new Date().toISOString()});
   saveCalories();closeCalModal();renderWhoop();
 }
 
