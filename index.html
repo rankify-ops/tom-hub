@@ -2965,7 +2965,7 @@ function renderProperties(){
   const el=document.getElementById('properties-content');
 
   // 33/286 The Esplanade — always visible
-  const _domOwing=4545;
+  const _domOwing=3000;
   let html='<div class="card" style="padding:20px;margin-bottom:16px;border-left:3px solid var(--teal);cursor:pointer" onclick="openPropDetail()">';
   html+='<div style="display:flex;justify-content:space-between;align-items:center">';
   html+='<div><div style="font-size:0.9rem;font-weight:700;color:#fff">🏠 33/286 The Esplanade, Miami</div>';
@@ -3071,8 +3071,8 @@ function openPropDetail(){
 
   h+='<div class="metrics-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">';
   h+='<div class="card metric-tile" style="padding:14px"><div class="metric-value" style="font-size:1rem">$47,350</div><div class="metric-label">Dom Paid</div></div>';
-  h+='<div class="card metric-tile" style="padding:14px"><div class="metric-value teal" style="font-size:1rem">$21,169.70</div><div class="metric-label">Paid Back (Offset)</div></div>';
-  h+='<div class="card metric-tile" style="padding:14px"><div class="metric-value" style="font-size:1rem;color:var(--amber)">$13,090</div><div class="metric-label">Split Owing</div></div>';
+  h+='<div class="card metric-tile" style="padding:14px"><div class="metric-value teal" style="font-size:1rem">$22,714.70</div><div class="metric-label">Paid Back (Offset)</div></div>';
+  h+='<div class="card metric-tile" style="padding:14px"><div class="metric-value" style="font-size:1rem;color:var(--amber)">$11,545</div><div class="metric-label">Split Owing</div></div>';
   h+='</div>';
 
   // Ledger
@@ -3083,7 +3083,8 @@ function openPropDetail(){
     {desc:'Photo shoot discount -$200',date:'22 Mar 2026',bal:'$13,045.00',type:'pay'},
     {desc:'Paid $4,000',date:'1 Apr 2026',bal:'$9,045.00',type:'pay'},
     {desc:'Paid $2,500',date:'18 Jun 2026',bal:'$6,545.00',type:'pay'},
-    {desc:'Paid $2,000',date:'12 Jul 2026',bal:'$4,545.00',type:'pay',latest:true},
+    {desc:'Paid $2,000',date:'12 Jul 2026',bal:'$4,545.00',type:'pay'},
+    {desc:'Paid $1,545',date:'18 Aug 2026',bal:'$3,000.00',type:'pay',latest:true},
   ];
   h+='<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">';
   ledger.forEach(l=>{
@@ -3099,7 +3100,7 @@ function openPropDetail(){
 
   h+='<div style="padding:16px;border-radius:10px;background:rgba(233,193,98,0.08);border:1px solid rgba(233,193,98,0.15);text-align:center">';
   h+='<div style="font-size:0.65rem;color:var(--text-faint)">Current Amount Owing to Dom</div>';
-  h+='<div style="font-size:1.6rem;font-weight:700;color:var(--amber)">$4,545.00</div>';
+  h+='<div style="font-size:1.6rem;font-weight:700;color:var(--amber)">$3,000.00</div>';
   h+='</div></div>';
 
   // Contacts
