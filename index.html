@@ -342,9 +342,11 @@ select.form-input{cursor:pointer;background:#1a1a1a}
       <div style="display:flex;gap:6px;margin-bottom:14px" id="fin-sub-tabs">
         <button onclick="_finSubTab='subscriptions';renderFinancesShell()" class="btn btn-ghost" id="fin-tab-subscriptions" style="font-size:0.7rem;padding:6px 16px">Subscriptions</button>
         <button onclick="_finSubTab='banking';renderFinancesShell()" class="btn btn-ghost" id="fin-tab-banking" style="font-size:0.7rem;padding:6px 16px">Banking</button>
+        <button onclick="_finSubTab='netposition';renderFinancesShell()" class="btn btn-ghost" id="fin-tab-netposition" style="font-size:0.7rem;padding:6px 16px">Net Position</button>
       </div>
       <div id="finances-content"></div>
       <div id="banking-content" style="display:none"><div class="empty-state"><div class="icon">🏦</div><h3>Loading...</h3></div></div>
+      <div id="netposition-content" style="display:none"></div>
     </div>
 
     <!-- ═══ WHOOP TAB ═══ -->
@@ -1304,25 +1306,170 @@ let _finDueMonth=new Date().getMonth();
 let _finDueYear=new Date().getFullYear();
 
 function renderFinancesShell(){
-  const isBanking=_finSubTab==='banking';
-  document.getElementById('finances-content').style.display=isBanking?'none':'';
-  document.getElementById('banking-content').style.display=isBanking?'':'none';
-  document.getElementById('fin-add-btn').style.display=isBanking?'none':'';
-  document.getElementById('fin-refresh-btn').style.display=isBanking?'':'none';
-  document.getElementById('banking-updated').style.display=isBanking?'':'none';
-  document.getElementById('finances-updated').style.display=isBanking?'none':'';
-  const sBtn=document.getElementById('fin-tab-subscriptions');
-  const bBtn=document.getElementById('fin-tab-banking');
-  sBtn.style.background=isBanking?'none':'var(--teal)';sBtn.style.color=isBanking?'var(--text-secondary)':'#000';sBtn.style.fontWeight=isBanking?'400':'600';sBtn.style.border=isBanking?'1px solid rgba(255,255,255,0.1)':'1px solid var(--teal)';
-  bBtn.style.background=isBanking?'var(--teal)':'none';bBtn.style.color=isBanking?'#000':'var(--text-secondary)';bBtn.style.fontWeight=isBanking?'600':'400';bBtn.style.border=isBanking?'1px solid var(--teal)':'1px solid rgba(255,255,255,0.1)';
-  if(isBanking)renderBanking();
+  const t=_finSubTab;
+  document.getElementById('finances-content').style.display=t==='subscriptions'?'':'none';
+  document.getElementById('banking-content').style.display=t==='banking'?'':'none';
+  document.getElementById('netposition-content').style.display=t==='netposition'?'':'none';
+  document.getElementById('fin-add-btn').style.display=t==='subscriptions'?'':'none';
+  document.getElementById('fin-refresh-btn').style.display=t==='banking'?'':'none';
+  document.getElementById('banking-updated').style.display=t==='banking'?'':'none';
+  document.getElementById('finances-updated').style.display=t==='subscriptions'?'':'none';
+  ['subscriptions','banking','netposition'].forEach(k=>{
+    const btn=document.getElementById('fin-tab-'+k);if(!btn)return;
+    const on=t===k;
+    btn.style.background=on?'var(--teal)':'none';
+    btn.style.color=on?'#000':'var(--text-secondary)';
+    btn.style.fontWeight=on?'600':'400';
+    btn.style.border=on?'1px solid var(--teal)':'1px solid rgba(255,255,255,0.1)';
+  });
+  if(t==='banking')renderBanking();
+  else if(t==='netposition')renderNetPosition();
   else renderFinances();
+}
+
+function calcRealIncome(){
+  if(!_bankingData)return{weekly:_weeklyIncome,source:'default'};
+  const txns=_bankingData.transactions||[];
+  const wages=txns.filter(t=>t.acctId===5554613&&t.amount>0&&!t.isTransfer&&t.payee&&t.payee.includes('ITM Wages'));
+  if(wages.length<2)return{weekly:_weeklyIncome,source:'default'};
+  wages.sort((a,b)=>a.date.localeCompare(b.date));
+  const first=new Date(wages[0].date),last=new Date(wages[wages.length-1].date);
+  const weeks=Math.max(1,(last-first)/(7*86400000));
+  const total=wages.reduce((s,t)=>s+t.amount,0);
+  return{weekly:Math.round(total/weeks*100)/100,source:'synced',count:wages.length,from:wages[0].date,to:wages[wages.length-1].date};
+}
+
+function renderNetPosition(){
+  const el=document.getElementById('netposition-content');if(!el)return;
+  const accts=_bankingData?.accounts||[];
+  const income=calcRealIncome();
+  _weeklyIncome=income.weekly;
+
+  const personalAccts=accts.filter(a=>a.group==='personal'&&a.balance>=0);
+  const bizAccts=accts.filter(a=>a.group==='business');
+  const loanAccts=accts.filter(a=>a.group==='loan');
+  const ccAcct=accts.find(a=>a.name==='Credit Card');
+
+  const totalCash=personalAccts.reduce((s,a)=>s+a.balance,0)+bizAccts.reduce((s,a)=>s+a.balance,0);
+  const ccDebt=ccAcct?Math.abs(ccAcct.balance):0;
+  const homeLoanFull=loanAccts.reduce((s,a)=>s+Math.abs(a.balance),0);
+  const homeLoanShare=Math.round(homeLoanFull/2*100)/100;
+
+  const activeItems=_costTracking.filter(c=>c.status==='active');
+  const totalMonthlyCosts=activeItems.reduce((s,c)=>s+deriveCosts(c).monthly,0);
+  const monthlyLiving=_weeklyLiving*52/12;
+  const monthlyIncome=income.weekly*52/12;
+  const monthlySurplus=monthlyIncome-totalMonthlyCosts-monthlyLiving;
+
+  const totalDebts=ccDebt+homeLoanShare;
+  const netWorth=totalCash-totalDebts;
+
+  let h='';
+  // Income card
+  h+='<div class="card" style="padding:14px;margin-bottom:12px">';
+  h+='<div style="font-size:0.72rem;font-weight:600;color:var(--teal);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Income</div>';
+  h+='<div class="metrics-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:10px">';
+  h+='<div class="metric-tile" style="padding:10px;text-align:center"><div class="metric-value" style="font-size:1rem;color:var(--teal)">'+$(income.weekly)+'</div><div class="metric-label">per week</div></div>';
+  h+='<div class="metric-tile" style="padding:10px;text-align:center"><div class="metric-value" style="font-size:1rem;color:var(--teal)">'+$(income.weekly*52/12)+'</div><div class="metric-label">per month</div></div>';
+  h+='<div class="metric-tile" style="padding:10px;text-align:center"><div class="metric-value" style="font-size:1rem;color:var(--teal)">'+$(income.weekly*52)+'</div><div class="metric-label">per year</div></div>';
+  h+='</div>';
+  if(income.source==='synced') h+='<div style="font-size:0.6rem;color:var(--text-faint)">Synced from '+income.count+' wage deposits ('+fmtShort(income.from)+' — '+fmtShort(income.to)+')</div>';
+  h+='</div>';
+
+  // Net Worth card
+  const nwColor=netWorth>=0?'var(--teal)':'var(--red-soft)';
+  h+='<div class="card" style="padding:14px;margin-bottom:12px">';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
+  h+='<div style="font-size:0.72rem;font-weight:600;color:var(--white);text-transform:uppercase;letter-spacing:0.5px">Net Position</div>';
+  h+='<div style="font-size:1.3rem;font-weight:700;color:'+nwColor+'">'+$(netWorth)+'</div>';
+  h+='</div>';
+
+  // Assets
+  h+='<div style="font-size:0.65rem;font-weight:600;color:var(--teal);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;margin-top:6px">Assets</div>';
+  for(const a of personalAccts){
+    if(a.balance<=0)continue;
+    h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
+    h+='<span style="color:var(--text-secondary)">'+a.name+' <span style="font-size:0.55rem;color:var(--text-faint)">'+a.bank+'</span></span>';
+    h+='<span style="color:var(--teal);font-weight:600">'+$(a.balance)+'</span></div>';
+  }
+  for(const a of bizAccts){
+    if(a.balance<=0)continue;
+    h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
+    h+='<span style="color:var(--text-secondary)">'+a.name+' <span style="font-size:0.55rem;color:var(--text-faint)">'+a.bank+'</span></span>';
+    h+='<span style="color:var(--teal);font-weight:600">'+$(a.balance)+'</span></div>';
+  }
+  h+='<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:0.78rem;font-weight:600;border-top:1px solid rgba(255,255,255,0.08);margin-top:4px">';
+  h+='<span style="color:var(--white)">Total Cash</span><span style="color:var(--teal)">'+$(totalCash)+'</span></div>';
+
+  // Debts
+  h+='<div style="font-size:0.65rem;font-weight:600;color:var(--red-soft);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;margin-top:16px">Debts</div>';
+  if(ccDebt>0){
+    h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
+    h+='<span style="color:var(--text-secondary)">Credit Card <span style="font-size:0.55rem;color:var(--text-faint)">NAB #0779</span></span>';
+    h+='<span style="color:var(--red-soft);font-weight:600">-'+$(ccDebt)+'</span></div>';
+  }
+  if(homeLoanFull>0){
+    h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
+    h+='<span style="color:var(--text-secondary)">Home Loan <span style="font-size:0.55rem;color:var(--text-faint)">CommBank · 50% share (full: '+$(homeLoanFull)+')</span></span>';
+    h+='<span style="color:var(--red-soft);font-weight:600">-'+$(homeLoanShare)+'</span></div>';
+  }
+  h+='<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:0.78rem;font-weight:600;border-top:1px solid rgba(255,255,255,0.08);margin-top:4px">';
+  h+='<span style="color:var(--white)">Total Debts</span><span style="color:var(--red-soft)">-'+$(totalDebts)+'</span></div>';
+  h+='</div>';
+
+  // Monthly cash flow card
+  h+='<div class="card" style="padding:14px;margin-bottom:12px">';
+  h+='<div style="font-size:0.72rem;font-weight:600;color:var(--white);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Monthly Cash Flow</div>';
+  const rows=[
+    {label:'Income (after tax)',value:monthlyIncome,color:'var(--teal)',sign:'+'},
+    {label:'Subscriptions & Bills',value:totalMonthlyCosts,color:'var(--red-soft)',sign:'-'},
+    {label:'Living Expenses',value:monthlyLiving,color:'var(--amber)',sign:'-'},
+  ];
+  for(const r of rows){
+    h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
+    h+='<span style="color:var(--text-secondary)">'+r.label+'</span>';
+    h+='<span style="color:'+r.color+';font-weight:600">'+r.sign+''+$(r.value)+'</span></div>';
+  }
+  h+='<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:0.85rem;font-weight:700;border-top:1px solid rgba(255,255,255,0.08);margin-top:4px">';
+  h+='<span style="color:var(--white)">Surplus</span><span style="color:'+(monthlySurplus>=0?'var(--teal)':'var(--red-soft)')+'">'+$(monthlySurplus)+'/mo</span></div>';
+  h+='</div>';
+
+  // Spending breakdown from transactions
+  if(_bankingData){
+    const allTxns=_bankingData.transactions||[];
+    const now=new Date();
+    const thisMonth=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+    const spending=allTxns.filter(t=>t.date.startsWith(thisMonth)&&t.amount<0&&!t.isTransfer);
+    const totalSpent=spending.reduce((s,t)=>s+Math.abs(t.amount),0);
+    if(totalSpent>0){
+      const cats={};
+      for(const t of spending){cats[t.cat||'Uncategorised']=(cats[t.cat||'Uncategorised']||0)+Math.abs(t.amount)}
+      const sorted=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+      h+='<div class="card" style="padding:14px;margin-bottom:12px">';
+      h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
+      h+='<div style="font-size:0.72rem;font-weight:600;color:var(--white);text-transform:uppercase;letter-spacing:0.5px">Spending This Month</div>';
+      h+='<div style="font-size:1rem;font-weight:700;color:var(--red-soft)">'+$(totalSpent)+'</div></div>';
+      for(const [cat,amt] of sorted){
+        const pct=Math.round(amt/totalSpent*100);
+        h+='<div style="margin-bottom:6px">';
+        h+='<div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-bottom:2px">';
+        h+='<span style="color:var(--text-secondary)">'+cat+'</span>';
+        h+='<span style="color:var(--text-muted);font-weight:600">'+$(amt)+' <span style="font-size:0.55rem;color:var(--text-faint)">'+pct+'%</span></span></div>';
+        h+='<div style="height:4px;background:rgba(255,255,255,0.05);border-radius:2px;overflow:hidden">';
+        h+='<div style="height:100%;width:'+pct+'%;background:var(--red-soft);border-radius:2px"></div></div>';
+        h+='</div>';
+      }
+      h+='</div>';
+    }
+  }
+
+  el.innerHTML=h;
 }
 
 function renderFinances(){
   const el=document.getElementById('finances-content');if(!el)return;
   advanceRenewals();
-
+  if(_bankingData){const ri=calcRealIncome();if(ri.source==='synced')_weeklyIncome=ri.weekly;}
   const weeklyIncome=_weeklyIncome;
   const monthlyIncome=weeklyIncome*52/12;
   const annualIncome=weeklyIncome*52;
@@ -1551,13 +1698,16 @@ function renderBanking(){
 
   const totalPersonal=personalAccts.reduce((s,a)=>s+a.balance,0);
   const totalBiz=bizAccts.reduce((s,a)=>s+a.balance,0);
-  const totalLoan=loanAccts.reduce((s,a)=>s+a.balance,0);
-  const totalNet=accts.reduce((s,a)=>s+a.balance,0);
+  const totalLoanFull=loanAccts.reduce((s,a)=>s+Math.abs(a.balance),0);
+  const totalLoanShare=Math.round(totalLoanFull/2*100)/100;
+  const totalCash=personalAccts.filter(a=>a.balance>0).reduce((s,a)=>s+a.balance,0)+totalBiz;
+  const ccDebt=accts.filter(a=>a.balance<0&&a.group!=='loan').reduce((s,a)=>s+Math.abs(a.balance),0);
+  const totalNet=totalCash-ccDebt-totalLoanShare;
 
   let h='<div class="metrics-grid" style="margin-bottom:16px;grid-template-columns:repeat(4,1fr)">';
   h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:var(--teal)">'+$(totalPersonal)+'</div><div class="metric-label">Personal</div></div>';
   h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:var(--amber)">'+$(totalBiz)+'</div><div class="metric-label">Business</div></div>';
-  h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:var(--red-soft)">'+$(Math.abs(totalLoan))+'</div><div class="metric-label">Loan Owing</div></div>';
+  h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:var(--red-soft)">'+$(totalLoanShare)+'</div><div class="metric-label">Loan (50%)</div></div>';
   h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:'+(totalNet>=0?'var(--teal)':'var(--red-soft)')+'">'+$(totalNet)+'</div><div class="metric-label">Net Position</div></div>';
   h+='</div>';
 
@@ -3551,7 +3701,8 @@ function renderOverview(){
   const lifeProg=lifeGoalsTotal?(lifeGoalsDone/lifeGoalsTotal*100):0;
   const avgGoalProgress=totalGoals?Math.round((customProg+lifeProg)/(totalGoals?_goals.length+(lifeGoalsTotal?1:0):1)):0;
 
-  // Finance data
+  // Finance data — sync income from bank if available
+  if(_bankingData){const ri=calcRealIncome();if(ri.source==='synced')_weeklyIncome=ri.weekly;}
   const activeItems=_costTracking.filter(c=>c.status==='active');
   const totalMonthly=activeItems.reduce((s,c)=>s+deriveCosts(c).monthly,0);
   const monthlyLiving=_weeklyLiving*52/12;
