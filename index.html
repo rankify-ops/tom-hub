@@ -247,6 +247,7 @@ select.form-input{cursor:pointer;background:#1a1a1a}
       <div class="nav-item" data-tab="notes"><span class="nav-icon">✎</span><span>Notes</span></div>
       <div class="nav-item" data-tab="goals"><span class="nav-icon">⊕</span><span>Goals</span></div>
       <div class="nav-item" data-tab="finances"><span class="nav-icon">◇</span><span>Finances</span></div>
+      <div class="nav-item" data-tab="banking"><span class="nav-icon">🏦</span><span>Banking</span></div>
       <div class="nav-item" data-tab="whoop"><span class="nav-icon">♡</span><span>Training & Recovery</span></div>
       <div class="nav-item" data-tab="properties"><span class="nav-icon">🏠</span><span>Investment Properties</span></div>
       <div class="nav-item" data-tab="licenses"><span class="nav-icon">📜</span><span>Licenses & Certs</span></div>
@@ -278,6 +279,7 @@ select.form-input{cursor:pointer;background:#1a1a1a}
             <span class="quick-link" onclick="switchTab('notes')">✎ Notes</span>
             <span class="quick-link" onclick="switchTab('goals')">⊕ Goals</span>
             <span class="quick-link" onclick="switchTab('finances')">◇ Finances</span>
+            <span class="quick-link" onclick="switchTab('banking')">🏦 Banking</span>
             <span class="quick-link" onclick="switchTab('whoop')">♡ Training & Recovery</span>
             <span class="quick-link" onclick="switchTab('properties')">🏠 Properties</span>
             <span class="quick-link" onclick="switchTab('licenses')">📜 Licenses & Certs</span>
@@ -338,6 +340,18 @@ select.form-input{cursor:pointer;background:#1a1a1a}
       </div>
       <div id="finances-content"></div>
     </div>
+    <!-- ═══ BANKING TAB ═══ -->
+    <div class="tab-panel" id="tab-banking">
+      <div class="section-header">
+        <h2>Banking</h2>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div class="updated" id="banking-updated"></div>
+          <button class="btn btn-ghost" onclick="loadBanking()" style="font-size:0.68rem">Refresh</button>
+        </div>
+      </div>
+      <div id="banking-content"><div class="empty-state"><div class="icon">🏦</div><h3>Loading...</h3></div></div>
+    </div>
+
     <!-- ═══ WHOOP TAB ═══ -->
     <div class="tab-panel" id="tab-whoop">
       <div class="section-header">
@@ -721,11 +735,13 @@ let _goals=[];
 let _finances=[];
 let _templates=[];
 let _trainingLogs=[];
+let _bankingData=null;
+let _bankingFilter='all';
 let _activeWorkout=null;
 
 // ─── Load All Data ───
 async function loadAll(){
-  await Promise.all([loadChecklists(),loadNotes(),loadGoals(),loadFinances(),loadTraining(),loadWhoop(),loadProperties(),loadLicenses(),loadCalories(),loadWeight()]);
+  await Promise.all([loadChecklists(),loadNotes(),loadGoals(),loadFinances(),loadBanking(),loadTraining(),loadWhoop(),loadProperties(),loadLicenses(),loadCalories(),loadWeight()]);
   renderOverview();
 }
 
@@ -1490,6 +1506,123 @@ function renderFinances(){
 
   el.innerHTML=h;
   _initPieHover(pieId,pieData,pieTotal);
+}
+
+// ════════════════════════════════════════
+// BANKING (PocketSmith)
+// ════════════════════════════════════════
+async function loadBanking(){
+  try{
+    const res=await fetch('/api/pocketsmith/data?t='+Date.now());
+    if(res.ok){
+      _bankingData=await res.json();
+      if(_bankingData.updated)document.getElementById('banking-updated').textContent='Synced: '+fmt(_bankingData.updated);
+      renderBanking();
+    }
+  }catch(e){console.warn('Banking load failed',e)}
+}
+
+function renderBanking(){
+  const el=document.getElementById('banking-content');if(!el||!_bankingData)return;
+  const accts=_bankingData.accounts||[];
+  const txns=_bankingData.transactions||[];
+
+  if(!accts.length){
+    el.innerHTML='<div class="empty-state"><div class="icon">🏦</div><h3>No accounts synced</h3><p style="color:var(--text-faint);font-size:0.78rem">Bank data will appear here once synced via PocketSmith</p></div>';
+    return;
+  }
+
+  const personalAccts=accts.filter(a=>a.group==='personal');
+  const bizAccts=accts.filter(a=>a.group==='business');
+  const loanAccts=accts.filter(a=>a.group==='loan');
+
+  const totalPersonal=personalAccts.reduce((s,a)=>s+a.balance,0);
+  const totalBiz=bizAccts.reduce((s,a)=>s+a.balance,0);
+  const totalLoan=loanAccts.reduce((s,a)=>s+a.balance,0);
+  const totalNet=accts.reduce((s,a)=>s+a.balance,0);
+
+  let h='<div class="metrics-grid" style="margin-bottom:16px;grid-template-columns:repeat(4,1fr)">';
+  h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:var(--teal)">'+$(totalPersonal)+'</div><div class="metric-label">Personal</div></div>';
+  h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:var(--amber)">'+$(totalBiz)+'</div><div class="metric-label">Business</div></div>';
+  h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:var(--red-soft)">'+$(Math.abs(totalLoan))+'</div><div class="metric-label">Loan Owing</div></div>';
+  h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:'+(totalNet>=0?'var(--teal)':'var(--red-soft)')+'">'+$(totalNet)+'</div><div class="metric-label">Net Position</div></div>';
+  h+='</div>';
+
+  // Account cards grouped
+  const groups=[
+    {label:'Personal Accounts',items:personalAccts,color:'var(--teal)'},
+    {label:'Business Accounts',items:bizAccts,color:'var(--amber)'},
+    {label:'Loans',items:loanAccts,color:'var(--red-soft)'},
+  ];
+
+  for(const g of groups){
+    if(!g.items.length)continue;
+    h+='<div class="card" style="padding:14px;margin-bottom:12px">';
+    h+='<div style="font-size:0.72rem;font-weight:600;color:'+g.color+';text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">'+g.label+'</div>';
+    for(const a of g.items){
+      const bal=a.balance;
+      const balColor=bal<0?'var(--red-soft)':bal>100?'var(--teal)':'var(--text-muted)';
+      h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--card-border)">';
+      h+='<div><div style="font-size:0.82rem;color:var(--white)">'+a.name+'</div><div style="font-size:0.6rem;color:var(--text-faint)">'+a.bank+' · '+a.number+'</div></div>';
+      h+='<div style="font-size:0.88rem;font-weight:600;color:'+balColor+'">'+$(Math.abs(bal))+(bal<0?' <span style="font-size:0.55rem;color:var(--red-soft)">owing</span>':'')+'</div>';
+      h+='</div>';
+    }
+    h+='</div>';
+  }
+
+  // Recent transactions
+  h+='<div class="card" style="padding:14px;margin-bottom:12px">';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
+  h+='<div style="font-size:0.72rem;font-weight:600;color:var(--white);text-transform:uppercase;letter-spacing:0.5px">Recent Transactions</div>';
+  h+='<select id="banking-acct-filter" onchange="_bankingFilter=this.value;renderBanking()" style="background:var(--card-bg);color:var(--text-muted);border:1px solid var(--card-border);border-radius:6px;padding:4px 8px;font-size:0.68rem">';
+  h+='<option value="all"'+ (_bankingFilter==='all'?' selected':'')+'>All Accounts</option>';
+  const uniqueAccts=[...new Set(txns.map(t=>t.acct))];
+  for(const ua of uniqueAccts){
+    h+='<option value="'+ua+'"'+(_bankingFilter===ua?' selected':'')+'>'+ua+'</option>';
+  }
+  h+='</select>';
+  h+='</div>';
+
+  const filtered=_bankingFilter==='all'?txns:txns.filter(t=>t.acct===_bankingFilter);
+  const recent=filtered.slice(0,50);
+
+  // Spending summary for this month
+  const now=new Date();
+  const thisMonth=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  const monthTxns=txns.filter(t=>t.date.startsWith(thisMonth)&&t.amount<0&&!t.isTransfer);
+  const monthSpent=monthTxns.reduce((s,t)=>s+Math.abs(t.amount),0);
+  const catTotals={};
+  for(const t of monthTxns){
+    const cat=t.cat||'Uncategorised';
+    catTotals[cat]=(catTotals[cat]||0)+Math.abs(t.amount);
+  }
+  const sortedCats=Object.entries(catTotals).sort((a,b)=>b[1]-a[1]);
+
+  if(monthSpent>0){
+    h+='<div style="margin-bottom:12px;padding:10px;background:rgba(45,212,168,0.04);border-radius:8px">';
+    h+='<div style="font-size:0.68rem;color:var(--text-faint);margin-bottom:6px">This Month\'s Spending: <span style="color:var(--red-soft);font-weight:600">'+$(monthSpent)+'</span></div>';
+    h+='<div style="display:flex;flex-wrap:wrap;gap:6px">';
+    for(const [cat,total] of sortedCats.slice(0,8)){
+      h+='<span style="font-size:0.6rem;padding:3px 8px;background:rgba(255,255,255,0.05);border-radius:4px;color:var(--text-muted)">'+cat+': '+$(total)+'</span>';
+    }
+    h+='</div></div>';
+  }
+
+  for(const t of recent){
+    const isDebit=t.amount<0;
+    const color=isDebit?'var(--red-soft)':'var(--teal)';
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03)">';
+    h+='<div style="flex:1;min-width:0">';
+    h+='<div style="font-size:0.75rem;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+t.payee+'</div>';
+    h+='<div style="font-size:0.55rem;color:var(--text-faint)">'+fmtShort(t.date)+' · '+t.acct+(t.cat?' · '+t.cat:'')+'</div>';
+    h+='</div>';
+    h+='<div style="font-size:0.78rem;font-weight:600;color:'+color+';white-space:nowrap;margin-left:8px">'+(isDebit?'-':'+')+'$'+fmt2(Math.abs(t.amount))+'</div>';
+    h+='</div>';
+  }
+  if(!recent.length) h+='<div style="font-size:0.75rem;color:var(--text-faint);padding:12px 0;text-align:center">No transactions yet</div>';
+  h+='</div>';
+
+  el.innerHTML=h;
 }
 
 // ════════════════════════════════════════
