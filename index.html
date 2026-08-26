@@ -247,7 +247,6 @@ select.form-input{cursor:pointer;background:#1a1a1a}
       <div class="nav-item" data-tab="notes"><span class="nav-icon">✎</span><span>Notes</span></div>
       <div class="nav-item" data-tab="goals"><span class="nav-icon">⊕</span><span>Goals</span></div>
       <div class="nav-item" data-tab="finances"><span class="nav-icon">◇</span><span>Finances</span></div>
-      <div class="nav-item" data-tab="banking"><span class="nav-icon">🏦</span><span>Banking</span></div>
       <div class="nav-item" data-tab="whoop"><span class="nav-icon">♡</span><span>Training & Recovery</span></div>
       <div class="nav-item" data-tab="properties"><span class="nav-icon">🏠</span><span>Investment Properties</span></div>
       <div class="nav-item" data-tab="licenses"><span class="nav-icon">📜</span><span>Licenses & Certs</span></div>
@@ -279,7 +278,7 @@ select.form-input{cursor:pointer;background:#1a1a1a}
             <span class="quick-link" onclick="switchTab('notes')">✎ Notes</span>
             <span class="quick-link" onclick="switchTab('goals')">⊕ Goals</span>
             <span class="quick-link" onclick="switchTab('finances')">◇ Finances</span>
-            <span class="quick-link" onclick="switchTab('banking')">🏦 Banking</span>
+            <span class="quick-link" onclick="switchTab('finances');_finSubTab='banking';renderFinancesShell()">🏦 Banking</span>
             <span class="quick-link" onclick="switchTab('whoop')">♡ Training & Recovery</span>
             <span class="quick-link" onclick="switchTab('properties')">🏠 Properties</span>
             <span class="quick-link" onclick="switchTab('licenses')">📜 Licenses & Certs</span>
@@ -335,21 +334,17 @@ select.form-input{cursor:pointer;background:#1a1a1a}
         <h2>Finances</h2>
         <div style="display:flex;gap:8px;align-items:center">
           <div class="updated" id="finances-updated"></div>
-          <button class="btn" onclick="showFinanceModal()">+ Add Entry</button>
+          <div class="updated" id="banking-updated" style="display:none"></div>
+          <button id="fin-add-btn" class="btn" onclick="showFinanceModal()">+ Add Entry</button>
+          <button id="fin-refresh-btn" class="btn btn-ghost" onclick="loadBanking()" style="font-size:0.68rem;display:none">Refresh</button>
         </div>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:14px" id="fin-sub-tabs">
+        <button onclick="_finSubTab='subscriptions';renderFinancesShell()" class="btn btn-ghost" id="fin-tab-subscriptions" style="font-size:0.7rem;padding:6px 16px">Subscriptions</button>
+        <button onclick="_finSubTab='banking';renderFinancesShell()" class="btn btn-ghost" id="fin-tab-banking" style="font-size:0.7rem;padding:6px 16px">Banking</button>
       </div>
       <div id="finances-content"></div>
-    </div>
-    <!-- ═══ BANKING TAB ═══ -->
-    <div class="tab-panel" id="tab-banking">
-      <div class="section-header">
-        <h2>Banking</h2>
-        <div style="display:flex;gap:8px;align-items:center">
-          <div class="updated" id="banking-updated"></div>
-          <button class="btn btn-ghost" onclick="loadBanking()" style="font-size:0.68rem">Refresh</button>
-        </div>
-      </div>
-      <div id="banking-content"><div class="empty-state"><div class="icon">🏦</div><h3>Loading...</h3></div></div>
+      <div id="banking-content" style="display:none"><div class="empty-state"><div class="icon">🏦</div><h3>Loading...</h3></div></div>
     </div>
 
     <!-- ═══ WHOOP TAB ═══ -->
@@ -714,6 +709,7 @@ function switchTab(tab){
   const panel=document.getElementById('tab-'+tab);
   if(panel) panel.classList.add('active');
   document.querySelector('.sidebar').classList.remove('open');
+  if(tab==='finances') renderFinancesShell();
 }
 document.querySelectorAll('.nav-item').forEach(item=>{
   item.addEventListener('click',()=>switchTab(item.dataset.tab));
@@ -737,6 +733,7 @@ let _templates=[];
 let _trainingLogs=[];
 let _bankingData=null;
 let _bankingFilter='all';
+let _finSubTab='subscriptions';
 let _activeWorkout=null;
 
 // ─── Load All Data ───
@@ -1152,7 +1149,7 @@ async function loadFinances(){
         _weeklyIncome=2469.54;
         advanceRenewals();
       }
-      renderFinances();
+      renderFinancesShell();
     }
   }catch(e){console.warn('Finances load failed',e)}
 }
@@ -1305,6 +1302,22 @@ const _weeklyLiving=350;
 let _finCatFilter='All';
 let _finDueMonth=new Date().getMonth();
 let _finDueYear=new Date().getFullYear();
+
+function renderFinancesShell(){
+  const isBanking=_finSubTab==='banking';
+  document.getElementById('finances-content').style.display=isBanking?'none':'';
+  document.getElementById('banking-content').style.display=isBanking?'':'none';
+  document.getElementById('fin-add-btn').style.display=isBanking?'none':'';
+  document.getElementById('fin-refresh-btn').style.display=isBanking?'':'none';
+  document.getElementById('banking-updated').style.display=isBanking?'':'none';
+  document.getElementById('finances-updated').style.display=isBanking?'none':'';
+  const sBtn=document.getElementById('fin-tab-subscriptions');
+  const bBtn=document.getElementById('fin-tab-banking');
+  sBtn.style.background=isBanking?'none':'var(--teal)';sBtn.style.color=isBanking?'var(--text-secondary)':'#000';sBtn.style.fontWeight=isBanking?'400':'600';sBtn.style.border=isBanking?'1px solid rgba(255,255,255,0.1)':'1px solid var(--teal)';
+  bBtn.style.background=isBanking?'var(--teal)':'none';bBtn.style.color=isBanking?'#000':'var(--text-secondary)';bBtn.style.fontWeight=isBanking?'600':'400';bBtn.style.border=isBanking?'1px solid var(--teal)':'1px solid rgba(255,255,255,0.1)';
+  if(isBanking)renderBanking();
+  else renderFinances();
+}
 
 function renderFinances(){
   const el=document.getElementById('finances-content');if(!el)return;
