@@ -1562,9 +1562,10 @@ function renderBanking(){
     for(const a of g.items){
       const bal=a.balance;
       const balColor=bal<0?'var(--red-soft)':bal>100?'var(--teal)':'var(--text-muted)';
-      h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--card-border)">';
-      h+='<div><div style="font-size:0.82rem;color:var(--white)">'+a.name+'</div><div style="font-size:0.6rem;color:var(--text-faint)">'+a.bank+' · '+a.number+'</div></div>';
-      h+='<div style="font-size:0.88rem;font-weight:600;color:'+balColor+'">'+$(Math.abs(bal))+(bal<0?' <span style="font-size:0.55rem;color:var(--red-soft)">owing</span>':'')+'</div>';
+      const txCount=(txns||[]).filter(t=>t.acctId===a.id).length;
+      h+='<div onclick="showAccountDetail('+a.id+')" style="display:flex;justify-content:space-between;align-items:center;padding:8px 4px;border-bottom:1px solid var(--card-border);cursor:pointer;border-radius:6px;transition:background 0.15s" onmouseover="this.style.background=\'rgba(255,255,255,0.04)\'" onmouseout="this.style.background=\'none\'">';
+      h+='<div><div style="font-size:0.82rem;color:var(--white)">'+a.name+'</div><div style="font-size:0.6rem;color:var(--text-faint)">'+a.bank+' · '+a.number+(txCount?' · '+txCount+' txns':'')+'</div></div>';
+      h+='<div style="display:flex;align-items:center;gap:8px"><div style="font-size:0.88rem;font-weight:600;color:'+balColor+'">'+$(Math.abs(bal))+(bal<0?' <span style="font-size:0.55rem;color:var(--red-soft)">owing</span>':'')+'</div><span style="font-size:0.65rem;color:var(--text-faint)">›</span></div>';
       h+='</div>';
     }
     h+='</div>';
@@ -1622,6 +1623,68 @@ function renderBanking(){
   if(!recent.length) h+='<div style="font-size:0.75rem;color:var(--text-faint);padding:12px 0;text-align:center">No transactions yet</div>';
   h+='</div>';
 
+  el.innerHTML=h;
+}
+
+function showAccountDetail(acctId){
+  const el=document.getElementById('banking-content');if(!el||!_bankingData)return;
+  const accts=_bankingData.accounts||[];
+  const txns=_bankingData.transactions||[];
+  const acct=accts.find(a=>a.id===acctId);
+  if(!acct)return;
+
+  const acctTxns=txns.filter(t=>t.acctId===acctId).sort((a,b)=>b.date.localeCompare(a.date));
+  const bal=acct.balance;
+  const balColor=bal<0?'var(--red-soft)':bal>100?'var(--teal)':'var(--text-muted)';
+
+  let h='<div style="margin-bottom:12px">';
+  h+='<button class="btn btn-ghost" onclick="renderBanking()" style="font-size:0.68rem;margin-bottom:10px">← Back to accounts</button>';
+  h+='<div class="card" style="padding:14px;margin-bottom:12px">';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center">';
+  h+='<div><div style="font-size:1rem;font-weight:600;color:var(--white)">'+acct.name+'</div>';
+  h+='<div style="font-size:0.68rem;color:var(--text-faint)">'+acct.bank+' · ···'+acct.number+'</div></div>';
+  h+='<div style="text-align:right"><div style="font-size:1.2rem;font-weight:700;color:'+balColor+'">'+$(Math.abs(bal))+'</div>';
+  h+=(bal<0?'<div style="font-size:0.6rem;color:var(--red-soft)">owing</div>':'<div style="font-size:0.6rem;color:var(--text-faint)">balance</div>')+'</div>';
+  h+='</div></div>';
+
+  // Monthly breakdown
+  const months={};
+  for(const t of acctTxns){
+    const m=t.date.substring(0,7);
+    if(!months[m])months[m]={in:0,out:0,txns:[]};
+    if(t.amount>=0)months[m].in+=t.amount;
+    else months[m].out+=Math.abs(t.amount);
+    months[m].txns.push(t);
+  }
+
+  const sortedMonths=Object.keys(months).sort((a,b)=>b.localeCompare(a));
+  for(const m of sortedMonths){
+    const md=months[m];
+    const mLabel=new Date(m+'-15').toLocaleDateString('en-AU',{month:'long',year:'numeric'});
+    h+='<div class="card" style="padding:14px;margin-bottom:10px">';
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+    h+='<div style="font-size:0.72rem;font-weight:600;color:var(--white);text-transform:uppercase;letter-spacing:0.5px">'+mLabel+'</div>';
+    h+='<div style="font-size:0.6rem;color:var(--text-faint)">';
+    if(md.in>0)h+='<span style="color:var(--teal)">+'+$(md.in)+'</span> ';
+    if(md.out>0)h+='<span style="color:var(--red-soft)">-'+$(md.out)+'</span>';
+    h+=' · '+md.txns.length+' txns</div></div>';
+
+    for(const t of md.txns){
+      const isDebit=t.amount<0;
+      const color=isDebit?'var(--red-soft)':'var(--teal)';
+      h+='<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03)">';
+      h+='<div style="flex:1;min-width:0">';
+      h+='<div style="font-size:0.75rem;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+t.payee+'</div>';
+      h+='<div style="font-size:0.55rem;color:var(--text-faint)">'+fmtShort(t.date)+(t.cat?' · '+t.cat:'')+(t.isTransfer?' · transfer':'')+'</div>';
+      h+='</div>';
+      h+='<div style="font-size:0.78rem;font-weight:600;color:'+color+';white-space:nowrap;margin-left:8px">'+(isDebit?'-':'+')+'$'+fmt2(Math.abs(t.amount))+'</div>';
+      h+='</div>';
+    }
+    h+='</div>';
+  }
+
+  if(!acctTxns.length) h+='<div class="card" style="padding:20px;text-align:center;color:var(--text-faint);font-size:0.78rem">No transactions since July 1</div>';
+  h+='</div>';
   el.innerHTML=h;
 }
 
