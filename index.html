@@ -1361,8 +1361,13 @@ function renderNetPosition(){
   const monthlyIncome=income.weekly*52/12;
   const monthlySurplus=monthlyIncome-totalMonthlyCosts-monthlyLiving;
 
+  const propVal=getPropertyValue();
+  const propShare=propVal?Math.round(propVal.value/2*100)/100:0;
+  const equity=propShare-homeLoanShare;
+
+  const totalAssets=totalCash+propShare;
   const totalDebts=ccDebt+homeLoanShare;
-  const netWorth=totalCash-totalDebts;
+  const netWorth=totalAssets-totalDebts;
 
   let h='';
   // Income card
@@ -1398,8 +1403,13 @@ function renderNetPosition(){
     h+='<span style="color:var(--text-secondary)">'+a.name+' <span style="font-size:0.55rem;color:var(--text-faint)">'+a.bank+'</span></span>';
     h+='<span style="color:var(--teal);font-weight:600">'+$(a.balance)+'</span></div>';
   }
+  if(propShare>0){
+    h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
+    h+='<span style="color:var(--text-secondary)">33/286 The Esplanade <span style="font-size:0.55rem;color:var(--text-faint)">50% share (full: '+$(propVal.value)+')</span></span>';
+    h+='<span style="color:var(--teal);font-weight:600">'+$(propShare)+'</span></div>';
+  }
   h+='<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:0.78rem;font-weight:600;border-top:1px solid rgba(255,255,255,0.08);margin-top:4px">';
-  h+='<span style="color:var(--white)">Total Cash</span><span style="color:var(--teal)">'+$(totalCash)+'</span></div>';
+  h+='<span style="color:var(--white)">Total Assets</span><span style="color:var(--teal)">'+$(totalAssets)+'</span></div>';
 
   // Debts
   h+='<div style="font-size:0.65rem;font-weight:600;color:var(--red-soft);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;margin-top:16px">Debts</div>';
@@ -1415,7 +1425,32 @@ function renderNetPosition(){
   }
   h+='<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:0.78rem;font-weight:600;border-top:1px solid rgba(255,255,255,0.08);margin-top:4px">';
   h+='<span style="color:var(--white)">Total Debts</span><span style="color:var(--red-soft)">-'+$(totalDebts)+'</span></div>';
+
+  // Property equity
+  if(propShare>0){
+    h+='<div style="font-size:0.65rem;font-weight:600;color:var(--amber);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;margin-top:16px">Property Equity</div>';
+    h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
+    h+='<span style="color:var(--text-secondary)">Property Value (50%)</span><span style="color:var(--teal);font-weight:600">'+$(propShare)+'</span></div>';
+    h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
+    h+='<span style="color:var(--text-secondary)">Home Loan (50%)</span><span style="color:var(--red-soft);font-weight:600">-'+$(homeLoanShare)+'</span></div>';
+    h+='<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:0.78rem;font-weight:600;border-top:1px solid rgba(255,255,255,0.08);margin-top:4px">';
+    h+='<span style="color:var(--white)">Equity</span><span style="color:'+(equity>=0?'var(--teal)':'var(--red-soft)')+'">'+$(equity)+'</span></div>';
+  }
   h+='</div>';
+
+  // Property value log
+  if(_propertyValueLog.length){
+    const sorted=[..._propertyValueLog].sort((a,b)=>b.date.localeCompare(a.date));
+    h+='<div class="card" style="padding:14px;margin-bottom:12px">';
+    h+='<div style="font-size:0.72rem;font-weight:600;color:var(--white);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Property Value History — 33/286 The Esplanade</div>';
+    for(const entry of sorted){
+      const share=Math.round(entry.value/2*100)/100;
+      h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
+      h+='<span style="color:var(--text-secondary)">'+fmtShort(entry.date)+'</span>';
+      h+='<span style="color:var(--text-muted)">'+$(entry.value)+' <span style="font-size:0.55rem;color:var(--text-faint)">50%: '+$(share)+'</span></span></div>';
+    }
+    h+='</div>';
+  }
 
   // Monthly cash flow card
   h+='<div class="card" style="padding:14px;margin-bottom:12px">';
@@ -3257,14 +3292,20 @@ function renderWeightSection(){
 // INVESTMENT PROPERTIES
 // ════════════════════════════════════════
 let _properties=[];
+let _propertyValueLog=[];
 async function loadProperties(){
   try{
     const res=await fetch('/api/properties?t='+Date.now());
-    if(res.ok){const d=await res.json();_properties=d.properties||[];if(d.updated)document.getElementById('properties-updated').textContent='Saved: '+fmt(d.updated);renderProperties()}
+    if(res.ok){const d=await res.json();_properties=d.properties||[];_propertyValueLog=d.valueLog||[];if(d.updated)document.getElementById('properties-updated').textContent='Saved: '+fmt(d.updated);renderProperties()}
   }catch(e){console.warn('Properties load failed',e)}
 }
 async function saveProperties(){
-  try{await fetch('/api/properties',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',properties:_properties})});document.getElementById('properties-updated').textContent='Saved: '+fmt(new Date().toISOString())}catch(e){console.warn('Properties save failed',e)}
+  try{await fetch('/api/properties',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',properties:_properties,valueLog:_propertyValueLog})});document.getElementById('properties-updated').textContent='Saved: '+fmt(new Date().toISOString())}catch(e){console.warn('Properties save failed',e)}
+}
+function getPropertyValue(){
+  if(!_propertyValueLog.length)return null;
+  const sorted=[..._propertyValueLog].sort((a,b)=>b.date.localeCompare(a.date));
+  return sorted[0];
 }
 
 let _editingPropertyId=null;

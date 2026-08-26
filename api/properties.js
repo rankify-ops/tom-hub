@@ -37,8 +37,8 @@ module.exports = async function handler(req, res) {
       const { action } = req.body;
 
       if (action === 'save') {
-        const { properties } = req.body;
-        await kvSet(KV_KEY, JSON.stringify({ properties, updated: new Date().toISOString() }));
+        const { properties, valueLog } = req.body;
+        await kvSet(KV_KEY, JSON.stringify({ properties, valueLog: valueLog || [], updated: new Date().toISOString() }));
         return res.status(200).json({ success: true });
       }
 
