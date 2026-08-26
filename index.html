@@ -1355,6 +1355,15 @@ function renderNetPosition(){
   const homeLoanFull=loanAccts.reduce((s,a)=>s+Math.abs(a.balance),0);
   const homeLoanShare=Math.round(homeLoanFull/2*100)/100;
 
+  // Additional debts
+  const carLoanOwing=18133.93;
+  const carValue=22000;
+  const carPaymentMonthly=566.42;
+  const carPaymentsLeft=Math.ceil(carLoanOwing/carPaymentMonthly);
+  const carPaidOffDate=new Date();carPaidOffDate.setMonth(carPaidOffDate.getMonth()+carPaymentsLeft);
+  const oweToDOM=3000;
+  const taxBill2025=4000;
+
   const activeItems=_costTracking.filter(c=>c.status==='active');
   const totalMonthlyCosts=activeItems.reduce((s,c)=>s+deriveCosts(c).monthly,0);
   const monthlyLiving=_weeklyLiving*52/12;
@@ -1365,8 +1374,8 @@ function renderNetPosition(){
   const propShare=propVal?Math.round(propVal.value/2*100)/100:0;
   const equity=propShare-homeLoanShare;
 
-  const totalAssets=totalCash+propShare;
-  const totalDebts=ccDebt+homeLoanShare;
+  const totalAssets=totalCash+propShare+carValue;
+  const totalDebts=ccDebt+homeLoanShare+carLoanOwing+oweToDOM+taxBill2025;
   const netWorth=totalAssets-totalDebts;
 
   let h='';
@@ -1408,6 +1417,9 @@ function renderNetPosition(){
     h+='<span style="color:var(--text-secondary)">33/286 The Esplanade <span style="font-size:0.55rem;color:var(--text-faint)">50% share (full: '+$(propVal.value)+')</span></span>';
     h+='<span style="color:var(--teal);font-weight:600">'+$(propShare)+'</span></div>';
   }
+  h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
+  h+='<span style="color:var(--text-secondary)">Car <span style="font-size:0.55rem;color:var(--text-faint)">estimated value</span></span>';
+  h+='<span style="color:var(--teal);font-weight:600">'+$(carValue)+'</span></div>';
   h+='<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:0.78rem;font-weight:600;border-top:1px solid rgba(255,255,255,0.08);margin-top:4px">';
   h+='<span style="color:var(--white)">Total Assets</span><span style="color:var(--teal)">'+$(totalAssets)+'</span></div>';
 
@@ -1423,6 +1435,15 @@ function renderNetPosition(){
     h+='<span style="color:var(--text-secondary)">Home Loan <span style="font-size:0.55rem;color:var(--text-faint)">CommBank · 50% share (full: '+$(homeLoanFull)+')</span></span>';
     h+='<span style="color:var(--red-soft);font-weight:600">-'+$(homeLoanShare)+'</span></div>';
   }
+  h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
+  h+='<span style="color:var(--text-secondary)">Car Loan <span style="font-size:0.55rem;color:var(--text-faint)">'+carPaymentsLeft+' payments left · paid off '+carPaidOffDate.toLocaleDateString('en-AU',{month:'short',year:'numeric'})+'</span></span>';
+  h+='<span style="color:var(--red-soft);font-weight:600">-'+$(carLoanOwing)+'</span></div>';
+  h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
+  h+='<span style="color:var(--text-secondary)">Owe to Dom <span style="font-size:0.55rem;color:var(--text-faint)">property contribution</span></span>';
+  h+='<span style="color:var(--red-soft);font-weight:600">-'+$(oweToDOM)+'</span></div>';
+  h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
+  h+='<span style="color:var(--text-secondary)">2025 Tax Bill <span style="font-size:0.55rem;color:var(--text-faint)">ATO</span></span>';
+  h+='<span style="color:var(--red-soft);font-weight:600">-'+$(taxBill2025)+'</span></div>';
   h+='<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:0.78rem;font-weight:600;border-top:1px solid rgba(255,255,255,0.08);margin-top:4px">';
   h+='<span style="color:var(--white)">Total Debts</span><span style="color:var(--red-soft)">-'+$(totalDebts)+'</span></div>';
 
