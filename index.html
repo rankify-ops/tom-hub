@@ -3986,6 +3986,13 @@ function renderOverview(){
     if(rankThisMonth>0){
       panels+='<div style="font-size:0.7rem;color:var(--text-faint);border-top:1px solid rgba(255,255,255,0.04);padding-top:8px;margin-top:8px">Rankify gross: '+$(rankThisMonth)+' − 37% tax = '+$(rankNetMonth)+'</div>';
     }
+    const grossThisMonth=_monthlyGross+rankThisMonth;
+    panels+='<div style="border-top:1px solid rgba(255,255,255,0.06);margin-top:12px;padding-top:12px">';
+    panels+='<div class="metrics-grid" style="grid-template-columns:repeat(3,1fr)">';
+    panels+='<div class="metric-tile" style="padding:16px 10px"><div class="metric-value" style="color:var(--amber)">'+$(_monthlyGross)+'</div><div class="metric-label">Salary (gross)</div></div>';
+    panels+='<div class="metric-tile" style="padding:16px 10px"><div class="metric-value" style="color:'+(rankThisMonth>0?'var(--amber)':'var(--text-faint)')+'">'+$(rankThisMonth)+'</div><div class="metric-label">Rankify (gross)</div></div>';
+    panels+='<div class="metric-tile" style="padding:16px 10px"><div class="metric-value" style="color:var(--amber)">'+$(grossThisMonth)+'</div><div class="metric-label">Total Gross</div></div>';
+    panels+='</div></div>';
     panels+='</div>';
 
     panels+='<div class="card" style="cursor:pointer;padding:18px" onclick="switchTab(\'finances\')">';
