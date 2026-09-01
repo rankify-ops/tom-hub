@@ -1396,7 +1396,7 @@ function renderNetPosition(){
     // Build month-by-month: salary wages + biz income as gross, spending as expenses
     const earningsMonths={};
     const wagePayee='ITM Wages';
-    const bizAcctIds=[5554578,5554583,5554588,5554593];
+    const bizAcctIds=[5554578];
 
     for(const t of allTxns){
       const m=t.date.slice(0,7);
@@ -1429,8 +1429,8 @@ function renderNetPosition(){
     h+='<div style="font-size:1.1rem;font-weight:700;color:var(--teal)">'+$(ytdTotal)+'</div></div>';
     h+='<div class="metrics-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:6px">';
     h+='<div class="metric-tile" style="padding:8px;text-align:center"><div class="metric-value" style="font-size:0.9rem;color:var(--teal)">'+$(ytdSalary)+'</div><div class="metric-label">Salary (net)</div></div>';
-    h+='<div class="metric-tile" style="padding:8px;text-align:center"><div class="metric-value" style="font-size:0.9rem;color:var(--amber)">'+$(ytdBizGross)+'</div><div class="metric-label">Biz Gross</div></div>';
-    h+='<div class="metric-tile" style="padding:8px;text-align:center"><div class="metric-value" style="font-size:0.9rem;color:'+(ytdBizNet>=0?'var(--teal)':'var(--red-soft)')+'">'+$(ytdBizNet)+'</div><div class="metric-label">Biz Net</div></div>';
+    h+='<div class="metric-tile" style="padding:8px;text-align:center"><div class="metric-value" style="font-size:0.9rem;color:var(--amber)">'+$(ytdBizGross)+'</div><div class="metric-label">Rankify Gross</div></div>';
+    h+='<div class="metric-tile" style="padding:8px;text-align:center"><div class="metric-value" style="font-size:0.9rem;color:'+(ytdBizNet>=0?'var(--teal)':'var(--red-soft)')+'">'+$(ytdBizNet)+'</div><div class="metric-label">Rankify Net</div></div>';
     h+='</div></div>';
 
     // Month by month breakdown
@@ -1456,7 +1456,7 @@ function renderNetPosition(){
         h+='<span>ITM Salary ('+d.wageCount+' weeks)</span><span style="color:var(--teal)">'+$(d.salary)+'</span></div>';
       }
       if(d.bizTxns.length){
-        h+='<div style="font-size:0.6rem;color:var(--amber);margin:4px 0 2px">Business Income:</div>';
+        h+='<div style="font-size:0.6rem;color:var(--amber);margin:4px 0 2px">Rankify Income:</div>';
         for(const t of d.bizTxns){
           h+='<div style="display:flex;justify-content:space-between;font-size:0.68rem;padding:2px 0;color:var(--text-faint)">';
           h+='<span>'+fmtShort(t.date)+' — '+(t.payee||t.acct).substring(0,40)+'</span>';
