@@ -1331,12 +1331,9 @@ function calcRealIncome(){
   if(!_bankingData)return{weekly:_weeklyIncome,source:'default'};
   const txns=_bankingData.transactions||[];
   const wages=txns.filter(t=>t.acctId===5554613&&t.amount>0&&!t.isTransfer&&t.payee&&t.payee.includes('ITM Wages'));
-  if(wages.length<2)return{weekly:_weeklyIncome,source:'default'};
-  wages.sort((a,b)=>a.date.localeCompare(b.date));
-  const first=new Date(wages[0].date),last=new Date(wages[wages.length-1].date);
-  const weeks=Math.max(1,(last-first)/(7*86400000));
-  const total=wages.reduce((s,t)=>s+t.amount,0);
-  return{weekly:Math.round(total/weeks*100)/100,source:'synced',count:wages.length,from:wages[0].date,to:wages[wages.length-1].date};
+  if(!wages.length)return{weekly:_weeklyIncome,source:'default'};
+  wages.sort((a,b)=>b.date.localeCompare(a.date));
+  return{weekly:wages[0].amount,source:'synced',count:wages.length,from:wages[wages.length-1].date,to:wages[0].date};
 }
 
 function renderNetPosition(){
@@ -1379,16 +1376,101 @@ function renderNetPosition(){
   const netWorth=totalAssets-totalDebts;
 
   let h='';
-  // Income card
+  // Salary card (guaranteed income only)
   h+='<div class="card" style="padding:14px;margin-bottom:12px">';
-  h+='<div style="font-size:0.72rem;font-weight:600;color:var(--teal);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Income</div>';
+  h+='<div style="font-size:0.72rem;font-weight:600;color:var(--teal);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Salary — ITM</div>';
   h+='<div class="metrics-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:10px">';
   h+='<div class="metric-tile" style="padding:10px;text-align:center"><div class="metric-value" style="font-size:1rem;color:var(--teal)">'+$(income.weekly)+'</div><div class="metric-label">per week</div></div>';
-  h+='<div class="metric-tile" style="padding:10px;text-align:center"><div class="metric-value" style="font-size:1rem;color:var(--teal)">'+$(income.weekly*52/12)+'</div><div class="metric-label">per month</div></div>';
+  h+='<div class="metric-tile" style="padding:10px;text-align:center"><div class="metric-value" style="font-size:1rem;color:var(--teal)">'+$(monthlyIncome)+'</div><div class="metric-label">per month</div></div>';
   h+='<div class="metric-tile" style="padding:10px;text-align:center"><div class="metric-value" style="font-size:1rem;color:var(--teal)">'+$(income.weekly*52)+'</div><div class="metric-label">per year</div></div>';
   h+='</div>';
-  if(income.source==='synced') h+='<div style="font-size:0.6rem;color:var(--text-faint)">Synced from '+income.count+' wage deposits ('+fmtShort(income.from)+' — '+fmtShort(income.to)+')</div>';
+  if(income.source==='synced') h+='<div style="font-size:0.6rem;color:var(--text-faint)">Latest wage: '+fmtShort(income.to)+'</div>';
   h+='</div>';
+
+  // Total earnings by month — salary + business, gross vs net
+  if(_bankingData){
+    const allTxns=_bankingData.transactions||[];
+    const now=new Date();
+    const yr=String(now.getFullYear());
+
+    // Build month-by-month: salary wages + biz income as gross, spending as expenses
+    const earningsMonths={};
+    const wagePayee='ITM Wages';
+    const bizAcctIds=[5554578,5554583,5554588,5554593];
+
+    for(const t of allTxns){
+      const m=t.date.slice(0,7);
+      if(!earningsMonths[m])earningsMonths[m]={salary:0,bizGross:0,bizExpenses:0,wageCount:0,bizTxns:[]};
+      const isWage=t.acctId===5554613&&t.amount>0&&!t.isTransfer&&t.payee&&t.payee.includes(wagePayee);
+      const isBizIncome=bizAcctIds.includes(t.acctId)&&t.amount>0&&!t.isTransfer;
+      const isBizExpense=bizAcctIds.includes(t.acctId)&&t.amount<0&&!t.isTransfer;
+      if(isWage){earningsMonths[m].salary+=t.amount;earningsMonths[m].wageCount++}
+      if(isBizIncome){earningsMonths[m].bizGross+=t.amount;earningsMonths[m].bizTxns.push(t)}
+      if(isBizExpense){earningsMonths[m].bizExpenses+=Math.abs(t.amount)}
+    }
+
+    const sortedEM=Object.keys(earningsMonths).sort((a,b)=>b.localeCompare(a));
+
+    // Year to date totals
+    const ytdMonths=sortedEM.filter(m=>m.startsWith(yr));
+    let ytdSalary=0,ytdBizGross=0,ytdBizNet=0;
+    for(const m of ytdMonths){
+      const d=earningsMonths[m];
+      ytdSalary+=d.salary;
+      ytdBizGross+=d.bizGross;
+      ytdBizNet+=(d.bizGross-d.bizExpenses);
+    }
+    const ytdTotal=ytdSalary+ytdBizGross;
+    const ytdNet=ytdSalary+ytdBizNet;
+
+    h+='<div class="card" style="padding:14px;margin-bottom:12px">';
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
+    h+='<div style="font-size:0.72rem;font-weight:600;color:var(--white);text-transform:uppercase;letter-spacing:0.5px">'+yr+' Year to Date</div>';
+    h+='<div style="font-size:1.1rem;font-weight:700;color:var(--teal)">'+$(ytdTotal)+'</div></div>';
+    h+='<div class="metrics-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:6px">';
+    h+='<div class="metric-tile" style="padding:8px;text-align:center"><div class="metric-value" style="font-size:0.9rem;color:var(--teal)">'+$(ytdSalary)+'</div><div class="metric-label">Salary (net)</div></div>';
+    h+='<div class="metric-tile" style="padding:8px;text-align:center"><div class="metric-value" style="font-size:0.9rem;color:var(--amber)">'+$(ytdBizGross)+'</div><div class="metric-label">Biz Gross</div></div>';
+    h+='<div class="metric-tile" style="padding:8px;text-align:center"><div class="metric-value" style="font-size:0.9rem;color:'+(ytdBizNet>=0?'var(--teal)':'var(--red-soft)')+'">'+$(ytdBizNet)+'</div><div class="metric-label">Biz Net</div></div>';
+    h+='</div></div>';
+
+    // Month by month breakdown
+    h+='<div class="card" style="padding:14px;margin-bottom:12px">';
+    h+='<div style="font-size:0.72rem;font-weight:600;color:var(--white);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Earnings by Month</div>';
+    for(const m of sortedEM){
+      const d=earningsMonths[m];
+      const grossTotal=d.salary+d.bizGross;
+      const netTotal=d.salary+(d.bizGross-d.bizExpenses);
+      if(grossTotal===0&&d.bizExpenses===0)continue;
+      const label=new Date(m+'-01').toLocaleDateString('en-AU',{month:'long',year:'numeric'});
+      const mid='earnings-'+m;
+      h+='<div style="cursor:pointer;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.03)" onclick="document.getElementById(\''+mid+'\').style.display=document.getElementById(\''+mid+'\').style.display===\'none\'?\'block\':\'none\'">';
+      h+='<div style="display:flex;justify-content:space-between;align-items:center;font-size:0.75rem">';
+      h+='<span style="color:var(--text-secondary)">'+label+'</span>';
+      h+='<span style="display:flex;gap:12px">';
+      h+='<span style="font-size:0.6rem;color:var(--text-faint)">gross</span><span style="color:var(--teal);font-weight:600">'+$(grossTotal)+'</span>';
+      h+='<span style="font-size:0.6rem;color:var(--text-faint)">net</span><span style="color:'+(netTotal>=0?'var(--teal)':'var(--red-soft)')+';font-weight:600">'+$(netTotal)+'</span>';
+      h+='</span></div></div>';
+      h+='<div id="'+mid+'" style="display:none;padding:6px 0 10px 12px">';
+      if(d.salary>0){
+        h+='<div style="display:flex;justify-content:space-between;font-size:0.68rem;padding:3px 0;color:var(--text-faint)">';
+        h+='<span>ITM Salary ('+d.wageCount+' weeks)</span><span style="color:var(--teal)">'+$(d.salary)+'</span></div>';
+      }
+      if(d.bizTxns.length){
+        h+='<div style="font-size:0.6rem;color:var(--amber);margin:4px 0 2px">Business Income:</div>';
+        for(const t of d.bizTxns){
+          h+='<div style="display:flex;justify-content:space-between;font-size:0.68rem;padding:2px 0;color:var(--text-faint)">';
+          h+='<span>'+fmtShort(t.date)+' — '+(t.payee||t.acct).substring(0,40)+'</span>';
+          h+='<span style="color:var(--teal)">'+$(t.amount)+'</span></div>';
+        }
+      }
+      if(d.bizExpenses>0){
+        h+='<div style="display:flex;justify-content:space-between;font-size:0.68rem;padding:3px 0;color:var(--text-faint);margin-top:2px">';
+        h+='<span>Business Expenses</span><span style="color:var(--red-soft)">-'+$(d.bizExpenses)+'</span></div>';
+      }
+      h+='</div>';
+    }
+    h+='</div>';
+  }
 
   // Net Worth card
   const nwColor=netWorth>=0?'var(--teal)':'var(--red-soft)';
@@ -1477,7 +1559,7 @@ function renderNetPosition(){
   h+='<div class="card" style="padding:14px;margin-bottom:12px">';
   h+='<div style="font-size:0.72rem;font-weight:600;color:var(--white);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Monthly Cash Flow</div>';
   const rows=[
-    {label:'Income (after tax)',value:monthlyIncome,color:'var(--teal)',sign:'+'},
+    {label:'Salary (after tax)',value:monthlyIncome,color:'var(--teal)',sign:'+'},
     {label:'Subscriptions & Bills',value:totalMonthlyCosts,color:'var(--red-soft)',sign:'-'},
     {label:'Living Expenses',value:monthlyLiving,color:'var(--amber)',sign:'-'},
   ];
@@ -1490,31 +1572,45 @@ function renderNetPosition(){
   h+='<span style="color:var(--white)">Surplus</span><span style="color:'+(monthlySurplus>=0?'var(--teal)':'var(--red-soft)')+'">'+$(monthlySurplus)+'/mo</span></div>';
   h+='</div>';
 
-  // Spending breakdown from transactions
+  // Spending breakdown by month with click-to-expand
   if(_bankingData){
     const allTxns=_bankingData.transactions||[];
-    const now=new Date();
-    const thisMonth=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
-    const spending=allTxns.filter(t=>t.date.startsWith(thisMonth)&&t.amount<0&&!t.isTransfer);
-    const totalSpent=spending.reduce((s,t)=>s+Math.abs(t.amount),0);
-    if(totalSpent>0){
-      const cats={};
-      for(const t of spending){cats[t.cat||'Uncategorised']=(cats[t.cat||'Uncategorised']||0)+Math.abs(t.amount)}
-      const sorted=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+    const spendTxns=allTxns.filter(t=>t.amount<0&&!t.isTransfer);
+    const spendMonths={};
+    for(const t of spendTxns){
+      const m=t.date.slice(0,7);
+      if(!spendMonths[m])spendMonths[m]={total:0,cats:{}};
+      spendMonths[m].total+=Math.abs(t.amount);
+      const c=t.cat||'Uncategorised';
+      spendMonths[m].cats[c]=(spendMonths[m].cats[c]||0)+Math.abs(t.amount);
+    }
+    const sortedSM=Object.keys(spendMonths).sort((a,b)=>b.localeCompare(a));
+    if(sortedSM.length){
       h+='<div class="card" style="padding:14px;margin-bottom:12px">';
-      h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
-      h+='<div style="font-size:0.72rem;font-weight:600;color:var(--white);text-transform:uppercase;letter-spacing:0.5px">Spending This Month</div>';
-      h+='<div style="font-size:1rem;font-weight:700;color:var(--red-soft)">'+$(totalSpent)+'</div></div>';
-      for(const [cat,amt] of sorted){
-        const pct=Math.round(amt/totalSpent*100);
-        h+='<div style="margin-bottom:6px">';
-        h+='<div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-bottom:2px">';
-        h+='<span style="color:var(--text-secondary)">'+cat+'</span>';
-        h+='<span style="color:var(--text-muted);font-weight:600">'+$(amt)+' <span style="font-size:0.55rem;color:var(--text-faint)">'+pct+'%</span></span></div>';
-        h+='<div style="height:4px;background:rgba(255,255,255,0.05);border-radius:2px;overflow:hidden">';
-        h+='<div style="height:100%;width:'+pct+'%;background:var(--red-soft);border-radius:2px"></div></div>';
+      h+='<div style="font-size:0.72rem;font-weight:600;color:var(--white);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Spending by Month</div>';
+      sortedSM.forEach((m,i)=>{
+        const d=spendMonths[m];
+        const label=new Date(m+'-01').toLocaleDateString('en-AU',{month:'long',year:'numeric'});
+        const mid='spend-month-'+m;
+        const open=i===0;
+        h+='<div style="cursor:pointer;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.03)" onclick="document.getElementById(\''+mid+'\').style.display=document.getElementById(\''+mid+'\').style.display===\'none\'?\'block\':\'none\'">';
+        h+='<div style="display:flex;justify-content:space-between;font-size:0.75rem">';
+        h+='<span style="color:var(--text-secondary)">'+label+'</span>';
+        h+='<span style="color:var(--red-soft);font-weight:600">'+$(d.total)+'</span></div></div>';
+        h+='<div id="'+mid+'" style="display:'+(open?'block':'none')+';padding:6px 0 10px 0">';
+        const sorted=Object.entries(d.cats).sort((a,b)=>b[1]-a[1]);
+        for(const [cat,amt] of sorted){
+          const pct=Math.round(amt/d.total*100);
+          h+='<div style="margin-bottom:5px">';
+          h+='<div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-bottom:2px">';
+          h+='<span style="color:var(--text-secondary)">'+cat+'</span>';
+          h+='<span style="color:var(--text-muted);font-weight:600">'+$(amt)+' <span style="font-size:0.55rem;color:var(--text-faint)">'+pct+'%</span></span></div>';
+          h+='<div style="height:4px;background:rgba(255,255,255,0.05);border-radius:2px;overflow:hidden">';
+          h+='<div style="height:100%;width:'+pct+'%;background:var(--red-soft);border-radius:2px"></div></div>';
+          h+='</div>';
+        }
         h+='</div>';
-      }
+      });
       h+='</div>';
     }
   }
@@ -1564,7 +1660,7 @@ function renderFinances(){
 
   // Summary tiles
   let h='<div class="metrics-grid" style="margin-bottom:16px;grid-template-columns:repeat(4,1fr)">';
-  h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:var(--teal)">$'+fmt2(monthlyIncome)+'</div><div class="metric-label">Monthly Income</div></div>';
+  h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:var(--teal)">$'+fmt2(monthlyIncome)+'</div><div class="metric-label">Salary /mo</div></div>';
   h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:var(--red-soft)">$'+fmt2(totalMonthly+monthlyLiving)+'</div><div class="metric-label">Total Due /mo</div></div>';
   h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:'+(monthlyNet>=0?'var(--teal)':'var(--red-soft)')+'">$'+fmt2(Math.abs(monthlyNet))+'</div><div class="metric-label">'+(monthlyNet>=0?'Surplus':'Deficit')+' /mo</div></div>';
   h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem">'+activeItems.length+'</div><div class="metric-label">Active Subs</div></div>';
@@ -1572,7 +1668,7 @@ function renderFinances(){
 
   // Secondary summary row
   h+='<div class="card" style="padding:14px;margin-bottom:16px"><div style="display:flex;justify-content:space-around;flex-wrap:wrap;gap:12px">';
-  h+='<div style="text-align:center"><div style="font-size:0.85rem;font-weight:600;color:var(--teal)">$'+fmt2(weeklyIncome)+'</div><div style="font-size:0.55rem;color:var(--text-faint)">Income /wk</div></div>';
+  h+='<div style="text-align:center"><div style="font-size:0.85rem;font-weight:600;color:var(--teal)">$'+fmt2(weeklyIncome)+'</div><div style="font-size:0.55rem;color:var(--text-faint)">Salary /wk</div></div>';
   h+='<div style="text-align:center"><div style="font-size:0.85rem;font-weight:600;color:var(--red-soft)">$'+fmt2(totalWeekly)+'</div><div style="font-size:0.55rem;color:var(--text-faint)">Subs /wk</div></div>';
   h+='<div style="text-align:center"><div style="font-size:0.85rem;font-weight:600;color:var(--amber)">$'+fmt2(weeklyLiving)+'</div><div style="font-size:0.55rem;color:var(--text-faint)">Living /wk</div></div>';
   h+='<div style="text-align:center"><div style="font-size:0.85rem;font-weight:600;color:'+(weeklyNet>=0?'var(--teal)':'var(--red-soft)')+'">$'+fmt2(Math.abs(weeklyNet))+'</div><div style="font-size:0.55rem;color:var(--text-faint)">Surplus /wk</div></div>';
@@ -3808,7 +3904,7 @@ function renderOverview(){
   panels+='<div class="card" style="cursor:pointer" onclick="switchTab(\'finances\')">';
   panels+='<div class="card-header"><span class="card-title">💰 Finances</span><span style="font-size:0.65rem;color:var(--text-faint)">'+activeItems.length+' subscriptions</span></div>';
   panels+='<div style="display:flex;gap:12px;margin:10px 0">';
-  panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Income</div><div style="font-weight:700;color:var(--teal)">$'+fmt2(monthlyIncome)+'</div></div>';
+  panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Salary</div><div style="font-weight:700;color:var(--teal)">$'+fmt2(monthlyIncome)+'</div></div>';
   panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Costs</div><div style="font-weight:700;color:var(--red-soft)">$'+fmt2(totalMonthly)+'</div></div>';
   panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Living</div><div style="font-weight:700;color:var(--amber)">$'+fmt2(monthlyLiving)+'</div></div>';
   panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Surplus</div><div style="font-weight:700;color:'+(surplus>=0?'var(--teal)':'var(--red-soft)')+'">$'+fmt2(surplus)+'</div></div>';
