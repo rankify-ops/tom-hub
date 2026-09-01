@@ -3958,24 +3958,24 @@ function renderOverview(){
     const ytdMonthCount=months.size||1;
     const ytdGross=ytdMonthCount*_monthlyGross+ytdRankGross;
 
-    panels+='<div class="card" style="cursor:pointer" onclick="switchTab(\'finances\')">';
-    panels+='<div class="card-header"><span class="card-title">💵 Income This Month</span></div>';
-    panels+='<div style="display:flex;gap:12px;margin:10px 0">';
-    panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Salary (net)</div><div style="font-weight:700;color:var(--teal)">'+$(_monthlyNet)+'</div></div>';
-    panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Rankify (net)</div><div style="font-weight:700;color:'+(rankNetMonth>0?'var(--teal)':'var(--text-faint)')+'">'+$(rankNetMonth)+'</div></div>';
-    panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Total Net</div><div style="font-weight:700;color:var(--teal)">'+$(incomeThisMonth)+'</div></div>';
+    panels+='<div class="card" style="cursor:pointer;padding:18px" onclick="switchTab(\'finances\')">';
+    panels+='<div class="card-header" style="margin-bottom:14px"><span class="card-title">💵 Income This Month</span></div>';
+    panels+='<div class="metrics-grid" style="grid-template-columns:repeat(3,1fr)">';
+    panels+='<div class="metric-tile" style="padding:16px 10px"><div class="metric-value" style="color:var(--teal)">'+$(_monthlyNet)+'</div><div class="metric-label">Salary (net)</div></div>';
+    panels+='<div class="metric-tile" style="padding:16px 10px"><div class="metric-value" style="color:'+(rankNetMonth>0?'var(--teal)':'var(--text-faint)')+'">'+$(rankNetMonth)+'</div><div class="metric-label">Rankify (net)</div></div>';
+    panels+='<div class="metric-tile" style="padding:16px 10px"><div class="metric-value" style="color:var(--teal)">'+$(incomeThisMonth)+'</div><div class="metric-label">Total Net</div></div>';
     panels+='</div>';
     if(rankThisMonth>0){
-      panels+='<div style="font-size:0.6rem;color:var(--text-faint);border-top:1px solid rgba(255,255,255,0.04);padding-top:4px">Rankify gross: '+$(rankThisMonth)+' − 37% tax = '+$(rankNetMonth)+'</div>';
+      panels+='<div style="font-size:0.7rem;color:var(--text-faint);border-top:1px solid rgba(255,255,255,0.04);padding-top:8px;margin-top:8px">Rankify gross: '+$(rankThisMonth)+' − 37% tax = '+$(rankNetMonth)+'</div>';
     }
     panels+='</div>';
 
-    panels+='<div class="card" style="cursor:pointer" onclick="switchTab(\'finances\')">';
-    panels+='<div class="card-header"><span class="card-title">📊 '+curYr+' Gross Earnings YTD</span></div>';
-    panels+='<div style="display:flex;gap:12px;margin:10px 0">';
-    panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Salary Gross</div><div style="font-weight:700;color:var(--amber)">'+$(ytdMonthCount*_monthlyGross)+'</div></div>';
-    panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Rankify Gross</div><div style="font-weight:700;color:var(--amber)">'+$(ytdRankGross)+'</div></div>';
-    panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Total Gross</div><div style="font-weight:700;color:var(--amber)">'+$(ytdGross)+'</div></div>';
+    panels+='<div class="card" style="cursor:pointer;padding:18px" onclick="switchTab(\'finances\')">';
+    panels+='<div class="card-header" style="margin-bottom:14px"><span class="card-title">📊 '+curYr+' Gross Earnings YTD</span></div>';
+    panels+='<div class="metrics-grid" style="grid-template-columns:repeat(3,1fr)">';
+    panels+='<div class="metric-tile" style="padding:16px 10px"><div class="metric-value" style="color:var(--amber)">'+$(ytdMonthCount*_monthlyGross)+'</div><div class="metric-label">Salary Gross</div></div>';
+    panels+='<div class="metric-tile" style="padding:16px 10px"><div class="metric-value" style="color:var(--amber)">'+$(ytdRankGross)+'</div><div class="metric-label">Rankify Gross</div></div>';
+    panels+='<div class="metric-tile" style="padding:16px 10px"><div class="metric-value" style="color:var(--amber)">'+$(ytdGross)+'</div><div class="metric-label">Total Gross</div></div>';
     panels+='</div></div>';
   }
 
