@@ -1480,8 +1480,16 @@ function renderNetPosition(){
           h+='<span style="color:var(--teal)">'+$(t.amount)+'</span></div>';
         }
         h+='<div style="display:flex;justify-content:space-between;font-size:0.68rem;padding:3px 0;color:var(--text-faint);margin-top:2px">';
-        h+='<span>Rankify after 37% tax</span><span style="color:var(--teal)">'+$(bizNet)+'</span></div>';
+        h+='<span>Rankify gross</span><span style="color:var(--amber)">'+$(d.bizGross)+'</span></div>';
+        h+='<div style="display:flex;justify-content:space-between;font-size:0.68rem;padding:3px 0;color:var(--text-faint)">';
+        h+='<span>Tax (37%)</span><span style="color:var(--red-soft)">-'+$(d.bizGross*_bizTaxRate)+'</span></div>';
+        h+='<div style="display:flex;justify-content:space-between;font-size:0.68rem;padding:3px 0;color:var(--text-faint)">';
+        h+='<span>Rankify net (63%)</span><span style="color:var(--teal)">'+$(bizNet)+'</span></div>';
       }
+      h+='<div style="display:flex;justify-content:space-between;font-size:0.72rem;padding:6px 0 0;margin-top:4px;border-top:1px solid rgba(255,255,255,0.06);font-weight:600">';
+      h+='<span style="color:var(--text-secondary)">Month Total</span>';
+      h+='<span><span style="color:var(--text-faint);font-size:0.55rem;font-weight:400;margin-right:4px">gross</span><span style="color:var(--amber)">'+$(grossTotal)+'</span>';
+      h+='<span style="color:var(--text-faint);font-size:0.55rem;font-weight:400;margin:0 4px 0 10px">net</span><span style="color:var(--teal)">'+$(netTotal)+'</span></span></div>';
       h+='</div>';
     }
     h+='</div>';
@@ -3932,6 +3940,44 @@ function renderOverview(){
     panels+='<span style="color:var(--text-secondary)">'+c.name+'</span><span style="color:#fff;font-weight:600">$'+fmt2(d.monthly)+'/mo</span></div>';
   });
   panels+='</div>';
+
+  // Income this month + YTD
+  if(_bankingData){
+    const allTxns=_bankingData.transactions||[];
+    const curMonth=_ld().slice(0,7);
+    const curYr=_ld().slice(0,4);
+    let rankThisMonth=0;
+    allTxns.forEach(t=>{if(t.acctId===5554578&&t.amount>0&&!t.isTransfer&&t.date.startsWith(curMonth))rankThisMonth+=t.amount});
+    const rankNetMonth=rankThisMonth*(1-_bizTaxRate);
+    const incomeThisMonth=_monthlyNet+rankNetMonth;
+
+    const months=new Set();
+    allTxns.forEach(t=>{if(t.date.startsWith(curYr))months.add(t.date.slice(0,7))});
+    let ytdRankGross=0;
+    allTxns.forEach(t=>{if(t.acctId===5554578&&t.amount>0&&!t.isTransfer&&t.date.startsWith(curYr))ytdRankGross+=t.amount});
+    const ytdMonthCount=months.size||1;
+    const ytdGross=ytdMonthCount*_monthlyGross+ytdRankGross;
+
+    panels+='<div class="card" style="cursor:pointer" onclick="switchTab(\'finances\')">';
+    panels+='<div class="card-header"><span class="card-title">💵 Income This Month</span></div>';
+    panels+='<div style="display:flex;gap:12px;margin:10px 0">';
+    panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Salary (net)</div><div style="font-weight:700;color:var(--teal)">'+$(_monthlyNet)+'</div></div>';
+    panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Rankify (net)</div><div style="font-weight:700;color:'+(rankNetMonth>0?'var(--teal)':'var(--text-faint)')+'">'+$(rankNetMonth)+'</div></div>';
+    panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Total Net</div><div style="font-weight:700;color:var(--teal)">'+$(incomeThisMonth)+'</div></div>';
+    panels+='</div>';
+    if(rankThisMonth>0){
+      panels+='<div style="font-size:0.6rem;color:var(--text-faint);border-top:1px solid rgba(255,255,255,0.04);padding-top:4px">Rankify gross: '+$(rankThisMonth)+' − 37% tax = '+$(rankNetMonth)+'</div>';
+    }
+    panels+='</div>';
+
+    panels+='<div class="card" style="cursor:pointer" onclick="switchTab(\'finances\')">';
+    panels+='<div class="card-header"><span class="card-title">📊 '+curYr+' Gross Earnings YTD</span></div>';
+    panels+='<div style="display:flex;gap:12px;margin:10px 0">';
+    panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Salary Gross</div><div style="font-weight:700;color:var(--amber)">'+$(ytdMonthCount*_monthlyGross)+'</div></div>';
+    panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Rankify Gross</div><div style="font-weight:700;color:var(--amber)">'+$(ytdRankGross)+'</div></div>';
+    panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Total Gross</div><div style="font-weight:700;color:var(--amber)">'+$(ytdGross)+'</div></div>';
+    panels+='</div></div>';
+  }
 
   // Whoop / Training snapshot
   panels+='<div class="card" style="cursor:pointer" onclick="switchTab(\'whoop\')">';
