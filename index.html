@@ -3909,6 +3909,24 @@ function renderOverview(){
 
   document.getElementById('overview-updated').textContent='Last loaded: '+fmt(new Date().toISOString());
 
+  // FY projection — Australian FY is Jul-Jun
+  let fyProjLabel='—',fyProjVal=0;
+  if(_bankingData){
+    const now=new Date();
+    const fyStartYr=now.getMonth()>=6?now.getFullYear():now.getFullYear()-1;
+    const fyStart=new Date(fyStartYr,6,1);
+    const msElapsed=now-fyStart;
+    const monthsElapsed=Math.max(1,msElapsed/(1000*60*60*24*30.44));
+    const allTxns=_bankingData.transactions||[];
+    let fyRankGross=0;
+    const fyStartStr=fyStartYr+'-07-01';
+    allTxns.forEach(t=>{if(t.acctId===5554578&&t.amount>0&&!t.isTransfer&&t.date>=fyStartStr)fyRankGross+=t.amount});
+    const fySalaryGross=monthsElapsed*_monthlyGross;
+    const fyGrossSoFar=fySalaryGross+fyRankGross;
+    fyProjVal=Math.round(fyGrossSoFar/monthsElapsed*12);
+    fyProjLabel='$'+fmt2(fyProjVal);
+  }
+
   // Build metrics
   const tc=s=>'onclick="switchTab(\''+s+'\')" style="cursor:pointer"';
   document.getElementById('overview-metrics').innerHTML=
@@ -3918,7 +3936,7 @@ function renderOverview(){
     '<div class="card metric-tile" '+tc('whoop')+'><div class="metric-value" style="color:'+(streak>=3?'var(--teal)':'var(--amber)')+'">'+streak+'🔥</div><div class="metric-label">Streak</div></div>'+
     '<div class="card metric-tile" '+tc('goals')+'><div class="metric-value" style="color:var(--amber)">'+activeGoals+'</div><div class="metric-label">Active Goals</div></div>'+
     '<div class="card metric-tile" '+tc('checklists')+'><div class="metric-value teal">'+checklistPct+'%</div><div class="metric-label">Tasks Done</div></div>'+
-    '<div class="card metric-tile" '+tc('notes')+'><div class="metric-value">'+_notes.length+'</div><div class="metric-label">Notes</div></div>';
+    '<div class="card metric-tile" '+tc('finances')+'><div class="metric-value" style="color:var(--amber)">'+fyProjLabel+'</div><div class="metric-label">FY Gross Proj.</div></div>';
 
   // Build panels
   let panels='';
