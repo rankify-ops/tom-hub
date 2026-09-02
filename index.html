@@ -3059,6 +3059,12 @@ function calcTDEE(){
   const bmr=10*s.weight+6.25*s.height-5*s.age+5;
   return Math.round(bmr*s.activityMultiplier);
 }
+function getWhoopDayBurn(date){
+  if(!_whoopHistory)return null;
+  const day=_whoopHistory[date];
+  if(!day||!day.strain||!day.strain.kilojoule)return null;
+  return Math.round(day.strain.kilojoule/4.184);
+}
 function getTodayCalsBurned(){
   const today=_ld();
   let burned=0;
@@ -3178,10 +3184,11 @@ function getDateCals(date){
 function renderCalorieSection(){
   const today=_ld();
   const isToday=_calViewDate===today;
+  const whoopBurn=getWhoopDayBurn(_calViewDate);
   const tdee=calcTDEE();
   const burned=isToday?getTodayCalsBurned():0;
   const {entries,total,protein}=getDateCals(_calViewDate);
-  const adjustedTDEE=tdee+burned;
+  const adjustedTDEE=whoopBurn||tdee+burned;
   const target=adjustedTDEE-_calSettings.deficitGoal;
   const remaining=target-total;
   const pct=target>0?Math.min(Math.round(total/target*100),100):0;
@@ -3203,8 +3210,12 @@ function renderCalorieSection(){
 
   // Summary tiles
   h+='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px">';
-  h+='<div style="text-align:center;padding:10px;border-radius:8px;background:rgba(255,255,255,0.03)"><div style="font-size:0.5rem;color:var(--text-faint)">Base TDEE</div><div style="font-size:0.85rem;font-weight:700;color:#fff">'+tdee+'</div></div>';
-  h+='<div style="text-align:center;padding:10px;border-radius:8px;background:rgba(255,255,255,0.03)"><div style="font-size:0.5rem;color:var(--text-faint)">Workout Burned</div><div style="font-size:0.85rem;font-weight:700;color:var(--teal)">+'+burned+'</div></div>';
+  if(whoopBurn){
+    h+='<div style="text-align:center;padding:10px;border-radius:8px;background:rgba(255,255,255,0.03);grid-column:span 2"><div style="font-size:0.5rem;color:var(--text-faint)">Whoop Burn (actual)</div><div style="font-size:0.85rem;font-weight:700;color:var(--teal)">'+whoopBurn+'</div></div>';
+  }else{
+    h+='<div style="text-align:center;padding:10px;border-radius:8px;background:rgba(255,255,255,0.03)"><div style="font-size:0.5rem;color:var(--text-faint)">Base TDEE</div><div style="font-size:0.85rem;font-weight:700;color:#fff">'+tdee+'</div></div>';
+    h+='<div style="text-align:center;padding:10px;border-radius:8px;background:rgba(255,255,255,0.03)"><div style="font-size:0.5rem;color:var(--text-faint)">Workout Burned</div><div style="font-size:0.85rem;font-weight:700;color:var(--teal)">+'+burned+'</div></div>';
+  }
   h+='<div style="text-align:center;padding:10px;border-radius:8px;background:rgba(255,255,255,0.03)"><div style="font-size:0.5rem;color:var(--text-faint)">Target (−'+_calSettings.deficitGoal+')</div><div style="font-size:0.85rem;font-weight:700;color:var(--amber)">'+target+'</div></div>';
   h+='<div style="text-align:center;padding:10px;border-radius:8px;background:rgba(255,255,255,0.03)"><div style="font-size:0.5rem;color:var(--text-faint)">Eaten</div><div style="font-size:0.85rem;font-weight:700;color:'+(total>target?'var(--red-soft)':'#fff')+'">'+total+'</div></div>';
   h+='<div style="text-align:center;padding:10px;border-radius:8px;background:rgba('+( remaining<0?'239,68,68':'45,212,168')+',0.08);border:1px solid rgba('+(remaining<0?'239,68,68':'45,212,168')+',0.15)"><div style="font-size:0.5rem;color:var(--text-faint)">Remaining</div><div style="font-size:0.85rem;font-weight:700;color:'+barColor+'">'+remaining+'</div></div>';
@@ -3298,6 +3309,39 @@ function renderCalorieSection(){
     h+='<div style="text-align:center;padding:12px;font-size:0.7rem;color:var(--text-faint)">No food logged'+(isToday?'yet':' on this day')+'</div>';
   }
   h+='</div>';
+
+  // Weekly deficit card (Mon-Sun)
+  const nowD=new Date();
+  const dayOfWeek=nowD.getDay()||7;
+  const monDate=new Date(nowD);monDate.setDate(nowD.getDate()-(dayOfWeek-1));
+  let weekBurned=0,weekEaten=0,weekDays=0,weekWhoopDays=0;
+  for(let i=0;i<7;i++){
+    const d=new Date(monDate);d.setDate(monDate.getDate()+i);
+    const dk=_ld(d);
+    if(dk>today)break;
+    const wb=getWhoopDayBurn(dk);
+    if(wb){weekBurned+=wb;weekWhoopDays++}else{weekBurned+=calcTDEE()}
+    weekEaten+=getDateCals(dk).total;
+    weekDays++;
+  }
+  const weekDeficit=weekBurned-weekEaten;
+  const weekTargetDeficit=weekDays*_calSettings.deficitGoal;
+  const estFatLoss=(weekDeficit/7700).toFixed(2);
+  const onTrack=weekDeficit>=weekTargetDeficit;
+  h+='<div class="card" style="padding:18px;margin-top:16px">';
+  h+='<div style="font-size:0.8rem;font-weight:700;color:#fff;margin-bottom:14px">📉 Deficit This Week <span style="font-size:0.6rem;color:var(--text-faint);font-weight:400">(Mon–Sun · '+weekDays+' days'+(weekWhoopDays?' · '+weekWhoopDays+' Whoop':'')+')</span></div>';
+  h+='<div class="metrics-grid" style="grid-template-columns:repeat(4,1fr)">';
+  h+='<div class="metric-tile" style="padding:12px 8px"><div class="metric-value" style="color:var(--teal)">'+weekBurned+'</div><div class="metric-label">Burned</div></div>';
+  h+='<div class="metric-tile" style="padding:12px 8px"><div class="metric-value" style="color:var(--amber)">'+weekEaten+'</div><div class="metric-label">Eaten</div></div>';
+  h+='<div class="metric-tile" style="padding:12px 8px"><div class="metric-value" style="color:'+(weekDeficit>0?'var(--teal)':'var(--red-soft)')+'">'+weekDeficit+'</div><div class="metric-label">Deficit</div></div>';
+  h+='<div class="metric-tile" style="padding:12px 8px"><div class="metric-value" style="color:'+(onTrack?'var(--teal)':'var(--red-soft)')+'">'+estFatLoss+'kg</div><div class="metric-label">Est. Fat Loss</div></div>';
+  h+='</div>';
+  const defPct=weekTargetDeficit>0?Math.min(Math.round(weekDeficit/weekTargetDeficit*100),100):0;
+  h+='<div style="margin-top:10px">';
+  h+='<div style="display:flex;justify-content:space-between;font-size:0.6rem;color:var(--text-faint);margin-bottom:4px"><span>'+weekDeficit+' / '+weekTargetDeficit+' cal deficit target</span><span>'+defPct+'%</span></div>';
+  h+='<div style="height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden"><div style="height:100%;width:'+defPct+'%;background:'+(onTrack?'var(--teal)':'var(--amber)')+';border-radius:4px;transition:width 0.3s"></div></div>';
+  h+='</div></div>';
+
   return h;
 }
 
