@@ -1423,15 +1423,18 @@ function renderNetPosition(){
 
     const sortedEM=Object.keys(earningsMonths).sort((a,b)=>b.localeCompare(a));
 
-    // Year to date totals — salary is fixed monthly rate, not based on deposit count
-    const ytdMonths=sortedEM.filter(m=>m.startsWith(yr));
+    // Year to date totals — Australian FY (Jul 1 – Jun 30)
+    const nowD=new Date();
+    const fyYr=nowD.getMonth()>=6?nowD.getFullYear():nowD.getFullYear()-1;
+    const fyStartDate=fyYr+'-07-01';
+    const ytdMonths=sortedEM.filter(m=>m>=fyStartDate.slice(0,7));
     let ytdSalaryNet=0,ytdBizGross=0;
     for(const m of ytdMonths){
       const d=earningsMonths[m];
       ytdSalaryNet+=d.salary;
       ytdBizGross+=d.bizGross;
     }
-    const _ytdWeds=_countWeds(new Date(+yr,0,1),new Date());
+    const _ytdWeds=_countWeds(new Date(fyYr,6,1),nowD);
     const ytdSalaryGross=_ytdWeds*_weeklyGross;
     const ytdSalaryNetFixed=_ytdWeds*_weeklyIncome;
     const ytdBizNet=ytdBizGross*(1-_bizTaxRate);
@@ -1440,7 +1443,7 @@ function renderNetPosition(){
 
     h+='<div class="card" style="padding:14px;margin-bottom:12px">';
     h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
-    h+='<div style="font-size:0.72rem;font-weight:600;color:var(--white);text-transform:uppercase;letter-spacing:0.5px">'+yr+' Year to Date</div>';
+    h+='<div style="font-size:0.72rem;font-weight:600;color:var(--white);text-transform:uppercase;letter-spacing:0.5px">FY'+fyYr+'/'+(fyYr+1)+' Year to Date</div>';
     h+='<div style="display:flex;gap:14px;align-items:baseline"><span style="font-size:0.6rem;color:var(--text-faint)">gross</span><span style="font-size:1.1rem;font-weight:700;color:var(--amber)">'+$(ytdGrossTotal)+'</span><span style="font-size:0.6rem;color:var(--text-faint)">net</span><span style="font-size:1.1rem;font-weight:700;color:var(--teal)">'+$(ytdNetTotal)+'</span></div></div>';
     h+='<div class="metrics-grid" style="grid-template-columns:repeat(2,1fr);margin-bottom:6px">';
     h+='<div class="metric-tile" style="padding:8px;text-align:center"><div class="metric-value" style="font-size:0.9rem;color:var(--amber)">'+$(ytdSalaryGross)+'</div><div class="metric-label">Salary Gross</div></div>';
@@ -4024,9 +4027,12 @@ function renderOverview(){
     const rankNetMonth=rankThisMonth*(1-_bizTaxRate);
     const incomeThisMonth=_monthlyNet+rankNetMonth;
 
+    const now=new Date();
+    const oFyYr=now.getMonth()>=6?now.getFullYear():now.getFullYear()-1;
+    const oFyStart=oFyYr+'-07-01';
     let ytdRankGross=0;
-    allTxns.forEach(t=>{if(t.acctId===5554578&&t.amount>0&&!t.isTransfer&&t.date.startsWith(curYr))ytdRankGross+=t.amount});
-    const ytdWednesdays=_countWeds(new Date(+curYr,0,1),new Date());
+    allTxns.forEach(t=>{if(t.acctId===5554578&&t.amount>0&&!t.isTransfer&&t.date>=oFyStart)ytdRankGross+=t.amount});
+    const ytdWednesdays=_countWeds(new Date(oFyYr,6,1),now);
     const ytdSalaryGross=ytdWednesdays*_weeklyGross;
     const ytdGross=ytdSalaryGross+ytdRankGross;
 
@@ -4050,7 +4056,7 @@ function renderOverview(){
     panels+='</div>';
 
     panels+='<div class="card" style="cursor:pointer;padding:18px" onclick="switchTab(\'finances\')">';
-    panels+='<div class="card-header" style="margin-bottom:14px"><span class="card-title">📊 '+curYr+' Gross Earnings YTD</span></div>';
+    panels+='<div class="card-header" style="margin-bottom:14px"><span class="card-title">📊 FY'+oFyYr+'/'+(oFyYr+1)+' Gross Earnings YTD</span></div>';
     panels+='<div class="metrics-grid" style="grid-template-columns:repeat(3,1fr)">';
     panels+='<div class="metric-tile" style="padding:16px 10px"><div class="metric-value" style="color:var(--amber)">'+$(ytdSalaryGross)+'</div><div class="metric-label">Salary Gross ('+ytdWednesdays+'wk)</div></div>';
     panels+='<div class="metric-tile" style="padding:16px 10px"><div class="metric-value" style="color:var(--amber)">'+$(ytdRankGross)+'</div><div class="metric-label">Rankify Gross</div></div>';
