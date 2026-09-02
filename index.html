@@ -1230,6 +1230,7 @@ const _weeklyGross=3461.54;
 const _monthlyGross=_weeklyGross*52/12;
 const _monthlyNet=2474.54*52/12;
 const _bizTaxRate=0.37;
+function _countWeds(from,to){let n=0,d=new Date(from);d.setDate(d.getDate()+(3-d.getDay()+7)%7);while(d<=to){n++;d.setDate(d.getDate()+7)}return n}
 
 function fmtDate(d){if(!d)return'–';const p=d.split('-');return p[2]+'/'+p[1]+'/'+p[0].slice(2);}
 
@@ -1430,8 +1431,9 @@ function renderNetPosition(){
       ytdSalaryNet+=d.salary;
       ytdBizGross+=d.bizGross;
     }
-    const ytdSalaryGross=ytdMonths.length*_monthlyGross;
-    const ytdSalaryNetFixed=ytdMonths.length*_monthlyNet;
+    const _ytdWeds=_countWeds(new Date(+yr,0,1),new Date());
+    const ytdSalaryGross=_ytdWeds*_weeklyGross;
+    const ytdSalaryNetFixed=_ytdWeds*_weeklyIncome;
     const ytdBizNet=ytdBizGross*(1-_bizTaxRate);
     const ytdGrossTotal=ytdSalaryGross+ytdBizGross;
     const ytdNetTotal=ytdSalaryNetFixed+ytdBizNet;
@@ -3968,15 +3970,15 @@ function renderOverview(){
     const now=new Date();
     const fyStartYr=now.getMonth()>=6?now.getFullYear():now.getFullYear()-1;
     const fyStart=new Date(fyStartYr,6,1);
-    const msElapsed=now-fyStart;
-    const monthsElapsed=Math.max(1,msElapsed/(1000*60*60*24*30.44));
     const allTxns=_bankingData.transactions||[];
     let fyRankGross=0;
     const fyStartStr=fyStartYr+'-07-01';
     allTxns.forEach(t=>{if(t.acctId===5554578&&t.amount>0&&!t.isTransfer&&t.date>=fyStartStr)fyRankGross+=t.amount});
-    const fySalaryGross=monthsElapsed*_monthlyGross;
+    const fyWeds=_countWeds(fyStart,now);
+    const fySalaryGross=fyWeds*_weeklyGross;
     const fyGrossSoFar=fySalaryGross+fyRankGross;
-    fyProjVal=Math.round(fyGrossSoFar/monthsElapsed*12);
+    const monthsElapsed=Math.max(1,(now-fyStart)/(1000*60*60*24*30.44));
+    fyProjVal=Math.round(52*_weeklyGross+(fyRankGross/monthsElapsed*12));
     fyProjLabel='$'+fmt2(fyProjVal);
   }
 
@@ -4022,12 +4024,11 @@ function renderOverview(){
     const rankNetMonth=rankThisMonth*(1-_bizTaxRate);
     const incomeThisMonth=_monthlyNet+rankNetMonth;
 
-    const months=new Set();
-    allTxns.forEach(t=>{if(t.date.startsWith(curYr))months.add(t.date.slice(0,7))});
     let ytdRankGross=0;
     allTxns.forEach(t=>{if(t.acctId===5554578&&t.amount>0&&!t.isTransfer&&t.date.startsWith(curYr))ytdRankGross+=t.amount});
-    const ytdMonthCount=months.size||1;
-    const ytdGross=ytdMonthCount*_monthlyGross+ytdRankGross;
+    const ytdWednesdays=_countWeds(new Date(+curYr,0,1),new Date());
+    const ytdSalaryGross=ytdWednesdays*_weeklyGross;
+    const ytdGross=ytdSalaryGross+ytdRankGross;
 
     panels+='<div class="card" style="cursor:pointer;padding:18px" onclick="switchTab(\'finances\')">';
     panels+='<div class="card-header" style="margin-bottom:14px"><span class="card-title">💵 Income This Month</span></div>';
@@ -4051,7 +4052,7 @@ function renderOverview(){
     panels+='<div class="card" style="cursor:pointer;padding:18px" onclick="switchTab(\'finances\')">';
     panels+='<div class="card-header" style="margin-bottom:14px"><span class="card-title">📊 '+curYr+' Gross Earnings YTD</span></div>';
     panels+='<div class="metrics-grid" style="grid-template-columns:repeat(3,1fr)">';
-    panels+='<div class="metric-tile" style="padding:16px 10px"><div class="metric-value" style="color:var(--amber)">'+$(ytdMonthCount*_monthlyGross)+'</div><div class="metric-label">Salary Gross</div></div>';
+    panels+='<div class="metric-tile" style="padding:16px 10px"><div class="metric-value" style="color:var(--amber)">'+$(ytdSalaryGross)+'</div><div class="metric-label">Salary Gross ('+ytdWednesdays+'wk)</div></div>';
     panels+='<div class="metric-tile" style="padding:16px 10px"><div class="metric-value" style="color:var(--amber)">'+$(ytdRankGross)+'</div><div class="metric-label">Rankify Gross</div></div>';
     panels+='<div class="metric-tile" style="padding:16px 10px"><div class="metric-value" style="color:var(--amber)">'+$(ytdGross)+'</div><div class="metric-label">Total Gross</div></div>';
     panels+='</div></div>';
