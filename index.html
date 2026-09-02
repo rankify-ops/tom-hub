@@ -2988,6 +2988,7 @@ const _quickCalcItems=[
   {key:'mince',icon:'🥩',label:'Grass-fed Mince',calPer100:171,protPer100:26},
   {key:'chicken',icon:'🍗',label:'Chicken Breast',calPer100:165,protPer100:31},
   {key:'rice',icon:'🍚',label:'White Rice (cooked)',calPer100:130,protPer100:2.7},
+  {key:'avocado',icon:'🥑',label:'Avocado',perUnit:true,calPerUnit:161,protPerUnit:2,unitLabel:'half',unitStep:0.5},
   {key:'eggs',icon:'🥚',label:'Egg (large, ½ tbsp butter)',perUnit:true,calPerUnit:128,protPerUnit:7,unitLabel:'egg'},
 ];
 let _activeQC=null;
@@ -3007,11 +3008,15 @@ function selectQuickCalc(key){
   wrap.style.display='block';
   document.getElementById('cal-qc-icon').textContent=item.icon;
   const inp=document.getElementById('cal-qc-grams');
-  inp.value=item.perUnit?'1':'';
+  const step=item.unitStep||1;
+  inp.step=item.perUnit?step:'1';
+  inp.value=item.perUnit?String(step):'';
   inp.placeholder=item.perUnit?'How many '+item.unitLabel+'s?':'Grams';
   if(item.perUnit){
-    document.getElementById('cal-qc-cals').textContent=item.calPerUnit+' cal';
-    document.getElementById('cal-qc-protein').textContent=item.protPerUnit+'g protein';
+    const initCal=Math.round(step*item.calPerUnit);
+    const initProt=Math.round(step*item.protPerUnit);
+    document.getElementById('cal-qc-cals').textContent=initCal+' cal';
+    document.getElementById('cal-qc-protein').textContent=initProt+'g protein';
   }else{
     document.getElementById('cal-qc-cals').textContent='0 cal';
     document.getElementById('cal-qc-protein').textContent='0g protein';
@@ -3034,7 +3039,10 @@ function logQuickCalc(){
   if(!v||v<=0)return;
   const cal=item.perUnit?Math.round(v*item.calPerUnit):Math.round(v*item.calPer100/100);
   const prot=item.perUnit?Math.round(v*item.protPerUnit):Math.round(v*item.protPer100/100);
-  const label=item.perUnit?item.icon+' '+v+' '+item.unitLabel+(v>1?'s':'')+' (butter)':item.icon+' '+item.label+' ('+v+'g)';
+  let label;
+  if(!item.perUnit){label=item.icon+' '+item.label+' ('+v+'g)'}
+  else if(item.key==='eggs'){label=item.icon+' '+v+' '+item.unitLabel+(v>1?'s':'')+' (butter)'}
+  else{const qty=v===0.5?'½':v===1.5?'1½':String(v);label=item.icon+' '+qty+' '+item.label+(v>1?' ('+item.unitLabel+'s)':' ('+item.unitLabel+')')}
   const today=_ld();
   if(!_calLogs[today])_calLogs[today]=[];
   _calLogs[today].push({id:Date.now().toString(),name:label,calories:cal,protein:prot,time:new Date().toISOString()});
