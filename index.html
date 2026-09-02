@@ -3184,7 +3184,7 @@ function getDateCals(date){
 function renderCalorieSection(){
   const today=_ld();
   const isToday=_calViewDate===today;
-  const whoopBurn=getWhoopDayBurn(_calViewDate);
+  const whoopBurn=isToday?null:getWhoopDayBurn(_calViewDate);
   const tdee=calcTDEE();
   const burned=isToday?getTodayCalsBurned():0;
   const {entries,total,protein}=getDateCals(_calViewDate);
@@ -3319,8 +3319,8 @@ function renderCalorieSection(){
     const d=new Date(monDate);d.setDate(monDate.getDate()+i);
     const dk=_ld(d);
     if(dk>today)break;
-    const wb=getWhoopDayBurn(dk);
-    if(wb){weekBurned+=wb;weekWhoopDays++}else{weekBurned+=calcTDEE()}
+    const wb=(dk===today)?null:getWhoopDayBurn(dk);
+    if(wb){weekBurned+=wb;weekWhoopDays++}else{weekBurned+=calcTDEE()+(dk===today?getTodayCalsBurned():0)}
     weekEaten+=getDateCals(dk).total;
     weekDays++;
   }
