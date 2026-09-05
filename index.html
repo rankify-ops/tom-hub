@@ -1414,7 +1414,7 @@ function renderNetPosition(){
       const m=t.date.slice(0,7);
       if(!earningsMonths[m])earningsMonths[m]={salary:0,bizGross:0,bizExpenses:0,wageCount:0,bizTxns:[]};
       const isWage=t.acctId===5554613&&t.amount>0&&!t.isTransfer&&t.payee&&t.payee.includes(wagePayee);
-      const isBizIncome=bizAcctIds.includes(t.acctId)&&t.amount>0&&!t.isTransfer;
+      const isBizIncome=bizAcctIds.includes(t.acctId)&&t.amount>0;
       const isBizExpense=bizAcctIds.includes(t.acctId)&&t.amount<0&&!t.isTransfer;
       if(isWage){earningsMonths[m].salary+=t.amount;earningsMonths[m].wageCount++}
       if(isBizIncome){earningsMonths[m].bizGross+=t.amount;earningsMonths[m].bizTxns.push(t)}
@@ -4041,7 +4041,7 @@ function renderOverview(){
     const allTxns=_bankingData.transactions||[];
     let fyRankGross=0;
     const fyStartStr=fyStartYr+'-07-01';
-    allTxns.forEach(t=>{if(t.acctId===5554578&&t.amount>0&&!t.isTransfer&&t.date>=fyStartStr)fyRankGross+=t.amount});
+    allTxns.forEach(t=>{if(t.acctId===5554578&&t.amount>0&&t.date>=fyStartStr)fyRankGross+=t.amount});
     const fyWeds=_countWeds(fyStart,now);
     const fySalaryGross=fyWeds*_weeklyGross;
     const fyGrossSoFar=fySalaryGross+fyRankGross;
@@ -4088,7 +4088,7 @@ function renderOverview(){
     const curMonth=_ld().slice(0,7);
     const curYr=_ld().slice(0,4);
     let rankThisMonth=0;
-    allTxns.forEach(t=>{if(t.acctId===5554578&&t.amount>0&&!t.isTransfer&&t.date.startsWith(curMonth))rankThisMonth+=t.amount});
+    allTxns.forEach(t=>{if(t.acctId===5554578&&t.amount>0&&t.date.startsWith(curMonth))rankThisMonth+=t.amount});
     const rankNetMonth=rankThisMonth*(1-_bizTaxRate);
     const incomeThisMonth=_monthlyNet+rankNetMonth;
 
@@ -4096,7 +4096,7 @@ function renderOverview(){
     const oFyYr=now.getMonth()>=6?now.getFullYear():now.getFullYear()-1;
     const oFyStart=oFyYr+'-07-01';
     let ytdRankGross=0;
-    allTxns.forEach(t=>{if(t.acctId===5554578&&t.amount>0&&!t.isTransfer&&t.date>=oFyStart)ytdRankGross+=t.amount});
+    allTxns.forEach(t=>{if(t.acctId===5554578&&t.amount>0&&t.date>=oFyStart)ytdRankGross+=t.amount});
     const ytdWednesdays=_countWeds(new Date(oFyYr,6,1),now);
     const ytdSalaryGross=ytdWednesdays*_weeklyGross;
     const ytdGross=ytdSalaryGross+ytdRankGross;
