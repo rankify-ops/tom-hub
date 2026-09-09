@@ -2832,7 +2832,7 @@ function renderWhoop(){
         html+='<div style="min-width:40px;text-align:center"><span style="color:#fff;font-weight:600">'+(hrvVal||'—')+'</span><div style="font-size:0.45rem;color:var(--text-faint)">HRV</div></div>';
         html+='<div style="min-width:45px;text-align:center"><span style="color:#fff">'+(slHrs||'—')+'h</span><div style="font-size:0.45rem;color:var(--text-faint)">SLEEP</div></div>';
         html+='<div style="min-width:40px;text-align:center"><span style="color:var(--teal);font-weight:600">'+(strainVal!=null?strainVal.toFixed(1):'—')+'</span><div style="font-size:0.45rem;color:var(--text-faint)">STRAIN</div></div>';
-        if(ws.length){const wList=ws.map(w=>{const ns=normSport(w.sport);const icon={running:'🏃',tennis:'🎾',weightlifting:'🏋️',sauna:'🧖'}[ns]||'💪';return icon+' '+(w.duration_min||'?')+'m'}).join(' ');html+='<div style="flex:1;font-size:0.6rem;color:var(--text-secondary);text-align:right">'+wList+'</div>';}
+        if(ws.length){const wList=ws.map(w=>{const ns=normSport(w.sport);const icon={running:'🏃',tennis:'🎾',weightlifting:'🏋️',sauna:'🧖'}[ns]||'💪';const tLog=_trainingLogs.find(l=>l.date===date);const label=ns==='weightlifting'&&tLog?tLog.templateName:(ns?(ns.charAt(0).toUpperCase()+ns.slice(1)):'Workout');return icon+' '+label+' '+(w.duration_min||'?')+'m'}).join(' ');html+='<div style="flex:1;font-size:0.6rem;color:var(--text-secondary);text-align:right">'+wList+'</div>';}
         else html+='<div style="flex:1"></div>';
         html+='</div>';
       });
