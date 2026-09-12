@@ -1350,10 +1350,10 @@ function renderNetPosition(){
   const personalAccts=accts.filter(a=>a.group==='personal'&&a.balance>=0);
   const bizAccts=accts.filter(a=>a.group==='business');
   const loanAccts=accts.filter(a=>a.group==='loan');
-  const ccAcct=accts.find(a=>a.name==='Credit Card');
+  const ccAccts=accts.filter(a=>a.group==='personal'&&a.balance<0);
 
   const totalCash=personalAccts.reduce((s,a)=>s+a.balance,0)+bizAccts.reduce((s,a)=>s+a.balance,0);
-  const ccDebt=ccAcct?Math.abs(ccAcct.balance):0;
+  const ccDebt=ccAccts.reduce((s,a)=>s+Math.abs(a.balance),0);
   const homeLoanFull=loanAccts.reduce((s,a)=>s+Math.abs(a.balance),0);
   const homeLoanShare=Math.round(homeLoanFull/2*100)/100;
 
@@ -1535,11 +1535,11 @@ function renderNetPosition(){
 
   // Debts
   h+='<div style="font-size:0.65rem;font-weight:600;color:var(--red-soft);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;margin-top:16px">Debts</div>';
-  if(ccDebt>0){
+  ccAccts.forEach(cc=>{
     h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
-    h+='<span style="color:var(--text-secondary)">Credit Card <span style="font-size:0.55rem;color:var(--text-faint)">NAB #0779</span></span>';
-    h+='<span style="color:var(--red-soft);font-weight:600">-'+$(ccDebt)+'</span></div>';
-  }
+    h+='<span style="color:var(--text-secondary)">'+cc.name+' <span style="font-size:0.55rem;color:var(--text-faint)">'+cc.bank+(cc.number?' #'+cc.number:'')+'</span></span>';
+    h+='<span style="color:var(--red-soft);font-weight:600">-'+$(Math.abs(cc.balance))+'</span></div>';
+  });
   if(homeLoanFull>0){
     h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
     h+='<span style="color:var(--text-secondary)">Home Loan <span style="font-size:0.55rem;color:var(--text-faint)">CommBank · 50% share (full: '+$(homeLoanFull)+')</span></span>';
