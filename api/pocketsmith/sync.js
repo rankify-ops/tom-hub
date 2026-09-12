@@ -5,6 +5,7 @@ const GROUP_MAP = {
   5554543: 'personal', 5554553: 'personal', 5554558: 'personal',
   5554563: 'personal', 5554568: 'personal', 5554573: 'personal',
   5554598: 'personal', 5554613: 'personal', 5554608: 'personal',
+  5643758: 'personal',
   5554548: 'loan',
   5554578: 'business', 5554583: 'business', 5554588: 'business',
   5554593: 'business', 5554603: 'business', 5554618: 'business',
@@ -61,10 +62,12 @@ module.exports = async function handler(req, res) {
       if (name === 'SUBSCRIPTIONS & BILLS') name = 'Subscriptions & Bills';
       if (name === 'Holding account 2') name = 'Holding Account 2';
       if (name === 'Credit Card #0779') name = 'Credit Card';
+      if (name === 'American Express Platinum Card') name = 'Amex Platinum';
+      const bankName = BANK_MAP[a.institution?.id] || (a.name.toLowerCase().includes('american express') ? 'Amex' : 'Unknown');
       return {
         id: a.id,
         name,
-        bank: BANK_MAP[a.institution?.id] || 'Unknown',
+        bank: bankName,
         number: num,
         balance: a.current_balance,
         group: GROUP_MAP[a.id] || 'personal',
