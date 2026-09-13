@@ -64,12 +64,14 @@ module.exports = async function handler(req, res) {
       if (name === 'Credit Card #0779') name = 'Credit Card';
       if (name === 'American Express Platinum Card') name = 'Amex Platinum';
       const bankName = BANK_MAP[a.institution?.id] || (a.name.toLowerCase().includes('american express') ? 'Amex' : 'Unknown');
+      let balance = a.current_balance;
+      if (a.id === 5643758 && balance > 0) balance = -balance;
       return {
         id: a.id,
         name,
         bank: bankName,
         number: num,
-        balance: a.current_balance,
+        balance,
         group: GROUP_MAP[a.id] || 'personal',
       };
     });
