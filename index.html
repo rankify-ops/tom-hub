@@ -1886,12 +1886,20 @@ function renderBanking(){
   const totalLoanShare=Math.round(totalLoanFull/2*100)/100;
   const totalCash=personalAccts.filter(a=>a.balance>0).reduce((s,a)=>s+a.balance,0)+totalBiz;
   const ccDebt=accts.filter(a=>a.balance<0&&a.group!=='loan').reduce((s,a)=>s+Math.abs(a.balance),0);
-  const totalNet=totalPersonal+totalBiz;
+  const propVal=getPropertyValue();
+  const propShare=propVal?Math.round(propVal.value/2*100)/100:0;
+  const carValue=22000;
+  const carLoanOwing=18133.93;
+  const oweToDOM=1000;
+  const taxBill2025=4000;
+  const totalAssets=totalCash+propShare+carValue;
+  const totalDebts=ccDebt+totalLoanShare+carLoanOwing+oweToDOM+taxBill2025;
+  const totalNet=totalAssets-totalDebts;
 
   let h='<div class="metrics-grid" style="margin-bottom:16px;grid-template-columns:repeat(4,1fr)">';
-  h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:var(--teal)">'+$(totalCash)+'</div><div class="metric-label">Cash</div></div>';
+  h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:var(--teal)">'+$(totalPersonal)+'</div><div class="metric-label">Personal</div></div>';
   h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:var(--amber)">'+$(totalBiz)+'</div><div class="metric-label">Business</div></div>';
-  h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:var(--red-soft)">'+$(ccDebt)+'</div><div class="metric-label">Cards Owing</div></div>';
+  h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:var(--red-soft)">'+$(totalLoanShare)+'</div><div class="metric-label">Loan (50%)</div></div>';
   h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:'+(totalNet>=0?'var(--teal)':'var(--red-soft)')+'">'+$(totalNet)+'</div><div class="metric-label">Net Position</div></div>';
   h+='</div>';
 
