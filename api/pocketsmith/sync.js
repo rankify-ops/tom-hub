@@ -64,14 +64,12 @@ module.exports = async function handler(req, res) {
       if (name === 'Credit Card #0779') name = 'Credit Card';
       if (name === 'American Express Platinum Card') name = 'Amex Platinum';
       const bankName = BANK_MAP[a.institution?.id] || (a.name.toLowerCase().includes('american express') ? 'Amex' : 'Unknown');
-      let balance = a.current_balance;
-      if (a.id === 5643758 && balance > 0) balance = -balance;
       return {
         id: a.id,
         name,
         bank: bankName,
         number: num,
-        balance,
+        balance: a.current_balance,
         group: GROUP_MAP[a.id] || 'personal',
       };
     });
@@ -111,6 +109,12 @@ module.exports = async function handler(req, res) {
     }
 
     transactions.sort((a, b) => b.date.localeCompare(a.date));
+
+    const amex = accounts.find(a => a.id === 5643758);
+    if (amex) {
+      const amexTotal = transactions.filter(t => t.acctId === 5643758).reduce((s, t) => s + t.amount, 0);
+      amex.balance = amexTotal;
+    }
 
     await kvSet('tom_pocketsmith', JSON.stringify({
       accounts,
