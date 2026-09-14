@@ -1142,7 +1142,7 @@ async function loadFinances(){
       const d=await res.json();
       _finances=d.entries||[];
       if(d.updated)document.getElementById('finances-updated').textContent='Saved: '+fmt(d.updated);
-      const COST_VERSION=6;
+      const COST_VERSION=7;
       if(d.costTracking&&d.costTracking.length&&d.costsVersion>=COST_VERSION){
         _costTracking=d.costTracking;
         _weeklyIncome=d.weeklyIncome??2469.54;
@@ -1156,7 +1156,7 @@ async function loadFinances(){
   }catch(e){console.warn('Finances load failed',e)}
 }
 async function saveCostTracking(){
-  try{await fetch('/api/finances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save_costs',items:_costTracking,weeklyIncome:_weeklyIncome,version:6})})}catch(e){console.warn('Cost tracking save failed',e)}
+  try{await fetch('/api/finances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save_costs',items:_costTracking,weeklyIncome:_weeklyIncome,version:7})})}catch(e){console.warn('Cost tracking save failed',e)}
 }
 async function saveFinances(){
   try{await fetch('/api/finances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',entries:_finances})});document.getElementById('finances-updated').textContent='Saved: '+fmt(new Date().toISOString())}catch(e){console.warn('Finances save failed',e)}
@@ -1205,7 +1205,7 @@ function deleteFinance(id){
   saveFinances();renderFinances();renderOverview();
 }
 const _defaultCosts=[
-  {name:'Investment Property 33/286',owner:'Thomas Flood',monthly:1313,annual:15765,sixMonth:null,cycle:'Monthly',category:'Investment',catColor:'#e9c162',status:'active',payment:'Transfer to Commbank',payColor:'#ffc53d',renewal:'2026-07-12',url:null},
+  {name:'Investment Property 33/286',owner:'Thomas Flood',monthly:null,annual:null,sixMonth:null,weekly:316.75,cycle:'Weekly',category:'Investment',catColor:'#e9c162',status:'active',payment:'Transfer to Commbank',payColor:'#ffc53d',renewal:'2026-09-17',url:null},
   {name:'Rent 6/286 Espl',owner:'Thomas Flood',monthly:620,annual:7440,sixMonth:null,cycle:'Monthly',category:'Rent',catColor:'#8dcec3',status:'active',payment:'Transfer to Commbank',payColor:'#ffc53d',renewal:'2028-04-03',url:null},
   {name:'Car Finance Costs',owner:'Thomas Flood',monthly:566.42,annual:6797.04,sixMonth:null,cycle:'Monthly',category:'Car',catColor:'#ffaa7d',status:'active',payment:'Subscription & Bills NAB',payColor:'#0091ff',renewal:'2026-06-30',url:'https://self-service.taureancapital.com.au'},
   {name:'Money sent to Rankify account',owner:'Thomas Flood',monthly:535,annual:6420,sixMonth:null,cycle:'Monthly',category:'Investment',catColor:'#e9c162',status:'active',payment:'Rankify Transfer',payColor:'#30a46c',renewal:'2026-07-12',url:null},
