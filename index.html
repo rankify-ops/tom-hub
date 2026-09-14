@@ -1577,10 +1577,13 @@ function renderNetPosition(){
     h+='<div style="font-size:0.72rem;font-weight:600;color:var(--white);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Property Value History — 33/286 The Esplanade</div>';
     const pvChart=buildPropValueChart();
     if(pvChart)h+='<div style="margin-bottom:12px">'+pvChart+'</div>';
+    const _srcColors={realestate:'var(--teal)',commbank:'var(--amber)'};
+    const _srcLabels={realestate:'REA',commbank:'CommBank'};
     for(const entry of sorted){
       const share=Math.round(entry.value/2*100)/100;
+      const src=entry.source||'realestate';
       h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
-      h+='<span style="color:var(--text-secondary)">'+fmtShort(entry.date)+'</span>';
+      h+='<span style="color:var(--text-secondary)">'+fmtShort(entry.date)+' <span style="font-size:0.55rem;color:'+(_srcColors[src]||'var(--text-faint)')+'">'+(_srcLabels[src]||src)+'</span></span>';
       h+='<span style="color:var(--text-muted)">'+$(entry.value)+' <span style="font-size:0.55rem;color:var(--text-faint)">50%: '+$(share)+'</span></span></div>';
     }
     h+='</div>';
@@ -3514,22 +3517,32 @@ async function saveProperties(){
 }
 function getPropertyValue(){
   if(!_propertyValueLog.length)return null;
-  const sorted=[..._propertyValueLog].sort((a,b)=>b.date.localeCompare(a.date));
-  return sorted[0];
+  const sources=[...new Set(_propertyValueLog.map(e=>e.source||'realestate'))];
+  const latestBySrc=sources.map(s=>{
+    const entries=_propertyValueLog.filter(e=>(e.source||'realestate')===s).sort((a,b)=>b.date.localeCompare(a.date));
+    return entries[0];
+  }).filter(Boolean);
+  if(!latestBySrc.length)return null;
+  const vals=latestBySrc.map(e=>e.value).sort((a,b)=>a-b);
+  const median=vals.length%2?vals[Math.floor(vals.length/2)]:(vals[vals.length/2-1]+vals[vals.length/2])/2;
+  const latest=latestBySrc.sort((a,b)=>b.date.localeCompare(a.date))[0];
+  return{value:median,date:latest.date,sources:latestBySrc};
 }
 
 function buildPropValueChart(){
   if(_propertyValueLog.length<2)return '';
-  const sorted=[..._propertyValueLog].sort((a,b)=>a.date.localeCompare(b.date));
-  const vals=sorted.map(e=>e.value);
-  const minV=Math.min(...vals)*0.98;
-  const maxV=Math.max(...vals)*1.02;
+  const SRC_CFG={realestate:{color:'#2dd4a8',label:'REA Estimate'},commbank:{color:'#e9c162',label:'CommBank Estimate'},median:{color:'#fff',label:'Median Value'}};
+  const sources=[...new Set(_propertyValueLog.map(e=>e.source||'realestate'))];
+  const allDates=[...new Set(_propertyValueLog.map(e=>e.date))].sort();
+  const allVals=_propertyValueLog.map(e=>e.value);
+  const minV=Math.min(...allVals)*0.98;
+  const maxV=Math.max(...allVals)*1.02;
   const range=maxV-minV||1;
-  const W=400,H=120,PL=50,PR=10,PT=15,PB=22;
+  const W=400,H=140,PL=50,PR=10,PT=15,PB=28;
   const IW=W-PL-PR,IH=H-PT-PB;
-  const xOf=i=>PL+(sorted.length>1?i/(sorted.length-1):0.5)*IW;
+  const xOf=i=>PL+(allDates.length>1?i/(allDates.length-1):0.5)*IW;
   const yOf=v=>PT+IH-((v-minV)/range*IH);
-  const pts=sorted.map((e,i)=>xOf(i)+','+yOf(e.value)).join(' ');
+
   let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;overflow:visible">';
   const steps=4;
   for(let i=0;i<=steps;i++){
@@ -3538,19 +3551,55 @@ function buildPropValueChart(){
     s+='<line x1="'+PL+'" y1="'+y+'" x2="'+(W-PR)+'" y2="'+y+'" stroke="rgba(255,255,255,0.04)" stroke-width="0.5"/>';
     s+='<text x="'+(PL-3)+'" y="'+(y+1.5)+'" fill="rgba(255,255,255,0.25)" font-size="3.5" text-anchor="end" font-family="var(--font)">$'+(v>=1e6?(v/1e6).toFixed(2)+'M':Math.round(v/1000)+'K')+'</text>';
   }
-  s+='<defs><linearGradient id="pvFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(45,212,168,0.2)"/><stop offset="100%" stop-color="rgba(45,212,168,0)"/></linearGradient></defs>';
-  const fillPts=xOf(0)+','+yOf(minV)+' '+pts+' '+xOf(sorted.length-1)+','+yOf(minV);
-  s+='<polygon points="'+fillPts+'" fill="url(#pvFill)"/>';
-  s+='<polyline points="'+pts+'" fill="none" stroke="#2dd4a8" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>';
-  sorted.forEach((e,i)=>{
-    const x=xOf(i),y=yOf(e.value);
-    const isLast=i===sorted.length-1;
-    s+='<circle cx="'+x+'" cy="'+y+'" r="'+(isLast?'3':'2')+'" fill="#2dd4a8" stroke="'+(isLast?'#fff':'none')+'" stroke-width="'+(isLast?'0.8':'0')+'"/>';
-    s+='<text x="'+x+'" y="'+(y-5)+'" fill="'+(isLast?'#fff':'rgba(255,255,255,0.5)')+'" font-size="'+(isLast?'4':'3.5')+'" text-anchor="middle" font-weight="'+(isLast?'700':'400')+'" font-family="var(--font)">$'+(e.value/1000)+'K</text>';
-    const d=new Date(e.date+'T00:00:00');
-    const lbl=d.toLocaleDateString('en-AU',{day:'numeric',month:'short'});
-    s+='<text x="'+x+'" y="'+(H-2)+'" fill="'+(isLast?'#fff':'rgba(255,255,255,0.3)')+'" font-size="3.5" text-anchor="middle" font-weight="'+(isLast?'600':'400')+'" font-family="var(--font)">'+lbl+'</text>';
+
+  sources.forEach(src=>{
+    const cfg=SRC_CFG[src]||{color:'#96c7f2',label:src};
+    const entries=_propertyValueLog.filter(e=>(e.source||'realestate')===src).sort((a,b)=>a.date.localeCompare(b.date));
+    const pts=entries.map(e=>{const di=allDates.indexOf(e.date);return xOf(di)+','+yOf(e.value)}).join(' ');
+    s+='<polyline points="'+pts+'" fill="none" stroke="'+cfg.color+'" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>';
+    entries.forEach(e=>{
+      const di=allDates.indexOf(e.date);
+      const x=xOf(di),y=yOf(e.value);
+      const isLast=e===entries[entries.length-1];
+      s+='<circle cx="'+x+'" cy="'+y+'" r="'+(isLast?'2.5':'1.5')+'" fill="'+cfg.color+'"/>';
+      if(isLast)s+='<text x="'+x+'" y="'+(y-5)+'" fill="'+cfg.color+'" font-size="3.8" text-anchor="middle" font-weight="700" font-family="var(--font)">$'+(e.value/1000)+'K</text>';
+    });
   });
+
+  if(sources.length>1){
+    const medianPts=allDates.map((d,di)=>{
+      const valsOnDate=_propertyValueLog.filter(e=>e.date===d).map(e=>e.value).sort((a,b)=>a-b);
+      if(!valsOnDate.length)return null;
+      const med=valsOnDate.length%2?valsOnDate[Math.floor(valsOnDate.length/2)]:(valsOnDate[0]+valsOnDate[valsOnDate.length-1])/2;
+      return{x:xOf(di),y:yOf(med),v:med};
+    }).filter(Boolean);
+    if(medianPts.length>1){
+      s+='<polyline points="'+medianPts.map(p=>p.x+','+p.y).join(' ')+'" fill="none" stroke="#fff" stroke-width="1" stroke-dasharray="3,2" stroke-linejoin="round" opacity="0.6"/>';
+      const last=medianPts[medianPts.length-1];
+      s+='<text x="'+last.x+'" y="'+(last.y-5)+'" fill="#fff" font-size="3.8" text-anchor="middle" font-weight="700" font-family="var(--font)">$'+(last.v/1000)+'K</text>';
+    }
+  }
+
+  allDates.forEach((d,i)=>{
+    const dt=new Date(d+'T00:00:00');
+    const lbl=dt.toLocaleDateString('en-AU',{day:'numeric',month:'short'});
+    const isLast=i===allDates.length-1;
+    s+='<text x="'+xOf(i)+'" y="'+(H-8)+'" fill="'+(isLast?'#fff':'rgba(255,255,255,0.3)')+'" font-size="3.5" text-anchor="middle" font-weight="'+(isLast?'600':'400')+'" font-family="var(--font)">'+lbl+'</text>';
+  });
+
+  s+='<g transform="translate('+PL+','+(H-2)+'">';
+  let lx=0;
+  sources.forEach(src=>{
+    const cfg=SRC_CFG[src]||{color:'#96c7f2',label:src};
+    s+='<circle cx="'+lx+'" cy="0" r="2" fill="'+cfg.color+'"/>';
+    s+='<text x="'+(lx+4)+'" y="1.5" fill="rgba(255,255,255,0.5)" font-size="3" font-family="var(--font)">'+cfg.label+'</text>';
+    lx+=cfg.label.length*2+14;
+  });
+  if(sources.length>1){
+    s+='<line x1="'+lx+'" y1="0" x2="'+(lx+8)+'" y2="0" stroke="#fff" stroke-width="0.8" stroke-dasharray="2,1" opacity="0.6"/>';
+    s+='<text x="'+(lx+11)+'" y="1.5" fill="rgba(255,255,255,0.5)" font-size="3" font-family="var(--font)">Median</text>';
+  }
+  s+='</g>';
   s+='</svg>';
   return s;
 }
@@ -3754,25 +3803,77 @@ function openPropDetail(){
 
   // Property value chart + history
   if(_propertyValueLog.length){
-    const pvSorted=[..._propertyValueLog].sort((a,b)=>b.date.localeCompare(a.date));
-    const latest=pvSorted[0];
-    const share50=Math.round(latest.value/2*100)/100;
+    const propVal=getPropertyValue();
+    const medianVal=propVal?propVal.value:0;
+    const share50=Math.round(medianVal/2*100)/100;
+    const SRC_LABELS={realestate:'REA Estimate',commbank:'CommBank Estimate'};
+    const SRC_COLORS={realestate:'var(--teal)',commbank:'var(--amber)'};
     h+='<div class="card" style="padding:24px;margin-bottom:16px">';
     h+='<div style="font-size:0.9rem;font-weight:700;color:#fff;margin-bottom:4px">📈 Property Value</div>';
-    h+='<div style="display:flex;gap:20px;align-items:baseline;margin-bottom:16px">';
-    h+='<div><span style="font-size:1.4rem;font-weight:700;color:var(--teal)">'+$(latest.value)+'</span><span style="font-size:0.65rem;color:var(--text-faint);margin-left:6px">full value</span></div>';
+    h+='<div style="display:flex;gap:20px;align-items:baseline;margin-bottom:6px">';
+    h+='<div><span style="font-size:1.4rem;font-weight:700;color:#fff">'+$(medianVal)+'</span><span style="font-size:0.65rem;color:var(--text-faint);margin-left:6px">median value</span></div>';
     h+='<div><span style="font-size:1rem;font-weight:600;color:var(--amber)">'+$(share50)+'</span><span style="font-size:0.65rem;color:var(--text-faint);margin-left:6px">50% share</span></div>';
     h+='</div>';
+    if(propVal&&propVal.sources){
+      h+='<div style="display:flex;gap:16px;margin-bottom:14px">';
+      propVal.sources.forEach(s=>{
+        const src=s.source||'realestate';
+        h+='<div style="font-size:0.68rem;color:'+(SRC_COLORS[src]||'var(--text-muted)')+'">'+
+          (SRC_LABELS[src]||src)+': <b>'+$(s.value)+'</b></div>';
+      });
+      h+='</div>';
+    }
     const pvChart=buildPropValueChart();
     if(pvChart)h+='<div style="margin-bottom:14px">'+pvChart+'</div>';
+    const pvSorted=[..._propertyValueLog].sort((a,b)=>b.date.localeCompare(a.date));
     for(const entry of pvSorted){
       const sh=Math.round(entry.value/2*100)/100;
+      const src=entry.source||'realestate';
       h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
-      h+='<span style="color:var(--text-secondary)">'+fmtShort(entry.date)+'</span>';
+      h+='<span style="color:var(--text-secondary)">'+fmtShort(entry.date)+' <span style="font-size:0.55rem;color:'+(SRC_COLORS[src]||'var(--text-faint)')+'">'+
+        (SRC_LABELS[src]||src)+'</span></span>';
       h+='<span style="color:var(--text-muted)">'+$(entry.value)+' <span style="font-size:0.55rem;color:var(--text-faint)">50%: '+$(sh)+'</span></span></div>';
     }
     h+='</div>';
   }
+
+  // Home Loan & Interest Rate
+  const loanAcct=(_bankingData?.accounts||[]).find(a=>a.id===5554548);
+  const loanBal=loanAcct?Math.abs(loanAcct.balance):0;
+  const loanShare=Math.round(loanBal/2*100)/100;
+  const interestRate=6.300;
+  const rateLastChanged='10/08/2026';
+  h+='<div class="card" style="padding:24px;margin-bottom:16px">';
+  h+='<div style="font-size:0.9rem;font-weight:700;color:#fff;margin-bottom:14px">🏦 Home Loan</div>';
+  h+='<div class="metrics-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:14px">';
+  h+='<div class="card metric-tile" style="padding:14px"><div class="metric-value" style="font-size:1rem;color:var(--red-soft)">'+$(loanBal)+'</div><div class="metric-label">Remaining (Full)</div></div>';
+  h+='<div class="card metric-tile" style="padding:14px"><div class="metric-value" style="font-size:1rem;color:var(--amber)">'+$(loanShare)+'</div><div class="metric-label">50% Share</div></div>';
+  h+='<div class="card metric-tile" style="padding:14px"><div class="metric-value" style="font-size:1rem;color:#fff">'+interestRate.toFixed(3)+'%</div><div class="metric-label">Interest Rate p.a.</div></div>';
+  h+='</div>';
+  h+='<div style="font-size:0.65rem;color:var(--text-faint)">Rate last changed: '+rateLastChanged+' · Weekly repayment: $1,328 ($664 your share)</div>';
+  const propMedian=getPropertyValue();
+  if(propMedian&&loanBal){
+    const equity=propMedian.value-loanBal;
+    const equityShare=Math.round(equity/2*100)/100;
+    const lvr=((loanBal/propMedian.value)*100).toFixed(1);
+    h+='<div style="display:flex;gap:16px;margin-top:12px;padding:12px;border-radius:8px;background:rgba(255,255,255,0.03)">';
+    h+='<div style="text-align:center;flex:1"><div style="font-size:0.55rem;color:var(--text-faint)">Equity (Full)</div><div style="font-size:0.85rem;font-weight:700;color:var(--teal)">'+$(equity)+'</div></div>';
+    h+='<div style="text-align:center;flex:1"><div style="font-size:0.55rem;color:var(--text-faint)">Equity (50%)</div><div style="font-size:0.85rem;font-weight:700;color:var(--teal)">'+$(equityShare)+'</div></div>';
+    h+='<div style="text-align:center;flex:1"><div style="font-size:0.55rem;color:var(--text-faint)">LVR</div><div style="font-size:0.85rem;font-weight:700;color:'+(parseFloat(lvr)>80?'var(--red-soft)':'var(--amber)')+'">'+lvr+'%</div></div>';
+    h+='</div>';
+  }
+  h+='<div style="margin-top:14px">';
+  h+='<div style="font-size:0.7rem;font-weight:600;color:var(--text-secondary);margin-bottom:8px">Rate History</div>';
+  const rateHistory=[
+    {date:'10/08/2026',rate:'6.300%',note:'Current rate'},
+  ];
+  rateHistory.forEach(r=>{
+    h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
+    h+='<span style="color:var(--text-secondary)">'+r.date+'</span>';
+    h+='<span style="color:#fff;font-weight:600">'+r.rate+'</span>';
+    h+='<span style="color:var(--text-faint);font-size:0.6rem">'+r.note+'</span></div>';
+  });
+  h+='</div></div>';
 
   // Contacts
   h+='<div style="font-size:0.9rem;font-weight:700;color:#fff;margin-bottom:14px">📇 Property Contacts</div>';
