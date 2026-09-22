@@ -69,6 +69,7 @@ module.exports = async function handler(req, res) {
         data[arrayKey].unshift(item);
         data.updated = new Date().toISOString();
         await kvSet(SPACES[space].key, data);
+        fireWebhook('item_added', { space, itemId: item.id });
         return res.status(200).json({ success: true, item });
       }
 
@@ -83,6 +84,7 @@ module.exports = async function handler(req, res) {
         Object.assign(data[arrayKey][idx], updates, { modified: new Date().toISOString() });
         data.updated = new Date().toISOString();
         await kvSet(SPACES[space].key, data);
+        fireWebhook('item_updated', { space, itemId: id });
         return res.status(200).json({ success: true, item: data[arrayKey][idx] });
       }
 
@@ -95,7 +97,15 @@ module.exports = async function handler(req, res) {
         data[arrayKey] = data[arrayKey].filter(i => i.id !== id);
         data.updated = new Date().toISOString();
         await kvSet(SPACES[space].key, data);
+        fireWebhook('item_deleted', { space, itemId: id });
         return res.status(200).json({ success: true });
+      }
+
+      // ── Test webhook ──
+
+      if (action === 'test_webhook') {
+        await fireWebhook('test', { message: 'Webhook test from tom-hub' });
+        return res.status(200).json({ success: true, message: 'Test webhook fired' });
       }
 
       // ── Calories: special log-by-date structure ──
@@ -162,7 +172,7 @@ module.exports = async function handler(req, res) {
         return res.status(200).json(data);
       }
 
-      return res.status(400).json({ error: 'Unknown action. Available: ping, list_spaces, get_space, set_space, add_item, update_item, delete_item, log_calories, log_weight, log_training, get_whoop, get_banking' });
+      return res.status(400).json({ error: 'Unknown action. Available: ping, list_spaces, get_space, set_space, add_item, update_item, delete_item, test_webhook, log_calories, log_weight, log_training, get_whoop, get_banking' });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
