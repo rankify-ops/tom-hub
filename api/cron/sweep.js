@@ -65,7 +65,7 @@ module.exports = async function handler(req, res) {
       const lastDate = Object.keys(calories.logs).sort().pop();
       if (lastDate) {
         const daysSince = Math.floor((todayMs - new Date(lastDate + 'T00:00:00Z').getTime()) / 86400000);
-        if (daysSince >= 3) {
+        if (daysSince >= 3 && daysSince <= 7) {
           alerts.push({
             event: 'calories_stale',
             data: { lastLogDate: lastDate, daysSince },
