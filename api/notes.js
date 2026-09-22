@@ -1,27 +1,4 @@
-async function kvGet(key) {
-  const url = process.env.KV_REST_API_URL;
-  const token = process.env.KV_REST_API_TOKEN;
-  if (!url || !token) return null;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(['GET', key]),
-  });
-  if (!res.ok) return null;
-  const data = await res.json();
-  return data.result ? JSON.parse(data.result) : null;
-}
-
-async function kvSet(key, value) {
-  const url = process.env.KV_REST_API_URL;
-  const token = process.env.KV_REST_API_TOKEN;
-  if (!url || !token) throw new Error('KV not configured');
-  await fetch(url, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(['SET', key, value]),
-  });
-}
+const { kvGet, kvSet } = require('./db');
 
 const KV_KEY = 'tom_notes';
 
@@ -38,7 +15,7 @@ module.exports = async function handler(req, res) {
 
       if (action === 'save') {
         const { notes } = req.body;
-        await kvSet(KV_KEY, JSON.stringify({ notes, updated: new Date().toISOString() }));
+        await kvSet(KV_KEY, { notes, updated: new Date().toISOString() });
         return res.status(200).json({ success: true });
       }
 

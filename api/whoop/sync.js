@@ -1,27 +1,4 @@
-async function kvGet(key) {
-  const url = process.env.KV_REST_API_URL;
-  const token = process.env.KV_REST_API_TOKEN;
-  if (!url || !token) return null;
-  const r = await fetch(url, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(['GET', key]),
-  });
-  if (!r.ok) return null;
-  const data = await r.json();
-  return data.result ? JSON.parse(data.result) : null;
-}
-
-async function kvSet(key, value) {
-  const url = process.env.KV_REST_API_URL;
-  const token = process.env.KV_REST_API_TOKEN;
-  if (!url || !token) throw new Error('KV not configured');
-  await fetch(url, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(['SET', key, value]),
-  });
-}
+const { kvGet, kvSet } = require('../db');
 
 async function refreshTokens(tokens) {
   const res = await fetch('https://api.prod.whoop.com/oauth/oauth2/token', {
@@ -42,7 +19,7 @@ async function refreshTokens(tokens) {
     expires_at: Date.now() + (data.expires_in * 1000),
     updated: new Date().toISOString(),
   };
-  await kvSet('tom_whoop_tokens', JSON.stringify(updated));
+  await kvSet('tom_whoop_tokens', updated);
   return updated;
 }
 
@@ -188,11 +165,11 @@ module.exports = async function handler(req, res) {
     }
 
     // Save history
-    await kvSet('tom_whoop_history', JSON.stringify(history));
+    await kvSet('tom_whoop_history', history);
 
     // Also save last sync timestamp
     const syncMeta = { last_sync: now.toISOString(), days_in_db: Object.keys(history).length, days_updated: daysUpdated };
-    await kvSet('tom_whoop_sync_meta', JSON.stringify(syncMeta));
+    await kvSet('tom_whoop_sync_meta', syncMeta);
 
     return res.status(200).json({ synced: true, ...syncMeta });
   } catch (err) {

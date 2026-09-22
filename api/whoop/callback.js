@@ -1,13 +1,4 @@
-async function kvSet(key, value) {
-  const url = process.env.KV_REST_API_URL;
-  const token = process.env.KV_REST_API_TOKEN;
-  if (!url || !token) throw new Error('KV not configured');
-  await fetch(url, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(['SET', key, value]),
-  });
-}
+const { kvSet } = require('../db');
 
 module.exports = async function handler(req, res) {
   try {
@@ -45,12 +36,12 @@ module.exports = async function handler(req, res) {
 
     const tokens = await tokenRes.json();
 
-    await kvSet('tom_whoop_tokens', JSON.stringify({
+    await kvSet('tom_whoop_tokens', {
       access_token: tokens.access_token,
       refresh_token: tokens.refresh_token,
       expires_at: Date.now() + (tokens.expires_in * 1000),
       updated: new Date().toISOString(),
-    }));
+    });
 
     res.redirect('/?whoop=connected');
   } catch (err) {

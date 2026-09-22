@@ -1,27 +1,4 @@
-async function kvGet(key) {
-  const url = process.env.KV_REST_API_URL;
-  const token = process.env.KV_REST_API_TOKEN;
-  if (!url || !token) return null;
-  const r = await fetch(url, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(['GET', key]),
-  });
-  if (!r.ok) return null;
-  const data = await r.json();
-  return data.result ? JSON.parse(data.result) : null;
-}
-
-async function kvSet(key, value) {
-  const url = process.env.KV_REST_API_URL;
-  const token = process.env.KV_REST_API_TOKEN;
-  if (!url || !token) throw new Error('KV not configured');
-  await fetch(url, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(['SET', key, value]),
-  });
-}
+const { kvGet, kvSet } = require('../db');
 
 async function refreshTokens(tokens) {
   const clientId = process.env.WHOOP_CLIENT_ID;
@@ -47,7 +24,7 @@ async function refreshTokens(tokens) {
     expires_at: Date.now() + (data.expires_in * 1000),
     updated: new Date().toISOString(),
   };
-  await kvSet('tom_whoop_tokens', JSON.stringify(updated));
+  await kvSet('tom_whoop_tokens', updated);
   return updated;
 }
 

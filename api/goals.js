@@ -1,27 +1,4 @@
-async function kvGet(key) {
-  const url = process.env.KV_REST_API_URL;
-  const token = process.env.KV_REST_API_TOKEN;
-  if (!url || !token) return null;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(['GET', key]),
-  });
-  if (!res.ok) return null;
-  const data = await res.json();
-  return data.result ? JSON.parse(data.result) : null;
-}
-
-async function kvSet(key, value) {
-  const url = process.env.KV_REST_API_URL;
-  const token = process.env.KV_REST_API_TOKEN;
-  if (!url || !token) throw new Error('KV not configured');
-  await fetch(url, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(['SET', key, value]),
-  });
-}
+const { kvGet, kvSet } = require('./db');
 
 const KV_KEY = 'tom_goals';
 
@@ -39,14 +16,14 @@ module.exports = async function handler(req, res) {
       if (action === 'save') {
         const { goals } = req.body;
         const existing = await kvGet(KV_KEY) || {};
-        await kvSet(KV_KEY, JSON.stringify({ ...existing, goals, updated: new Date().toISOString() }));
+        await kvSet(KV_KEY, { ...existing, goals, updated: new Date().toISOString() });
         return res.status(200).json({ success: true });
       }
 
       if (action === 'save_2026') {
         const { statuses } = req.body;
         const existing = await kvGet(KV_KEY) || {};
-        await kvSet(KV_KEY, JSON.stringify({ ...existing, statuses_2026: statuses, updated: new Date().toISOString() }));
+        await kvSet(KV_KEY, { ...existing, statuses_2026: statuses, updated: new Date().toISOString() });
         return res.status(200).json({ success: true });
       }
 

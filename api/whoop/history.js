@@ -1,16 +1,4 @@
-async function kvGet(key) {
-  const url = process.env.KV_REST_API_URL;
-  const token = process.env.KV_REST_API_TOKEN;
-  if (!url || !token) return null;
-  const r = await fetch(url, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(['GET', key]),
-  });
-  if (!r.ok) return null;
-  const data = await r.json();
-  return data.result ? JSON.parse(data.result) : null;
-}
+const { kvGet } = require('../db');
 
 module.exports = async function handler(req, res) {
   try {
