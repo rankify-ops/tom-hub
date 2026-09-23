@@ -2469,7 +2469,7 @@ async function loadWhoop(){
     if(_whoopData&&_whoopData.connected)fetch('/api/whoop/sync').catch(()=>{});
   }catch(e){console.warn('Whoop load failed',e)}
 }
-function normSport(s){if(!s)return'';s=s.toLowerCase();if(s.includes('sauna'))return'sauna';return s;}
+function normSport(s){if(!s)return'';s=s.toLowerCase();if(s.includes('sauna'))return'sauna';if(s.includes('weight')||s.includes('back')||s.includes('chest')||s.includes('legs')||s.includes('bicep')||s.includes('tricep')||s.includes('shoulder')||s.includes('push')||s.includes('pull'))return'weightlifting';return s;}
 
 function _rangeFilter(storageKey,current){
   const opts=[{k:'7d',l:'7 Days'},{k:'thisweek',l:'This Week'},{k:'30d',l:'30 Days'},{k:'all',l:'All'}];
@@ -2692,17 +2692,30 @@ function renderWhoop(){
       const dur=w.start&&w.end?Math.round((new Date(w.end)-new Date(w.start))/60000):null;
       allWorkouts.push({source:'whoop',date,sport:ns,sportLabel:ns?(ns.charAt(0).toUpperCase()+ns.slice(1)):'Workout',icon:sportIcons[ns]||'💪',duration:dur,strain:w.score?.strain||null,trainingLog:null,whoopId:w.id||null,whoopScore:w.score||null,whoopStart:w.start,whoopEnd:w.end});
     });}
-    // Add training logs that don't already have a Whoop history match
+    // Add training logs and match to Whoop workouts
     _trainingLogs.forEach(log=>{
-      const hasMatch=allWorkouts.some(w=>w.date===log.date&&w.source==='whoop');
       const tpl=_templates.find(t=>t.id===log.templateId);
-      allWorkouts.push({source:hasMatch?'both':'training',date:log.date,sport:normSport(tpl?.name||''),sportLabel:log.templateName,icon:tpl?tpl.icon:'🏋️',duration:getWhoopDuration(log),strain:null,trainingLog:log,whoopMatched:hasMatch});
+      const wm=findWhoopMatch(log);
+      const whoopIdx=wm?allWorkouts.findIndex(w=>w.source==='whoop'&&w.whoopId===wm.id):-1;
+      if(whoopIdx>=0){
+        // Replace the generic Whoop entry with the training log version
+        const wEntry=allWorkouts[whoopIdx];
+        allWorkouts[whoopIdx]={...wEntry,source:'both',sport:normSport(tpl?.name||''),sportLabel:log.templateName,icon:tpl?tpl.icon:'🏋️',trainingLog:log,whoopMatched:true,strain:wm.score?.strain||wEntry.strain,whoopScore:wm.score||wEntry.whoopScore,whoopId:wm.id};
+      } else {
+        allWorkouts.push({source:'training',date:log.date,sport:normSport(tpl?.name||''),sportLabel:log.templateName,icon:tpl?tpl.icon:'🏋️',duration:getWhoopDuration(log),strain:null,trainingLog:log,whoopMatched:false});
+      }
     });
-    // Dedupe: if training + whoop on same date, merge whoop data into training entry and remove standalone whoop
-    allWorkouts.forEach(w=>{if(w.trainingLog){const wm=findWhoopMatch(w.trainingLog);if(wm?.score){w.strain=wm.score.strain;w.whoopId=wm.id;w.whoopScore=wm.score;}}});
-    const deduped=[];const seenTrainingDates=new Set();
-    allWorkouts.forEach(w=>{if(w.trainingLog){seenTrainingDates.add(w.date);deduped.push(w);}});
-    allWorkouts.forEach(w=>{if(w.source==='whoop'&&!seenTrainingDates.has(w.date))deduped.push(w);});
+    // For any remaining unmatched Whoop "weight lifting" entries, try to find a training log on the same day
+    allWorkouts.forEach(w=>{
+      if(w.source==='whoop'&&normSport(w.sportLabel)==='weight lifting'&&!w.trainingLog){
+        const dayLog=_trainingLogs.find(l=>_ld(new Date(l.startTime||l.date))===w.date);
+        if(dayLog){const tpl=_templates.find(t=>t.id===dayLog.templateId);if(tpl){w.sportLabel=dayLog.templateName;w.icon=tpl.icon||'🏋️';w.sport=normSport(tpl.name);}}
+      }
+    });
+    // Dedupe: keep one entry per workout — prefer training-matched over standalone whoop
+    const deduped=[];const seenWhoopIds=new Set();const seenTrainingDates=new Set();
+    allWorkouts.forEach(w=>{if(w.trainingLog){seenTrainingDates.add(w.date);if(w.whoopId)seenWhoopIds.add(w.whoopId);deduped.push(w);}});
+    allWorkouts.forEach(w=>{if(w.source==='whoop'&&!seenTrainingDates.has(w.date)&&!seenWhoopIds.has(w.whoopId))deduped.push(w);});
     deduped.sort((a,b)=>b.date.localeCompare(a.date));
     _workoutListCache=deduped;
     const totalWorkouts=deduped.length;
