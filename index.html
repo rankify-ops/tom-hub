@@ -2707,15 +2707,15 @@ function renderWhoop(){
     });
     // For any remaining unmatched Whoop "weight lifting" entries, try to find a training log on the same day
     allWorkouts.forEach(w=>{
-      if(w.source==='whoop'&&normSport(w.sportLabel)==='weight lifting'&&!w.trainingLog){
+      if(w.source==='whoop'&&normSport(w.sportLabel)==='weightlifting'&&!w.trainingLog){
         const dayLog=_trainingLogs.find(l=>_ld(new Date(l.startTime||l.date))===w.date);
         if(dayLog){const tpl=_templates.find(t=>t.id===dayLog.templateId);if(tpl){w.sportLabel=dayLog.templateName;w.icon=tpl.icon||'🏋️';w.sport=normSport(tpl.name);}}
       }
     });
     // Dedupe: keep one entry per workout — prefer training-matched over standalone whoop
-    const deduped=[];const seenWhoopIds=new Set();const seenTrainingDates=new Set();
-    allWorkouts.forEach(w=>{if(w.trainingLog){seenTrainingDates.add(w.date);if(w.whoopId)seenWhoopIds.add(w.whoopId);deduped.push(w);}});
-    allWorkouts.forEach(w=>{if(w.source==='whoop'&&!seenTrainingDates.has(w.date)&&!seenWhoopIds.has(w.whoopId))deduped.push(w);});
+    const deduped=[];const matchedWhoopIds=new Set();const seenTrainingDates=new Set();
+    allWorkouts.forEach(w=>{if(w.trainingLog){seenTrainingDates.add(w.date);if(w.whoopId)matchedWhoopIds.add(w.whoopId);deduped.push(w);}});
+    allWorkouts.forEach(w=>{if(w.source==='whoop'&&!seenTrainingDates.has(w.date)&&!matchedWhoopIds.has(w.whoopId))deduped.push(w);});
     deduped.sort((a,b)=>b.date.localeCompare(a.date));
     _workoutListCache=deduped;
     const totalWorkouts=deduped.length;
