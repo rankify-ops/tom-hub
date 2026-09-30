@@ -1,9 +1,11 @@
 const { kvGet, kvSet } = require('./db');
+const { requireAuth } = require('./_auth');
 
 const KV_KEY = 'tom_finances';
 const KV_COSTS = 'tom_cost_tracking';
 
 module.exports = async function handler(req, res) {
+  if (!requireAuth(req, res)) return;
   try {
     if (req.method === 'GET') {
       const [data, costs] = await Promise.all([
