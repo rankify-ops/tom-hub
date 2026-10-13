@@ -1233,6 +1233,21 @@ const _bizTaxRate=0.37;
 function _countWeds(from,to){let n=0,d=new Date(from);d.setDate(d.getDate()+(3-d.getDay()+7)%7);while(d<=to){n++;d.setDate(d.getDate()+7)}return n}
 
 function fmtDate(d){if(!d)return'–';const p=d.split('-');return p[2]+'/'+p[1]+'/'+p[0].slice(2);}
+function fmtShortDate(d){const dd=String(d.getDate()),mm=String(d.getMonth()+1);return dd+'/'+mm;}
+function getPayDatesInMonth(renewalStr,cycle,month,year){
+  if(!renewalStr)return[];
+  const step=cycle==='Weekly'?7:cycle==='Fortnightly'?14:0;
+  if(!step)return[];
+  const anchor=new Date(renewalStr);anchor.setHours(0,0,0,0);
+  const firstOfMonth=new Date(year,month,1);
+  const lastOfMonth=new Date(year,month+1,0);
+  let d=new Date(anchor);
+  if(d>lastOfMonth){while(d>lastOfMonth)d.setDate(d.getDate()-step);d.setDate(d.getDate()+step);}
+  if(d<firstOfMonth){while(d<firstOfMonth)d.setDate(d.getDate()+step);}
+  const dates=[];
+  while(d<=lastOfMonth){dates.push(new Date(d));d.setDate(d.getDate()+step);}
+  return dates;
+}
 
 function advanceRenewals(){
   const now=new Date();now.setHours(0,0,0,0);
@@ -1720,7 +1735,13 @@ function renderFinances(){
     if(c.cycle==='6 Monthly'){const m=rd.getMonth();return m===_finDueMonth||((m+6)%12)===_finDueMonth;}
     return rd.getMonth()===_finDueMonth&&rd.getFullYear()===_finDueYear;
   });
-  const dueTotal=dueItems.reduce((s,c)=>{const d=deriveCosts(c);return s+(c.cycle==='Annual'?d.annual:c.cycle==='6 Monthly'?d.sixMonth:d.monthly);},0);
+  const dueTotal=dueItems.reduce((s,c)=>{
+    if(c.cycle==='Weekly'||c.cycle==='Fortnightly'){
+      const pays=getPayDatesInMonth(c.renewal,c.cycle,_finDueMonth,_finDueYear);
+      return s+(c.weekly||deriveCosts(c).weekly)*pays.length;
+    }
+    const d=deriveCosts(c);return s+(c.cycle==='Annual'?d.annual:c.cycle==='6 Monthly'?d.sixMonth:d.monthly);
+  },0);
 
   // Pie data setup
   const pieData=[...grouped.filter(g=>g.totalMonthly>0),{label:'Living Expenses',color:'#f97316',totalMonthly:monthlyLiving}];
@@ -1733,8 +1754,8 @@ function renderFinances(){
     return{...d,pct,startAngle,endAngle:angle};
   });
 
-  // Two-column: Pie chart (left) + Due This Month (right)
-  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">';
+  // Three-column: Pie chart (left) + Due This Month (center) + Due This Week (right)
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px">';
 
   // LEFT: Monthly Subscription Breakdown (pie + legend)
   const pieId='pie-'+Date.now();
@@ -1782,15 +1803,21 @@ function renderFinances(){
   const _isCurMonth=_finDueMonth===new Date().getMonth()&&_finDueYear===new Date().getFullYear();
   let _paidTotal=0,_remTotal=0;
   dueItems.forEach(c=>{
-    const d=deriveCosts(c);
-    const amt=c.cycle==='Annual'?d.annual:c.cycle==='6 Monthly'?d.sixMonth:d.monthly;
-    const rd=c.renewal?new Date(c.renewal):null;
-    let paid=false;
-    if(_isCurMonth&&rd){
-      if(rd.getMonth()!==_finDueMonth||rd.getFullYear()!==_finDueYear)paid=true;
-      else paid=rd<_today;
+    if(c.cycle==='Weekly'||c.cycle==='Fortnightly'){
+      const pays=getPayDatesInMonth(c.renewal,c.cycle,_finDueMonth,_finDueYear);
+      const perPay=c.weekly||deriveCosts(c).weekly;
+      pays.forEach(pd=>{if(_isCurMonth&&pd<_today)_paidTotal+=perPay;else _remTotal+=perPay;});
+    } else {
+      const d=deriveCosts(c);
+      const amt=c.cycle==='Annual'?d.annual:c.cycle==='6 Monthly'?d.sixMonth:d.monthly;
+      const rd=c.renewal?new Date(c.renewal):null;
+      let paid=false;
+      if(_isCurMonth&&rd){
+        if(rd.getMonth()!==_finDueMonth||rd.getFullYear()!==_finDueYear)paid=true;
+        else paid=rd<_today;
+      }
+      if(paid)_paidTotal+=amt;else _remTotal+=amt;
     }
-    if(paid)_paidTotal+=amt;else _remTotal+=amt;
   });
   h+='<div class="card" style="padding:20px">';
   h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">';
@@ -1810,27 +1837,106 @@ function renderFinances(){
   }
   if(dueItems.length){
     h+='<div style="display:flex;flex-direction:column;gap:6px;max-height:500px;overflow-y:auto">';
-    dueItems.sort((a,b)=>{const da=deriveCosts(a),db=deriveCosts(b);return db.monthly-da.monthly;}).forEach(c=>{
-      const d=deriveCosts(c);
-      const amt=c.cycle==='Annual'?d.annual:c.cycle==='6 Monthly'?d.sixMonth:d.monthly;
+    dueItems.sort((a,b)=>{
+      const wa=c=>(c.cycle==='Weekly'||c.cycle==='Fortnightly')?(c.weekly||deriveCosts(c).weekly)*getPayDatesInMonth(c.renewal,c.cycle,_finDueMonth,_finDueYear).length:deriveCosts(c).monthly;
+      return wa(b)-wa(a);
+    }).forEach(c=>{
       const grp=catGroups.find(g=>g.cats.includes(c.category));
       const col=grp?grp.color:'#888';
-      const rd=c.renewal?new Date(c.renewal):null;
-      let isPaid=false;
-      if(_isCurMonth&&rd){
-        if(rd.getMonth()!==_finDueMonth||rd.getFullYear()!==_finDueYear)isPaid=true;
-        else isPaid=rd<_today;
+      if(c.cycle==='Weekly'||c.cycle==='Fortnightly'){
+        const pays=getPayDatesInMonth(c.renewal,c.cycle,_finDueMonth,_finDueYear);
+        const perPay=c.weekly||deriveCosts(c).weekly;
+        const totalAmt=perPay*pays.length;
+        const paidCount=_isCurMonth?pays.filter(pd=>pd<_today).length:0;
+        const allPaid=_isCurMonth&&paidCount===pays.length;
+        h+='<div style="padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.03)'+(allPaid?';opacity:0.55':'')+'">';
+        h+='<div style="display:flex;align-items:center;gap:10px">';
+        h+='<div style="width:4px;height:28px;border-radius:2px;background:'+col+'"></div>';
+        h+='<div style="flex:1;min-width:0"><div style="font-size:0.75rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.name+(allPaid?' <span style="font-size:0.55rem;font-weight:700;color:var(--teal);background:rgba(48,164,108,0.15);padding:1px 6px;border-radius:3px;margin-left:6px">PAID</span>':'')+'</div><div style="font-size:0.6rem;color:rgba(255,255,255,0.6)">'+c.cycle+' · $'+fmt2(perPay)+'/pay · '+pays.length+' payments · '+c.payment+'</div></div>';
+        h+='<div style="font-size:0.8rem;font-weight:700;color:#fff">$'+fmt2(totalAmt)+'</div>';
+        h+='</div>';
+        h+='<div style="display:flex;gap:4px;margin-top:6px;margin-left:14px;flex-wrap:wrap">';
+        pays.forEach(pd=>{
+          const paid=_isCurMonth&&pd<_today;
+          h+='<span style="font-size:0.55rem;padding:2px 6px;border-radius:3px;'+(paid?'background:rgba(48,164,108,0.15);color:var(--teal)':'background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.6)')+'">'+fmtShortDate(pd)+(paid?' ✓':'')+'</span>';
+        });
+        h+='</div></div>';
+      } else {
+        const d=deriveCosts(c);
+        const amt=c.cycle==='Annual'?d.annual:c.cycle==='6 Monthly'?d.sixMonth:d.monthly;
+        const rd=c.renewal?new Date(c.renewal):null;
+        let isPaid=false;
+        if(_isCurMonth&&rd){
+          if(rd.getMonth()!==_finDueMonth||rd.getFullYear()!==_finDueYear)isPaid=true;
+          else isPaid=rd<_today;
+        }
+        const subLine=isPaid?'Next payment · '+fmtDate(c.renewal)+' · '+c.payment:c.cycle+(c.renewal?' · '+fmtDate(c.renewal):'')+(c.payment?' · '+c.payment:'');
+        h+='<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.03)'+(isPaid?';opacity:0.55':'')+'">';
+        h+='<div style="width:4px;height:28px;border-radius:2px;background:'+col+'"></div>';
+        h+='<div style="flex:1;min-width:0"><div style="font-size:0.75rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.name+(isPaid?' <span style="font-size:0.55rem;font-weight:700;color:var(--teal);background:rgba(48,164,108,0.15);padding:1px 6px;border-radius:3px;margin-left:6px">PAID</span>':'')+'</div><div style="font-size:0.6rem;color:rgba(255,255,255,0.6)">'+subLine+'</div></div>';
+        h+='<div style="font-size:0.8rem;font-weight:700;color:'+(isPaid?'var(--text-faint)':'#fff')+'">$'+fmt2(amt)+'</div>';
+        h+='</div>';
       }
-      const subLine=isPaid?'Next payment · '+fmtDate(c.renewal)+' · '+c.payment:c.cycle+(c.renewal?' · '+fmtDate(c.renewal):'')+(c.payment?' · '+c.payment:'');
-      h+='<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.03)'+(isPaid?';opacity:0.55':'')+'">';
-      h+='<div style="width:4px;height:28px;border-radius:2px;background:'+col+'"></div>';
-      h+='<div style="flex:1;min-width:0"><div style="font-size:0.75rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.name+(isPaid?' <span style="font-size:0.55rem;font-weight:700;color:var(--teal);background:rgba(48,164,108,0.15);padding:1px 6px;border-radius:3px;margin-left:6px">PAID</span>':'')+'</div><div style="font-size:0.6rem;color:rgba(255,255,255,0.6)">'+subLine+'</div></div>';
-      h+='<div style="font-size:0.8rem;font-weight:700;color:'+(isPaid?'var(--text-faint)':'#fff')+'">$'+fmt2(amt)+'</div>';
-      h+='</div>';
     });
     h+='</div>';
   } else {
     h+='<div style="text-align:center;font-size:0.75rem;color:var(--text-faint);padding:20px 0">No items due this month</div>';
+  }
+  h+='</div>';
+
+  // DUE THIS WEEK card
+  const _weekStart=new Date(_today);_weekStart.setDate(_weekStart.getDate()-_weekStart.getDay()+1);
+  const _weekEnd=new Date(_weekStart);_weekEnd.setDate(_weekEnd.getDate()+6);
+  _weekEnd.setHours(23,59,59,999);
+  let weekItems=[];
+  _costTracking.filter(c=>c.status!=='paused').forEach(c=>{
+    if(c.cycle==='Weekly'||c.cycle==='Fortnightly'){
+      const pays=getPayDatesInMonth(c.renewal,c.cycle,_today.getMonth(),_today.getFullYear());
+      pays.forEach(pd=>{
+        if(pd>=_weekStart&&pd<=_weekEnd){
+          weekItems.push({name:c.name,amount:c.weekly||deriveCosts(c).weekly,date:pd,paid:pd<_today,payment:c.payment,category:c.category});
+        }
+      });
+    } else if(c.cycle==='Monthly'||c.cycle==='6 Monthly'||c.cycle==='Annual'){
+      if(!c.renewal)return;
+      const rd=new Date(c.renewal);rd.setHours(0,0,0,0);
+      if(rd>=_weekStart&&rd<=_weekEnd){
+        const d=deriveCosts(c);
+        const amt=c.cycle==='Annual'?d.annual:c.cycle==='6 Monthly'?d.sixMonth:d.monthly;
+        weekItems.push({name:c.name,amount:amt,date:rd,paid:rd<_today,payment:c.payment,category:c.category});
+      }
+    }
+  });
+  weekItems.sort((a,b)=>a.date-b.date);
+  const weekTotal=weekItems.reduce((s,i)=>s+i.amount,0);
+  const weekPaid=weekItems.filter(i=>i.paid).reduce((s,i)=>s+i.amount,0);
+  const weekRem=weekTotal-weekPaid;
+  h+='<div class="card" style="padding:20px">';
+  h+='<div style="margin-bottom:6px"><span style="font-size:0.9rem;font-weight:700;color:#fff">Due This Week</span></div>';
+  h+='<div style="font-size:0.6rem;color:rgba(255,255,255,0.5);margin-bottom:10px">'+fmtShortDate(_weekStart)+' – '+fmtShortDate(_weekEnd)+'</div>';
+  if(weekPaid>0){
+    h+='<div style="display:flex;gap:16px;margin-bottom:14px">';
+    h+='<div><div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.5)">Total</div><div style="font-size:1.1rem;font-weight:700;color:var(--red-soft)">$'+fmt2(weekTotal)+'</div></div>';
+    h+='<div><div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.5)">Paid</div><div style="font-size:1.1rem;font-weight:700;color:var(--teal)">$'+fmt2(weekPaid)+'</div></div>';
+    h+='<div><div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.5)">Remaining</div><div style="font-size:1.1rem;font-weight:700;color:#fff">$'+fmt2(weekRem)+'</div></div>';
+    h+='</div>';
+  } else {
+    h+='<div style="margin-bottom:14px"><span style="font-size:1.1rem;font-weight:700;color:var(--red-soft)">$'+fmt2(weekTotal)+'</span></div>';
+  }
+  if(weekItems.length){
+    h+='<div style="display:flex;flex-direction:column;gap:6px">';
+    weekItems.forEach(w=>{
+      const grp=catGroups.find(g=>g.cats.includes(w.category));
+      const col=grp?grp.color:'#888';
+      h+='<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.03)'+(w.paid?';opacity:0.55':'')+'">';
+      h+='<div style="width:4px;height:28px;border-radius:2px;background:'+col+'"></div>';
+      h+='<div style="flex:1;min-width:0"><div style="font-size:0.75rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+w.name+(w.paid?' <span style="font-size:0.55rem;font-weight:700;color:var(--teal);background:rgba(48,164,108,0.15);padding:1px 6px;border-radius:3px;margin-left:6px">PAID</span>':'')+'</div><div style="font-size:0.6rem;color:rgba(255,255,255,0.6)">'+fmtShortDate(w.date)+' · '+w.payment+'</div></div>';
+      h+='<div style="font-size:0.8rem;font-weight:700;color:'+(w.paid?'var(--text-faint)':'#fff')+'">$'+fmt2(w.amount)+'</div>';
+      h+='</div>';
+    });
+    h+='</div>';
+  } else {
+    h+='<div style="text-align:center;font-size:0.75rem;color:var(--text-faint);padding:20px 0">Nothing due this week</div>';
   }
   h+='</div>';
   h+='</div>';
