@@ -1787,19 +1787,31 @@ function renderFinances(){
   h+='<span style="font-size:1.1rem;font-weight:700;color:var(--red-soft)">$'+fmt2(dueTotal)+'</span>';
   h+='</div></div>';
   if(dueItems.length){
+    const today=new Date();today.setHours(0,0,0,0);
+    const isCurrentMonth=_finDueMonth===new Date().getMonth()&&_finDueYear===new Date().getFullYear();
+    let remainingTotal=0;
     h+='<div style="display:flex;flex-direction:column;gap:6px;max-height:500px;overflow-y:auto">';
     dueItems.sort((a,b)=>{const da=deriveCosts(a),db=deriveCosts(b);return db.monthly-da.monthly;}).forEach(c=>{
       const d=deriveCosts(c);
       const amt=c.cycle==='Annual'?d.annual:c.cycle==='6 Monthly'?d.sixMonth:d.monthly;
       const grp=catGroups.find(g=>g.cats.includes(c.category));
       const col=grp?grp.color:'#888';
-      h+='<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.03)">';
+      const rd=c.renewal?new Date(c.renewal):null;
+      const isPaid=isCurrentMonth&&rd&&rd<today;
+      if(!isPaid)remainingTotal+=amt;
+      h+='<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.03)'+(isPaid?';opacity:0.5':'')+'">';
       h+='<div style="width:4px;height:28px;border-radius:2px;background:'+col+'"></div>';
-      h+='<div style="flex:1;min-width:0"><div style="font-size:0.75rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.name+'</div><div style="font-size:0.55rem;color:var(--text-faint)">'+c.cycle+(c.renewal?' · '+fmtDate(c.renewal):'')+(c.payment?' · '+c.payment:'')+'</div></div>';
-      h+='<div style="font-size:0.8rem;font-weight:700;color:#fff">$'+fmt2(amt)+'</div>';
+      h+='<div style="flex:1;min-width:0"><div style="font-size:0.75rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.name+(isPaid?' <span style="font-size:0.55rem;font-weight:700;color:var(--teal);background:rgba(48,164,108,0.15);padding:1px 6px;border-radius:3px;margin-left:6px">PAID</span>':'')+'</div><div style="font-size:0.6rem;color:rgba(255,255,255,0.6)">'+c.cycle+(c.renewal?' · '+fmtDate(c.renewal):'')+(c.payment?' · '+c.payment:'')+'</div></div>';
+      h+='<div style="font-size:0.8rem;font-weight:700;color:'+(isPaid?'var(--text-faint)':'#fff')+'">$'+fmt2(amt)+'</div>';
       h+='</div>';
     });
     h+='</div>';
+    if(isCurrentMonth&&remainingTotal<dueTotal){
+      h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding:10px 12px;border-radius:8px;background:rgba(48,164,108,0.08);border:1px solid rgba(48,164,108,0.2)">';
+      h+='<span style="font-size:0.75rem;font-weight:600;color:var(--teal)">Remaining this month</span>';
+      h+='<span style="font-size:1rem;font-weight:700;color:var(--teal)">$'+fmt2(remainingTotal)+'</span>';
+      h+='</div>';
+    }
   } else {
     h+='<div style="text-align:center;font-size:0.75rem;color:var(--text-faint);padding:20px 0">No items due this month</div>';
   }
@@ -1839,10 +1851,10 @@ function renderFinances(){
     const cycleColors={Weekly:'#FF4081',Fortnightly:'#92ceac','6 Monthly':'#aec0f5'};
     const cc=cycleColors[c.cycle]||'#7C4DFF';
     h+='<td><span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.65rem;background:'+cc+'22;color:'+cc+';border:1px solid '+cc+'44">'+c.cycle+'</span></td>';
-    h+='<td style="text-align:right">$'+fmt2(d.weekly)+'</td>';
-    h+='<td style="text-align:right;font-weight:600">$'+fmt2(d.monthly)+'</td>';
-    h+='<td style="text-align:right;font-weight:600">$'+fmt2(d.annual)+'</td>';
-    h+='<td style="white-space:nowrap">'+fmtDate(c.renewal)+'</td>';
+    h+='<td style="text-align:right;color:rgba(255,255,255,0.7)">$'+fmt2(d.weekly)+'</td>';
+    h+='<td style="text-align:right;font-weight:600;color:#fff">$'+fmt2(d.monthly)+'</td>';
+    h+='<td style="text-align:right;font-weight:600;color:#fff">$'+fmt2(d.annual)+'</td>';
+    h+='<td style="white-space:nowrap;color:rgba(255,255,255,0.7)">'+fmtDate(c.renewal)+'</td>';
     const _pc=c.payColor||PAY_COLORS[c.payment]||'#888';
     h+='<td><span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.65rem;background:'+_pc+'22;color:'+_pc+';border:1px solid '+_pc+'44;white-space:nowrap">'+c.payment+'</span></td>';
     h+='<td>'+(c.url?'<a href="'+c.url+'" target="_blank" style="color:var(--teal);font-size:0.65rem;text-decoration:none" title="'+c.url+'">🔗</a>':'–')+'</td>';
