@@ -1142,7 +1142,7 @@ async function loadFinances(){
       const d=await res.json();
       _finances=d.entries||[];
       if(d.updated)document.getElementById('finances-updated').textContent='Saved: '+fmt(d.updated);
-      const COST_VERSION=9;
+      const COST_VERSION=10;
       if(d.costTracking&&d.costTracking.length&&d.costsVersion>=COST_VERSION){
         _costTracking=d.costTracking;
         _weeklyIncome=d.weeklyIncome??2469.54;
@@ -1156,7 +1156,7 @@ async function loadFinances(){
   }catch(e){console.warn('Finances load failed',e)}
 }
 async function saveCostTracking(){
-  try{await fetch('/api/finances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save_costs',items:_costTracking,weeklyIncome:_weeklyIncome,version:9})})}catch(e){console.warn('Cost tracking save failed',e)}
+  try{await fetch('/api/finances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save_costs',items:_costTracking,weeklyIncome:_weeklyIncome,version:10})})}catch(e){console.warn('Cost tracking save failed',e)}
 }
 async function saveFinances(){
   try{await fetch('/api/finances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',entries:_finances})});document.getElementById('finances-updated').textContent='Saved: '+fmt(new Date().toISOString())}catch(e){console.warn('Finances save failed',e)}
@@ -1214,7 +1214,7 @@ const _defaultCosts=[
   {name:'Vodafone Plan',owner:'Thomas Flood',monthly:81.51,annual:978.12,sixMonth:null,cycle:'Monthly',category:'Entertainment',catColor:'#96c7f2',status:'active',payment:'Amex',payColor:'#006FCF',renewal:'2026-07-15',url:null},
   {name:'Anytime Fitness',owner:'Thomas Flood',monthly:117,annual:1404,sixMonth:null,cycle:'Weekly',category:'Health',catColor:'#b6b6ff',status:'active',payment:'Subscription & Bills NAB',payColor:'#0091ff',renewal:'2026-03-16',url:null},
   {name:'Car Registration',owner:'Thomas Flood',monthly:null,annual:873.20,sixMonth:436.60,cycle:'6 Monthly',category:'Utilities',catColor:'#92ceac',status:'active',payment:'Manual Payment',payColor:'#b6b6ff',renewal:'2026-10-17',url:null},
-  {name:'Internet',owner:'Thomas Flood',monthly:55,annual:660,sixMonth:null,cycle:'Monthly',category:'Utilities',catColor:'#92ceac',status:'active',payment:'Transfer to Commbank',payColor:'#ffc53d',renewal:'2026-07-22',url:null},
+  {name:'Internet (50%)',owner:'Thomas Flood',monthly:42,annual:504,sixMonth:null,cycle:'Monthly',category:'Utilities',catColor:'#92ceac',status:'active',payment:'AMEX',payColor:'#006fcf',renewal:'2026-11-12',url:null},
   {name:'Express VPN',owner:'Thomas Flood',monthly:21.99,annual:263.88,sixMonth:null,cycle:'Monthly',category:'Entertainment',catColor:'#96c7f2',status:'paused',payment:'Qantas CC',payColor:'#e5484d',renewal:'2026-06-24',url:'https://portal.expressvpn.com/my-subscriptions'},
   {name:'ClickUp Personal',owner:'Thomas Flood',monthly:17,annual:204,sixMonth:17,cycle:'Monthly',category:'Organisational',catColor:'#6647f0',status:'paused',payment:'Qantas CC',payColor:'#e5484d',renewal:'2026-06-30',url:'https://app.clickup.com/90161369511'},
   {name:'Youtube Premium',owner:'Thomas Flood',monthly:16.99,annual:203.88,sixMonth:null,cycle:'Monthly',category:'Entertainment',catColor:'#96c7f2',status:'active',payment:'Amex',payColor:'#006FCF',renewal:'2026-07-10',url:null},
