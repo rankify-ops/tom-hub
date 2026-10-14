@@ -1832,7 +1832,7 @@ function renderFinances(){
       const pays=getPayDatesInMonth(c.renewal,c.cycle,_weekStart.getMonth(),_weekStart.getFullYear());
       pays.forEach(pd=>{
         if(pd>=_weekStart&&pd<=_weekEnd){
-          weekItems.push({name:c.name,amount:c.weekly||deriveCosts(c).weekly,date:pd,paid:_isThisWeek&&pd<_today,payment:c.payment,category:c.category});
+          weekItems.push({name:c.name,amount:c.weekly||deriveCosts(c).weekly,date:pd,paid:_isThisWeek&&pd<=_today,payment:c.payment,category:c.category});
         }
       });
     } else if(c.cycle==='Monthly'||c.cycle==='6 Monthly'||c.cycle==='Annual'){
@@ -1841,7 +1841,7 @@ function renderFinances(){
       if(rd>=_weekStart&&rd<=_weekEnd){
         const d=deriveCosts(c);
         const amt=c.cycle==='Annual'?d.annual:c.cycle==='6 Monthly'?d.sixMonth:d.monthly;
-        weekItems.push({name:c.name,amount:amt,date:rd,paid:_isThisWeek&&rd<_today,payment:c.payment,category:c.category});
+        weekItems.push({name:c.name,amount:amt,date:rd,paid:_isThisWeek&&rd<=_today,payment:c.payment,category:c.category});
       }
     }
   });
