@@ -1900,12 +1900,10 @@ function renderFinances(){
     h+='<div><div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.5)">Total</div><div style="font-size:1.1rem;font-weight:700;color:var(--red-soft)">$'+fmt2(dueTotal)+'</div></div>';
     h+='<div><div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.5)">Paid</div><div style="font-size:1.1rem;font-weight:700;color:var(--teal)">$'+fmt2(_paidTotal)+'</div></div>';
     h+='<div><div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.5)">Remaining</div><div style="font-size:1.1rem;font-weight:700;color:#fff">$'+fmt2(_remTotal)+'</div></div>';
-    if(_amexBal>0){h+='<div><div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.08em;color:#4da6ff">AMEX</div><div style="font-size:1.1rem;font-weight:700;color:#4da6ff">$'+fmt2(_amexBal)+'</div></div>';}
     h+='</div>';
   } else {
     h+='<div style="display:flex;gap:16px;margin-bottom:10px">';
     h+='<div><span style="font-size:1.1rem;font-weight:700;color:var(--red-soft)">$'+fmt2(dueTotal)+'</span></div>';
-    if(_amexBal>0){h+='<div><div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.08em;color:#4da6ff">AMEX</div><div style="font-size:1.1rem;font-weight:700;color:#4da6ff">$'+fmt2(_amexBal)+'</div></div>';}
     h+='</div>';
   }
   h+='<div style="padding:8px 10px;border-radius:8px;background:rgba(48,164,108,0.06);border:1px solid rgba(48,164,108,0.12);margin-bottom:10px">';
@@ -2015,12 +2013,10 @@ function renderFinances(){
     h+='<div><div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.5)">Total</div><div style="font-size:1.1rem;font-weight:700;color:var(--red-soft)">$'+fmt2(weekTotal)+'</div></div>';
     h+='<div><div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.5)">Paid</div><div style="font-size:1.1rem;font-weight:700;color:var(--teal)">$'+fmt2(weekPaid)+'</div></div>';
     h+='<div><div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.5)">Remaining</div><div style="font-size:1.1rem;font-weight:700;color:#fff">$'+fmt2(weekRem)+'</div></div>';
-    if(_amexBal>0){h+='<div><div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.08em;color:#4da6ff">AMEX</div><div style="font-size:1.1rem;font-weight:700;color:#4da6ff">$'+fmt2(_amexBal)+'</div></div>';}
     h+='</div>';
   } else {
     h+='<div style="display:flex;gap:16px;margin-bottom:14px">';
     h+='<div><span style="font-size:1.1rem;font-weight:700;color:var(--red-soft)">$'+fmt2(weekTotal)+'</span></div>';
-    if(_amexBal>0){h+='<div><div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.08em;color:#4da6ff">AMEX</div><div style="font-size:1.1rem;font-weight:700;color:#4da6ff">$'+fmt2(_amexBal)+'</div></div>';}
     h+='</div>';
   }
   const _wkPayDates=getPayDatesInMonth(_payDayAnchor,'Weekly',_today.getMonth(),_today.getFullYear()).filter(pd=>pd>=_weekStart&&pd<=_weekEnd);
