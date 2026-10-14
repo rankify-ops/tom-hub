@@ -1849,36 +1849,25 @@ function renderFinances(){
   // Payment method breakdown helper
   function payBreakdown(items){
     const map={};
-    items.forEach(i=>{const p=i.payment||'Other';if(!map[p])map[p]=0;map[p]+=i.amount;});
+    items.forEach(i=>{let p=i.payment||'Other';if(p.toUpperCase()==='AMEX')p='Amex';if(!map[p])map[p]=0;map[p]+=i.amount;});
     return Object.entries(map).sort((a,b)=>b[1]-a[1]);
   }
   function renderPayPills(breakdown){
     let o='';
     breakdown.forEach(([method,amt])=>{
-      const col=PAY_COLORS[method]||'#888';
-      o+='<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;font-size:0.55rem;background:'+col+'15;border:1px solid '+col+'30;color:'+col+';white-space:nowrap"><span style="width:6px;height:6px;border-radius:50%;background:'+col+'"></span>'+method+' $'+fmt2(amt)+'</span>';
+      o+='<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:6px;font-size:0.65rem;font-weight:600;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.7);white-space:nowrap">'+method+' <span style="color:#fff">$'+fmt2(amt)+'</span></span>';
     });
     return o;
   }
 
-  // Monthly payment breakdown
-  const monthlyPayItems=activeItems.map(c=>{const d=deriveCosts(c);return{payment:c.payment,amount:d.monthly};});
-  const monthlyPayBreak=payBreakdown(monthlyPayItems);
   // Due in month payment breakdown
-  const duePayItems=dueItems.filter(c=>!c.billingDay).map(c=>{
+  const duePayItems=dueItems.filter(c=>!c.billingDay&&c.status!=='paused').map(c=>{
     if(c.cycle==='Weekly'||c.cycle==='Fortnightly'){const pays=getPayDatesInMonth(c.renewal,c.cycle,_finDueMonth,_finDueYear);return{payment:c.payment,amount:(c.weekly||deriveCosts(c).weekly)*pays.length};}
     const d=deriveCosts(c);return{payment:c.payment,amount:c.cycle==='Annual'?d.annual:c.cycle==='6 Monthly'?d.sixMonth:d.monthly};
   });
   const duePayBreak=payBreakdown(duePayItems);
   // Week payment breakdown
   const weekPayBreak=payBreakdown(weekItems);
-
-  // Payment breakdown row
-  h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:8px">';
-  h+='<div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">'+renderPayPills(monthlyPayBreak)+'</div>';
-  h+='<div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">'+renderPayPills(duePayBreak)+'</div>';
-  h+='<div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">'+renderPayPills(weekPayBreak)+'</div>';
-  h+='</div>';
 
   // Three-column: Pie chart (left) + Due This Month (center) + Due This Week (right)
   h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px">';
@@ -1970,6 +1959,7 @@ function renderFinances(){
     if(_amexTM>0){h+='<div style="height:4px;border-radius:2px;background:rgba(255,255,255,0.06);overflow:hidden"><div style="height:100%;width:'+_amPct+'%;border-radius:2px;background:'+(_amOver?'var(--red-soft)':'linear-gradient(90deg,#006fcf,#4da6ff)')+'"></div></div>';}
     h+='</div>';
   }
+  if(duePayBreak.length){h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">'+renderPayPills(duePayBreak)+'</div>';}
   if(_isCurMonth&&_paidTotal>0){
     h+='<div style="display:flex;gap:16px;margin-bottom:10px">';
     h+='<div><div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.5)">Total</div><div style="font-size:1.1rem;font-weight:700;color:var(--red-soft)">$'+fmt2(dueTotal)+'</div></div>';
@@ -2056,6 +2046,7 @@ function renderFinances(){
   h+='<button onclick="_finWeekOffset++;renderFinances()" style="background:none;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:var(--text-secondary);padding:4px 10px;cursor:pointer;font-family:var(--font);font-size:0.7rem">→</button>';
   h+='</div></div>';
   h+='<div style="font-size:0.6rem;color:rgba(255,255,255,0.5);margin-bottom:10px">'+fmtShortDate(_weekStart)+' – '+fmtShortDate(_weekEnd)+'</div>';
+  if(weekPayBreak.length){h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">'+renderPayPills(weekPayBreak)+'</div>';}
   if(_amexTW>0||_amexSW>0){
     const _awPct=_amexTW>0?Math.min(100,Math.round(_amexSW/_amexTW*100)):0;
     const _awOver=_amexTW>0&&_amexSW>_amexTW;
