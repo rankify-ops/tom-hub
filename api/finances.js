@@ -36,6 +36,20 @@ module.exports = async function handler(req, res) {
         return res.status(200).json({ success: true });
       }
 
+      if (action === 'update_amex') {
+        const { balance } = req.body;
+        if (balance === undefined || balance === null) return res.status(400).json({ error: 'balance required' });
+        const costs = await kvGet(KV_COSTS);
+        if (!costs || !costs.items) return res.status(404).json({ error: 'No cost data found' });
+        const amex = costs.items.find(c => c.name === 'AMEX Balance');
+        if (!amex) return res.status(404).json({ error: 'AMEX Balance item not found' });
+        amex.monthly = parseFloat(balance);
+        amex.annual = parseFloat(balance) * 12;
+        costs.updated = new Date().toISOString();
+        await kvSet(KV_COSTS, costs);
+        return res.status(200).json({ success: true, balance: amex.monthly });
+      }
+
       return res.status(400).json({ error: 'Unknown action' });
     }
 
