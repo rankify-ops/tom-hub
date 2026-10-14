@@ -1784,7 +1784,7 @@ function renderFinances(){
   // Due This Month section
   const mNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
   const dueItems=_costTracking.filter(c=>{
-    if(c.status==='paused')return false;
+    if(c.status==='paused'&&!c.toggleable)return false;
     if(!c.renewal)return c.cycle==='Monthly'||c.cycle==='Weekly'||c.cycle==='Fortnightly';
     const rd=new Date(c.renewal);
     if(c.cycle==='Monthly'||c.cycle==='Weekly'||c.cycle==='Fortnightly')return true;
@@ -1793,6 +1793,7 @@ function renderFinances(){
     return rd.getMonth()===_finDueMonth&&rd.getFullYear()===_finDueYear;
   });
   const dueTotal=dueItems.reduce((s,c)=>{
+    if(c.status==='paused')return s;
     if(c.cycle==='Weekly'||c.cycle==='Fortnightly'){
       const pays=getPayDatesInMonth(c.renewal,c.cycle,_finDueMonth,_finDueYear);
       return s+(c.weekly||deriveCosts(c).weekly)*pays.length;
@@ -2023,8 +2024,9 @@ function renderFinances(){
         const subLine=isPaid?'Next payment · '+fmtDate(c.renewal)+' · '+c.payment:c.cycle+(c.renewal?' · '+fmtDate(c.renewal):'')+(c.payment?' · '+c.payment:'');
         h+='<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.03)'+(isPaid?';opacity:0.55':'')+'">';
         h+='<div style="width:4px;height:28px;border-radius:2px;background:'+col+'"></div>';
-        h+='<div style="flex:1;min-width:0"><div style="font-size:0.75rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.name+(c.toggleable?' <button onclick="toggleCostItem(\''+c.name.replace(/'/g,"\\'")+'\')" style="font-size:0.5rem;padding:1px 6px;border-radius:3px;cursor:pointer;font-family:var(--font);font-weight:700;border:1px solid rgba(48,164,108,0.3);background:rgba(48,164,108,0.1);color:var(--teal);margin-left:4px">ON</button>':'')+(isPaid?' <span style="font-size:0.55rem;font-weight:700;color:var(--teal);background:rgba(48,164,108,0.15);padding:1px 6px;border-radius:3px;margin-left:6px">PAID</span>':'')+'</div><div style="font-size:0.6rem;color:rgba(255,255,255,0.6)">'+subLine+'</div></div>';
-        h+='<div style="font-size:0.8rem;font-weight:700;color:'+(isPaid?'var(--text-faint)':'#fff')+'">$'+fmt2(amt)+'</div>';
+        const _tOff=c.toggleable&&c.status==='paused';
+        h+='<div style="flex:1;min-width:0"><div style="font-size:0.75rem;font-weight:600;color:'+(_tOff?'var(--text-faint)':'#fff')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.name+(c.toggleable?' <button onclick="toggleCostItem(\''+c.name.replace(/'/g,"\\'")+'\')" style="font-size:0.5rem;padding:1px 6px;border-radius:3px;cursor:pointer;font-family:var(--font);font-weight:700;border:1px solid '+(_tOff?'rgba(255,255,255,0.15)':'rgba(48,164,108,0.3)')+';background:'+(_tOff?'rgba(255,255,255,0.06)':'rgba(48,164,108,0.1)')+';color:'+(_tOff?'var(--text-faint)':'var(--teal)')+';margin-left:4px">'+(_tOff?'OFF':'ON')+'</button>':'')+(isPaid&&!_tOff?' <span style="font-size:0.55rem;font-weight:700;color:var(--teal);background:rgba(48,164,108,0.15);padding:1px 6px;border-radius:3px;margin-left:6px">PAID</span>':'')+'</div><div style="font-size:0.6rem;color:rgba(255,255,255,0.'+(_tOff?'3':'6')+')">'+ (_tOff?'Rankify covering its own expenses':subLine)+'</div></div>';
+        h+='<div style="font-size:0.8rem;font-weight:700;color:'+(_tOff?'var(--text-faint)':isPaid?'var(--text-faint)':'#fff')+'">'+(_tOff?'–':'$'+fmt2(amt))+'</div>';
         h+='</div>';
       }
     });
