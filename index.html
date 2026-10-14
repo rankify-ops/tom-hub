@@ -1146,6 +1146,13 @@ async function loadFinances(){
       if(d.costTracking&&d.costTracking.length&&d.costsVersion>=COST_VERSION){
         _costTracking=d.costTracking;
         _weeklyIncome=d.weeklyIncome??2469.54;
+        // Migrate old name + add toggleable flag
+        let _migrated=false;
+        const _rkOld=_costTracking.find(c=>c.name==='Money sent to Rankify account');
+        if(_rkOld){_rkOld.name='Rankify Expenses';_rkOld.toggleable=true;_migrated=true;}
+        const _rkNew=_costTracking.find(c=>c.name==='Rankify Expenses'&&!c.toggleable);
+        if(_rkNew){_rkNew.toggleable=true;_migrated=true;}
+        if(_migrated)saveCostTracking();
       }else{
         _costTracking=[..._defaultCosts];
         _weeklyIncome=2469.54;
