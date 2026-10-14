@@ -1142,7 +1142,7 @@ async function loadFinances(){
       const d=await res.json();
       _finances=d.entries||[];
       if(d.updated)document.getElementById('finances-updated').textContent='Saved: '+fmt(d.updated);
-      const COST_VERSION=13;
+      const COST_VERSION=14;
       if(d.costTracking&&d.costTracking.length&&d.costsVersion>=COST_VERSION){
         _costTracking=d.costTracking;
         _weeklyIncome=d.weeklyIncome??2469.54;
@@ -1156,7 +1156,7 @@ async function loadFinances(){
   }catch(e){console.warn('Finances load failed',e)}
 }
 async function saveCostTracking(){
-  try{await fetch('/api/finances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save_costs',items:_costTracking,weeklyIncome:_weeklyIncome,version:13})})}catch(e){console.warn('Cost tracking save failed',e)}
+  try{await fetch('/api/finances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save_costs',items:_costTracking,weeklyIncome:_weeklyIncome,version:14})})}catch(e){console.warn('Cost tracking save failed',e)}
 }
 async function saveFinances(){
   try{await fetch('/api/finances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',entries:_finances})});document.getElementById('finances-updated').textContent='Saved: '+fmt(new Date().toISOString())}catch(e){console.warn('Finances save failed',e)}
@@ -1222,7 +1222,7 @@ const _defaultCosts=[
   {name:'Amazon Prime',owner:'Thomas Flood',monthly:11.99,annual:143.88,sixMonth:null,cycle:'Monthly',category:'Entertainment',catColor:'#96c7f2',status:'active',payment:'Amex',payColor:'#006FCF',renewal:'2026-07-13',url:null},
   {name:'Spotify',owner:'Thomas Flood',monthly:7.99,annual:95.88,sixMonth:null,cycle:'Monthly',category:'Entertainment',catColor:'#96c7f2',status:'active',payment:'Amex',payColor:'#006FCF',renewal:'2026-07-09',url:null},
   {name:'Shooters Union',owner:'Thomas Flood',monthly:null,annual:55,sixMonth:null,cycle:'Annually',category:'Utilities',catColor:'#92ceac',status:'active',payment:'Visa 0779',payColor:'#0091ff',renewal:'2027-08-25',url:null},
-  {name:'AMEX Balance',owner:'Thomas Flood',monthly:0,annual:null,sixMonth:null,cycle:'Monthly',category:'Utilities',catColor:'#92ceac',status:'active',payment:'AMEX',payColor:'#006fcf',renewal:'2026-11-01',url:null,editable:true},
+  {name:'AMEX Balance',owner:'Thomas Flood',monthly:0,annual:null,sixMonth:null,cycle:'Monthly',category:'Utilities',catColor:'#92ceac',status:'active',payment:'AMEX',payColor:'#006fcf',renewal:'2026-11-04',url:null,editable:true,billingDay:5},
 ];
 const PAY_COLORS={'Qantas CC':'#e5484d','Transfer to Commbank':'#ffc53d','Subscription & Bills NAB':'#0091ff','Rankify Transfer':'#30a46c','Manual Payment':'#b6b6ff','Visa 0779':'#0091ff','Amex':'#006FCF'};
 let _costTracking=[];
@@ -1871,9 +1871,35 @@ function renderFinances(){
     h+='<span style="font-size:0.55rem;padding:2px 6px;border-radius:3px;'+(got?'background:rgba(48,164,108,0.15);color:var(--teal)':'background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.6)')+'">'+fmtShortDate(pd)+(got?' ✓':'')+'</span>';
   });
   h+='</div></div>';
-  if(dueItems.length){
+  // AMEX billing period card (pinned at top)
+  const _amexItem=dueItems.find(c=>c.billingDay);
+  if(_amexItem){
+    const bd=_amexItem.billingDay;
+    let bpStart,bpEnd;
+    const dn=new Date(_finDueYear,_finDueMonth,1);
+    if(dn.getDate()<bd){bpStart=new Date(dn.getFullYear(),dn.getMonth()-1,bd);bpEnd=new Date(dn.getFullYear(),dn.getMonth(),bd-1);}
+    else{bpStart=new Date(dn.getFullYear(),dn.getMonth(),bd);bpEnd=new Date(dn.getFullYear(),dn.getMonth()+1,bd-1);}
+    const daysIn=Math.max(0,Math.ceil((_today-bpStart)/(86400000)));
+    const daysTotal=Math.ceil((bpEnd-bpStart)/(86400000))+1;
+    const pct=Math.min(100,Math.round(daysIn/daysTotal*100));
+    const bal=_amexItem.monthly||0;
+    h+='<div style="padding:10px;border-radius:8px;background:rgba(0,111,207,0.08);border:1px solid rgba(0,111,207,0.2);margin-bottom:8px">';
+    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">';
+    h+='<div><span style="font-size:0.75rem;font-weight:700;color:#fff">AMEX Balance</span>';
+    h+=' <span style="font-size:0.55rem;color:rgba(255,255,255,0.5);margin-left:6px">'+fmtShortDate(bpStart)+' – '+fmtShortDate(bpEnd)+'</span></div>';
+    h+='<div style="display:flex;align-items:center;gap:8px">';
+    h+='<button onclick="updateEditableCost(\'AMEX Balance\')" style="background:none;border:1px solid rgba(0,111,207,0.3);border-radius:4px;color:#4da6ff;padding:2px 8px;cursor:pointer;font-size:0.6rem;font-family:var(--font)">update</button>';
+    h+='<span style="font-size:1rem;font-weight:700;color:'+(bal>0?'#fff':'rgba(255,255,255,0.3)')+'">$'+fmt2(bal)+'</span>';
+    h+='</div></div>';
+    h+='<div style="height:4px;border-radius:2px;background:rgba(255,255,255,0.06);overflow:hidden"><div style="height:100%;width:'+pct+'%;border-radius:2px;background:linear-gradient(90deg,#006fcf,#4da6ff)"></div></div>';
+    h+='<div style="display:flex;justify-content:space-between;margin-top:4px;font-size:0.5rem;color:rgba(255,255,255,0.4)">';
+    h+='<span>Day '+daysIn+' of '+daysTotal+'</span><span>Due '+fmtShortDate(bpEnd)+'</span></div>';
+    h+='</div>';
+  }
+  const _regularDueItems=dueItems.filter(c=>!c.billingDay);
+  if(_regularDueItems.length){
     h+='<div style="display:flex;flex-direction:column;gap:6px;max-height:500px;overflow-y:auto">';
-    dueItems.sort((a,b)=>{
+    _regularDueItems.sort((a,b)=>{
       const wa=c=>(c.cycle==='Weekly'||c.cycle==='Fortnightly')?(c.weekly||deriveCosts(c).weekly)*getPayDatesInMonth(c.renewal,c.cycle,_finDueMonth,_finDueYear).length:deriveCosts(c).monthly;
       return wa(b)-wa(a);
     }).forEach(c=>{
@@ -1910,13 +1936,12 @@ function renderFinances(){
         h+='<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.03)'+(isPaid?';opacity:0.55':'')+'">';
         h+='<div style="width:4px;height:28px;border-radius:2px;background:'+col+'"></div>';
         h+='<div style="flex:1;min-width:0"><div style="font-size:0.75rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.name+(isPaid?' <span style="font-size:0.55rem;font-weight:700;color:var(--teal);background:rgba(48,164,108,0.15);padding:1px 6px;border-radius:3px;margin-left:6px">PAID</span>':'')+'</div><div style="font-size:0.6rem;color:rgba(255,255,255,0.6)">'+subLine+'</div></div>';
-        if(c.editable){h+='<button onclick="event.stopPropagation();updateEditableCost(\''+c.name.replace(/'/g,"\\'")+'\')" style="background:none;border:1px solid rgba(255,255,255,0.1);border-radius:4px;color:rgba(255,255,255,0.5);padding:2px 6px;cursor:pointer;font-size:0.55rem;font-family:var(--font);white-space:nowrap">edit</button>';}
         h+='<div style="font-size:0.8rem;font-weight:700;color:'+(isPaid?'var(--text-faint)':'#fff')+'">$'+fmt2(amt)+'</div>';
         h+='</div>';
       }
     });
     h+='</div>';
-  } else {
+  } else if(!_amexItem) {
     h+='<div style="text-align:center;font-size:0.75rem;color:var(--text-faint);padding:20px 0">No items due this month</div>';
   }
   h+='</div>';
