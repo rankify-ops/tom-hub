@@ -1331,6 +1331,8 @@ function _initPieHover(id,data,total){
 }
 
 const _weeklyLiving=350;
+const _payDayAnchor='2026-10-14';
+const _payDayAmount=2474.54;
 let _finCatFilter='All';
 let _finDueMonth=new Date().getMonth();
 let _finDueYear=new Date().getFullYear();
@@ -1827,6 +1829,9 @@ function renderFinances(){
       if(paid)_paidTotal+=amt;else _remTotal+=amt;
     }
   });
+  const _incPayDates=getPayDatesInMonth(_payDayAnchor,'Weekly',_finDueMonth,_finDueYear);
+  const _incTotal=_incPayDates.length*_payDayAmount;
+  const _incReceived=_isCurMonth?_incPayDates.filter(pd=>pd<_today).length*_payDayAmount:0;
   h+='<div class="card" style="padding:20px">';
   h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">';
   h+='<span style="font-size:0.9rem;font-weight:700;color:#fff">Due in '+mNames[_finDueMonth]+'</span>';
@@ -1835,14 +1840,25 @@ function renderFinances(){
   h+='<button onclick="_finDueMonth++;if(_finDueMonth>11){_finDueMonth=0;_finDueYear++;}renderFinances()" style="background:none;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:var(--text-secondary);padding:4px 10px;cursor:pointer;font-family:var(--font);font-size:0.7rem">→</button>';
   h+='</div></div>';
   if(_isCurMonth&&_paidTotal>0){
-    h+='<div style="display:flex;gap:16px;margin-bottom:14px">';
+    h+='<div style="display:flex;gap:16px;margin-bottom:10px">';
     h+='<div><div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.5)">Total</div><div style="font-size:1.1rem;font-weight:700;color:var(--red-soft)">$'+fmt2(dueTotal)+'</div></div>';
     h+='<div><div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.5)">Paid</div><div style="font-size:1.1rem;font-weight:700;color:var(--teal)">$'+fmt2(_paidTotal)+'</div></div>';
     h+='<div><div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.5)">Remaining</div><div style="font-size:1.1rem;font-weight:700;color:#fff">$'+fmt2(_remTotal)+'</div></div>';
     h+='</div>';
   } else {
-    h+='<div style="margin-bottom:14px"><span style="font-size:1.1rem;font-weight:700;color:var(--red-soft)">$'+fmt2(dueTotal)+'</span></div>';
+    h+='<div style="margin-bottom:10px"><span style="font-size:1.1rem;font-weight:700;color:var(--red-soft)">$'+fmt2(dueTotal)+'</span></div>';
   }
+  h+='<div style="padding:8px 10px;border-radius:8px;background:rgba(48,164,108,0.06);border:1px solid rgba(48,164,108,0.12);margin-bottom:10px">';
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">';
+  h+='<span style="font-size:0.7rem;font-weight:600;color:var(--teal)">Income · '+_incPayDates.length+' paydays</span>';
+  h+='<span style="font-size:0.8rem;font-weight:700;color:var(--teal)">$'+fmt2(_incTotal)+'</span>';
+  h+='</div>';
+  h+='<div style="display:flex;gap:4px;flex-wrap:wrap">';
+  _incPayDates.forEach(pd=>{
+    const got=_isCurMonth&&pd<_today;
+    h+='<span style="font-size:0.55rem;padding:2px 6px;border-radius:3px;'+(got?'background:rgba(48,164,108,0.15);color:var(--teal)':'background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.6)')+'">'+fmtShortDate(pd)+(got?' ✓':'')+'</span>';
+  });
+  h+='</div></div>';
   if(dueItems.length){
     h+='<div style="display:flex;flex-direction:column;gap:6px;max-height:500px;overflow-y:auto">';
     dueItems.sort((a,b)=>{
@@ -1930,6 +1946,15 @@ function renderFinances(){
     h+='</div>';
   } else {
     h+='<div style="margin-bottom:14px"><span style="font-size:1.1rem;font-weight:700;color:var(--red-soft)">$'+fmt2(weekTotal)+'</span></div>';
+  }
+  const _wkPayDates=getPayDatesInMonth(_payDayAnchor,'Weekly',_today.getMonth(),_today.getFullYear()).filter(pd=>pd>=_weekStart&&pd<=_weekEnd);
+  if(_wkPayDates.length){
+    const _wkPayGot=_wkPayDates[0]<_today;
+    h+='<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:rgba(48,164,108,0.06);border:1px solid rgba(48,164,108,0.12);margin-bottom:8px'+ (_wkPayGot?';opacity:0.55':'')+'">';
+    h+='<div style="width:4px;height:28px;border-radius:2px;background:var(--teal)"></div>';
+    h+='<div style="flex:1;min-width:0"><div style="font-size:0.75rem;font-weight:600;color:var(--teal)">Salary'+(_wkPayGot?' <span style="font-size:0.55rem;font-weight:700;color:var(--teal);background:rgba(48,164,108,0.15);padding:1px 6px;border-radius:3px;margin-left:6px">RECEIVED</span>':'')+'</div><div style="font-size:0.6rem;color:rgba(255,255,255,0.6)">Wed '+fmtShortDate(_wkPayDates[0])+'</div></div>';
+    h+='<div style="font-size:0.8rem;font-weight:700;color:var(--teal)">+$'+fmt2(_payDayAmount)+'</div>';
+    h+='</div>';
   }
   if(weekItems.length){
     h+='<div style="display:flex;flex-direction:column;gap:6px">';
