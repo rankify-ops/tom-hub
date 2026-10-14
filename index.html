@@ -1421,7 +1421,7 @@ function renderNetPosition(){
 
   const activeItems=_costTracking.filter(c=>c.status==='active');
   const _nowCF=new Date(),_cfMo=_nowCF.getMonth(),_cfYr=_nowCF.getFullYear();
-  const totalMonthlyCosts=activeItems.reduce((s,c)=>s+actualMonthlyCost(c,_cfMo,_cfYr),0);
+  const totalMonthlyCosts=activeItems.filter(c=>!c.billingDay).reduce((s,c)=>s+actualMonthlyCost(c,_cfMo,_cfYr),0);
   const monthlyIncome=income.weekly*52/12;
   const monthlySurplus=monthlyIncome-totalMonthlyCosts;
 
@@ -1711,9 +1711,10 @@ function renderFinances(){
   const monthlyIncome=weeklyIncome*52/12;
   const annualIncome=weeklyIncome*52;
   const activeItems=_costTracking.filter(c=>c.status==='active');
+  const _costItems=activeItems.filter(c=>!c.billingDay);
   const _nowFin=new Date(),_finMo=_nowFin.getMonth(),_finYr=_nowFin.getFullYear();
-  const totalMonthly=activeItems.reduce((s,c)=>s+actualMonthlyCost(c,_finMo,_finYr),0);
-  const activeDerived=activeItems.map(c=>deriveCosts(c));
+  const totalMonthly=_costItems.reduce((s,c)=>s+actualMonthlyCost(c,_finMo,_finYr),0);
+  const activeDerived=_costItems.map(c=>deriveCosts(c));
   const totalWeekly=activeDerived.reduce((s,d)=>s+d.weekly,0);
   const totalAnnual=activeDerived.reduce((s,d)=>s+d.annual,0);
   const weeklyNet=weeklyIncome-totalWeekly;
