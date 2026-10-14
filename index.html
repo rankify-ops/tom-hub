@@ -1208,7 +1208,7 @@ const _defaultCosts=[
   {name:'Investment Property 33/286',owner:'Thomas Flood',monthly:null,annual:null,sixMonth:null,weekly:316.75,cycle:'Weekly',category:'Investment',catColor:'#e9c162',status:'active',payment:'Transfer to Commbank',payColor:'#ffc53d',renewal:'2026-09-17',url:null},
   {name:'Rent — New Place',owner:'Thomas Flood',monthly:null,annual:null,sixMonth:null,weekly:1150,cycle:'Weekly',category:'Rent',catColor:'#8dcec3',status:'active',payment:'Transfer to Commbank',payColor:'#ffc53d',renewal:'2026-10-23',url:null},
   {name:'Car Finance Costs',owner:'Thomas Flood',monthly:566.42,annual:6797.04,sixMonth:null,cycle:'Monthly',category:'Car',catColor:'#ffaa7d',status:'active',payment:'Subscription & Bills NAB',payColor:'#0091ff',renewal:'2026-06-30',url:'https://self-service.taureancapital.com.au'},
-  {name:'Money sent to Rankify account',owner:'Thomas Flood',monthly:535,annual:6420,sixMonth:null,cycle:'Monthly',category:'Investment',catColor:'#e9c162',status:'active',payment:'Rankify Transfer',payColor:'#30a46c',renewal:'2026-10-30',url:null},
+  {name:'Rankify Expenses',owner:'Thomas Flood',monthly:535,annual:6420,sixMonth:null,cycle:'Monthly',category:'Investment',catColor:'#e9c162',status:'active',payment:'Rankify Transfer',payColor:'#30a46c',renewal:'2026-10-30',url:null,toggleable:true},
   {name:'AHM Health Insurance',owner:'Thomas Flood',monthly:175.62,annual:2107.44,sixMonth:null,cycle:'Monthly',category:'Health',catColor:'#b6b6ff',status:'active',payment:'Qantas CC',payColor:'#e5484d',renewal:'2026-07-22',url:null},
   {name:'Car Insurance',owner:'Thomas Flood',monthly:125.87,annual:1510.44,sixMonth:null,cycle:'Monthly',category:'Utilities',catColor:'#92ceac',status:'active',payment:'Amex',payColor:'#006FCF',renewal:'2026-07-22',url:null},
   {name:'Vodafone Plan',owner:'Thomas Flood',monthly:81.51,annual:978.12,sixMonth:null,cycle:'Monthly',category:'Entertainment',catColor:'#96c7f2',status:'active',payment:'Amex',payColor:'#006FCF',renewal:'2026-07-15',url:null},
@@ -1299,6 +1299,12 @@ function updateEditableCost(name){
   if(isNaN(n))return;
   item.monthly=n;
   item.annual=n*12;
+  saveCostTracking();renderFinances();renderOverview();
+}
+function toggleCostItem(name){
+  const item=_costTracking.find(c=>c.name===name);
+  if(!item)return;
+  item.status=item.status==='active'?'paused':'active';
   saveCostTracking();renderFinances();renderOverview();
 }
 
@@ -1956,7 +1962,7 @@ function renderFinances(){
         const subLine=isPaid?'Next payment · '+fmtDate(c.renewal)+' · '+c.payment:c.cycle+(c.renewal?' · '+fmtDate(c.renewal):'')+(c.payment?' · '+c.payment:'');
         h+='<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.03)'+(isPaid?';opacity:0.55':'')+'">';
         h+='<div style="width:4px;height:28px;border-radius:2px;background:'+col+'"></div>';
-        h+='<div style="flex:1;min-width:0"><div style="font-size:0.75rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.name+(isPaid?' <span style="font-size:0.55rem;font-weight:700;color:var(--teal);background:rgba(48,164,108,0.15);padding:1px 6px;border-radius:3px;margin-left:6px">PAID</span>':'')+'</div><div style="font-size:0.6rem;color:rgba(255,255,255,0.6)">'+subLine+'</div></div>';
+        h+='<div style="flex:1;min-width:0"><div style="font-size:0.75rem;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.name+(c.toggleable?' <button onclick="toggleCostItem(\''+c.name.replace(/'/g,"\\'")+'\')" style="font-size:0.5rem;padding:1px 6px;border-radius:3px;cursor:pointer;font-family:var(--font);font-weight:700;border:1px solid rgba(48,164,108,0.3);background:rgba(48,164,108,0.1);color:var(--teal);margin-left:4px">ON</button>':'')+(isPaid?' <span style="font-size:0.55rem;font-weight:700;color:var(--teal);background:rgba(48,164,108,0.15);padding:1px 6px;border-radius:3px;margin-left:6px">PAID</span>':'')+'</div><div style="font-size:0.6rem;color:rgba(255,255,255,0.6)">'+subLine+'</div></div>';
         h+='<div style="font-size:0.8rem;font-weight:700;color:'+(isPaid?'var(--text-faint)':'#fff')+'">$'+fmt2(amt)+'</div>';
         h+='</div>';
       }
@@ -2074,7 +2080,7 @@ function renderFinances(){
     const d=deriveCosts(c);
     const isPaused=c.status==='paused';
     h+='<tr style="'+(isPaused?'opacity:0.5':'')+'">';
-    h+='<td style="color:#fff;font-weight:600;white-space:nowrap">'+c.name+(isPaused?' <span style="color:var(--text-faint);font-weight:400;font-size:0.55rem">(PAUSED)</span>':'')+'</td>';
+    h+='<td style="color:#fff;font-weight:600;white-space:nowrap">'+c.name+(c.toggleable?' <button onclick="toggleCostItem(\''+c.name.replace(/'/g,"\\'")+'\')" style="font-size:0.55rem;padding:2px 8px;border-radius:4px;cursor:pointer;font-family:var(--font);font-weight:600;border:1px solid '+(isPaused?'rgba(255,255,255,0.15)':'rgba(48,164,108,0.3)')+';background:'+(isPaused?'rgba(255,255,255,0.06)':'rgba(48,164,108,0.1)')+';color:'+(isPaused?'var(--text-faint)':'var(--teal)')+';margin-left:6px">'+(isPaused?'OFF':'ON')+'</button>':isPaused?' <span style="color:var(--text-faint);font-weight:400;font-size:0.55rem">(PAUSED)</span>':'')+'</td>';
     h+='<td>'+(c.category?'<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.65rem;background:'+(c.catColor||'#888')+'22;color:'+(c.catColor||'#888')+';border:1px solid '+(c.catColor||'#888')+'44">'+c.category+'</span>':'–')+'</td>';
     const cycleColors={Weekly:'#FF4081',Fortnightly:'#92ceac','6 Monthly':'#aec0f5'};
     const cc=cycleColors[c.cycle]||'#7C4DFF';
