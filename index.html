@@ -1812,6 +1812,7 @@ function renderFinances(){
   });
 
   // Pre-compute week items for payment breakdown
+  const _today=new Date();_today.setHours(0,0,0,0);
   const _weekStart=new Date(_today);_weekStart.setDate(_weekStart.getDate()-_weekStart.getDay()+1+(_finWeekOffset*7));
   const _weekEnd=new Date(_weekStart);_weekEnd.setDate(_weekEnd.getDate()+6);
   _weekEnd.setHours(23,59,59,999);
@@ -1916,7 +1917,6 @@ function renderFinances(){
   h+='</div>';
 
   // RIGHT: Due This Month
-  const _today=new Date();_today.setHours(0,0,0,0);
   const _isCurMonth=_finDueMonth===new Date().getMonth()&&_finDueYear===new Date().getFullYear();
   let _paidTotal=0,_remTotal=0;
   dueItems.forEach(c=>{
