@@ -1394,9 +1394,8 @@ function renderNetPosition(){
   const activeItems=_costTracking.filter(c=>c.status==='active');
   const _nowCF=new Date(),_cfMo=_nowCF.getMonth(),_cfYr=_nowCF.getFullYear();
   const totalMonthlyCosts=activeItems.reduce((s,c)=>s+actualMonthlyCost(c,_cfMo,_cfYr),0);
-  const monthlyLiving=_weeklyLiving*52/12;
   const monthlyIncome=income.weekly*52/12;
-  const monthlySurplus=monthlyIncome-totalMonthlyCosts-monthlyLiving;
+  const monthlySurplus=monthlyIncome-totalMonthlyCosts;
 
   const propVal=getPropertyValue();
   const propShare=propVal?Math.round(propVal.value/2*100)/100:0;
@@ -1620,7 +1619,6 @@ function renderNetPosition(){
   const rows=[
     {label:'Salary (after tax)',value:monthlyIncome,color:'var(--teal)',sign:'+'},
     {label:'Subscriptions & Bills',value:totalMonthlyCosts,color:'var(--red-soft)',sign:'-'},
-    {label:'Living Expenses',value:monthlyLiving,color:'var(--amber)',sign:'-'},
   ];
   for(const r of rows){
     h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
@@ -1690,12 +1688,9 @@ function renderFinances(){
   const activeDerived=activeItems.map(c=>deriveCosts(c));
   const totalWeekly=activeDerived.reduce((s,d)=>s+d.weekly,0);
   const totalAnnual=activeDerived.reduce((s,d)=>s+d.annual,0);
-  const weeklyLiving=_weeklyLiving;
-  const monthlyLiving=weeklyLiving*52/12;
-  const annualLiving=weeklyLiving*52;
-  const weeklyNet=weeklyIncome-totalWeekly-weeklyLiving;
-  const monthlyNet=monthlyIncome-totalMonthly-monthlyLiving;
-  const annualNet=annualIncome-totalAnnual-annualLiving;
+  const weeklyNet=weeklyIncome-totalWeekly;
+  const monthlyNet=monthlyIncome-totalMonthly;
+  const annualNet=annualIncome-totalAnnual;
 
   const catGroups=[
     {label:'Investments',cats:['Investment'],color:'#e9c162',icon:'📈'},
@@ -1723,7 +1718,7 @@ function renderFinances(){
   // Summary tiles
   let h='<div class="metrics-grid" style="margin-bottom:16px;grid-template-columns:repeat(4,1fr)">';
   h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:var(--teal)">$'+fmt2(monthlyIncome)+'</div><div class="metric-label">Salary /mo</div></div>';
-  h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:var(--red-soft)">$'+fmt2(totalMonthly+monthlyLiving)+'</div><div class="metric-label">Total Due /mo</div></div>';
+  h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:var(--red-soft)">$'+fmt2(totalMonthly)+'</div><div class="metric-label">Total Due /mo</div></div>';
   h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:'+(monthlyNet>=0?'var(--teal)':'var(--red-soft)')+'">$'+fmt2(Math.abs(monthlyNet))+'</div><div class="metric-label">'+(monthlyNet>=0?'Surplus':'Deficit')+' /mo</div></div>';
   h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem">'+activeItems.length+'</div><div class="metric-label">Active Subs</div></div>';
   h+='</div>';
@@ -1732,7 +1727,6 @@ function renderFinances(){
   h+='<div class="card" style="padding:14px;margin-bottom:16px"><div style="display:flex;justify-content:space-around;flex-wrap:wrap;gap:12px">';
   h+='<div style="text-align:center"><div style="font-size:0.85rem;font-weight:600;color:var(--teal)">$'+fmt2(weeklyIncome)+'</div><div style="font-size:0.55rem;color:var(--text-faint)">Salary /wk</div></div>';
   h+='<div style="text-align:center"><div style="font-size:0.85rem;font-weight:600;color:var(--red-soft)">$'+fmt2(totalWeekly)+'</div><div style="font-size:0.55rem;color:var(--text-faint)">Subs /wk</div></div>';
-  h+='<div style="text-align:center"><div style="font-size:0.85rem;font-weight:600;color:var(--amber)">$'+fmt2(weeklyLiving)+'</div><div style="font-size:0.55rem;color:var(--text-faint)">Living /wk</div></div>';
   h+='<div style="text-align:center"><div style="font-size:0.85rem;font-weight:600;color:'+(weeklyNet>=0?'var(--teal)':'var(--red-soft)')+'">$'+fmt2(Math.abs(weeklyNet))+'</div><div style="font-size:0.55rem;color:var(--text-faint)">Surplus /wk</div></div>';
   h+='<div style="text-align:center"><div style="font-size:0.85rem;font-weight:600;color:var(--amber)">$'+fmt2(totalAnnual)+'</div><div style="font-size:0.55rem;color:var(--text-faint)">Subs /yr</div></div>';
   h+='<div style="text-align:center"><div style="font-size:0.85rem;font-weight:600;color:'+(annualNet>=0?'var(--teal)':'var(--red-soft)')+'">$'+fmt2(Math.abs(annualNet))+'</div><div style="font-size:0.55rem;color:var(--text-faint)">Surplus /yr</div></div>';
@@ -1758,7 +1752,7 @@ function renderFinances(){
   },0);
 
   // Pie data setup
-  const pieData=[...grouped.filter(g=>g.totalMonthly>0),{label:'Living Expenses',color:'#f97316',totalMonthly:monthlyLiving}];
+  const pieData=[...grouped.filter(g=>g.totalMonthly>0)];
   const pieTotal=pieData.reduce((s,d)=>s+d.totalMonthly,0);
   let angle=0;
   const slices=pieData.map(d=>{
@@ -4283,9 +4277,8 @@ function renderOverview(){
   const activeItems=_costTracking.filter(c=>c.status==='active');
   const _nowOv=new Date(),_ovMo=_nowOv.getMonth(),_ovYr=_nowOv.getFullYear();
   const totalMonthly=activeItems.reduce((s,c)=>s+actualMonthlyCost(c,_ovMo,_ovYr),0);
-  const monthlyLiving=_weeklyLiving*52/12;
   const monthlyIncome=_weeklyIncome*52/12;
-  const surplus=monthlyIncome-totalMonthly-monthlyLiving;
+  const surplus=monthlyIncome-totalMonthly;
 
   // Whoop data
   const todayStr=_ld();
@@ -4344,7 +4337,6 @@ function renderOverview(){
   panels+='<div style="display:flex;gap:12px;margin:10px 0">';
   panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Salary</div><div style="font-weight:700;color:var(--teal)">$'+fmt2(monthlyIncome)+'</div></div>';
   panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Costs</div><div style="font-weight:700;color:var(--red-soft)">$'+fmt2(totalMonthly)+'</div></div>';
-  panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Living</div><div style="font-weight:700;color:var(--amber)">$'+fmt2(monthlyLiving)+'</div></div>';
   panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Surplus</div><div style="font-weight:700;color:'+(surplus>=0?'var(--teal)':'var(--red-soft)')+'">$'+fmt2(surplus)+'</div></div>';
   panels+='</div>';
   // mini bar of top 3 costs
