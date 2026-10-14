@@ -1687,8 +1687,9 @@ function renderFinances(){
   const activeItems=_costTracking.filter(c=>c.status==='active');
   const _nowFin=new Date(),_finMo=_nowFin.getMonth(),_finYr=_nowFin.getFullYear();
   const totalMonthly=activeItems.reduce((s,c)=>s+actualMonthlyCost(c,_finMo,_finYr),0);
-  const totalWeekly=totalMonthly*12/52;
-  const totalAnnual=totalMonthly*12;
+  const activeDerived=activeItems.map(c=>deriveCosts(c));
+  const totalWeekly=activeDerived.reduce((s,d)=>s+d.weekly,0);
+  const totalAnnual=activeDerived.reduce((s,d)=>s+d.annual,0);
   const weeklyLiving=_weeklyLiving;
   const monthlyLiving=weeklyLiving*52/12;
   const annualLiving=weeklyLiving*52;
@@ -1708,13 +1709,15 @@ function renderFinances(){
     const items=_costTracking.filter(c=>g.cats.includes(c.category));
     const derived=items.map(c=>({...c,...deriveCosts(c)}));
     const totalM=items.reduce((s,c)=>s+actualMonthlyCost(c,_finMo,_finYr),0);
-    return{...g,items:derived,totalMonthly:totalM,totalAnnual:totalM*12,totalWeekly:totalM*12/52};
+    const avgM=derived.reduce((s,d)=>s+d.monthly,0);
+    return{...g,items:derived,totalMonthly:totalM,totalAnnual:avgM*12,totalWeekly:avgM*12/52};
   });
   const uncategorized=_costTracking.filter(c=>!c.category);
   if(uncategorized.length){
     const derived=uncategorized.map(c=>({...c,...deriveCosts(c)}));
     const totalM=uncategorized.reduce((s,c)=>s+actualMonthlyCost(c,_finMo,_finYr),0);
-    grouped.push({label:'Other',cats:[],color:'#888',icon:'📋',items:derived,totalMonthly:totalM,totalAnnual:totalM*12,totalWeekly:totalM*12/52});
+    const avgM=derived.reduce((s,d)=>s+d.monthly,0);
+    grouped.push({label:'Other',cats:[],color:'#888',icon:'📋',items:derived,totalMonthly:totalM,totalAnnual:avgM*12,totalWeekly:avgM*12/52});
   }
 
   // Summary tiles
