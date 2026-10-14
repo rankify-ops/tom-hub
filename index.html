@@ -1142,7 +1142,7 @@ async function loadFinances(){
       const d=await res.json();
       _finances=d.entries||[];
       if(d.updated)document.getElementById('finances-updated').textContent='Saved: '+fmt(d.updated);
-      const COST_VERSION=15;
+      const COST_VERSION=16;
       if(d.costTracking&&d.costTracking.length&&d.costsVersion>=COST_VERSION){
         _costTracking=d.costTracking;
         _weeklyIncome=d.weeklyIncome??2469.54;
@@ -1156,7 +1156,7 @@ async function loadFinances(){
   }catch(e){console.warn('Finances load failed',e)}
 }
 async function saveCostTracking(){
-  try{await fetch('/api/finances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save_costs',items:_costTracking,weeklyIncome:_weeklyIncome,version:15})})}catch(e){console.warn('Cost tracking save failed',e)}
+  try{await fetch('/api/finances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save_costs',items:_costTracking,weeklyIncome:_weeklyIncome,version:16})})}catch(e){console.warn('Cost tracking save failed',e)}
 }
 async function saveFinances(){
   try{await fetch('/api/finances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',entries:_finances})});document.getElementById('finances-updated').textContent='Saved: '+fmt(new Date().toISOString())}catch(e){console.warn('Finances save failed',e)}
@@ -1222,7 +1222,7 @@ const _defaultCosts=[
   {name:'Amazon Prime',owner:'Thomas Flood',monthly:11.99,annual:143.88,sixMonth:null,cycle:'Monthly',category:'Entertainment',catColor:'#96c7f2',status:'active',payment:'Amex',payColor:'#006FCF',renewal:'2026-07-13',url:null},
   {name:'Spotify',owner:'Thomas Flood',monthly:7.99,annual:95.88,sixMonth:null,cycle:'Monthly',category:'Entertainment',catColor:'#96c7f2',status:'active',payment:'Amex',payColor:'#006FCF',renewal:'2026-07-09',url:null},
   {name:'Shooters Union',owner:'Thomas Flood',monthly:null,annual:55,sixMonth:null,cycle:'Annually',category:'Utilities',catColor:'#92ceac',status:'active',payment:'Visa 0779',payColor:'#0091ff',renewal:'2027-08-25',url:null},
-  {name:'AMEX Balance',owner:'Thomas Flood',monthly:0,annual:null,sixMonth:null,cycle:'Monthly',category:'Utilities',catColor:'#92ceac',status:'active',payment:'AMEX',payColor:'#006fcf',renewal:'2026-11-18',url:null,editable:true,billingDay:5,billingGrace:14},
+  {name:'AMEX Balance',owner:'Thomas Flood',monthly:0,annual:null,sixMonth:null,cycle:'Monthly',category:'Utilities',catColor:'#92ceac',status:'active',payment:'AMEX',payColor:'#006fcf',renewal:'2026-11-18',url:null,editable:true,billingDay:5,billingGrace:14,amexSpentMonth:0,amexTargetMonth:0,amexSpentWeek:0,amexTargetWeek:0},
 ];
 const PAY_COLORS={'Qantas CC':'#e5484d','Transfer to Commbank':'#ffc53d','Subscription & Bills NAB':'#0091ff','Rankify Transfer':'#30a46c','Manual Payment':'#b6b6ff','Visa 0779':'#0091ff','Amex':'#006FCF'};
 let _costTracking=[];
@@ -1880,6 +1880,21 @@ function renderFinances(){
   h+='<button onclick="_finDueMonth++;if(_finDueMonth>11){_finDueMonth=0;_finDueYear++;}renderFinances()" style="background:none;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:var(--text-secondary);padding:4px 10px;cursor:pointer;font-family:var(--font);font-size:0.7rem">→</button>';
   h+='</div></div>';
   const _amexBal=_amex?(_amex.monthly||0):0;
+  const _amexSM=_amex?(_amex.amexSpentMonth||0):0;
+  const _amexTM=_amex?(_amex.amexTargetMonth||0):0;
+  const _amexSW=_amex?(_amex.amexSpentWeek||0):0;
+  const _amexTW=_amex?(_amex.amexTargetWeek||0):0;
+  if(_amexTM>0||_amexSM>0){
+    const _amPct=_amexTM>0?Math.min(100,Math.round(_amexSM/_amexTM*100)):0;
+    const _amOver=_amexTM>0&&_amexSM>_amexTM;
+    h+='<div style="padding:8px 10px;border-radius:8px;background:rgba(0,111,207,0.06);border:1px solid rgba(0,111,207,0.12);margin-bottom:10px">';
+    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">';
+    h+='<span style="font-size:0.6rem;font-weight:600;color:#4da6ff">AMEX Spend This Month</span>';
+    h+='<span style="font-size:0.75rem;font-weight:700;color:'+(_amOver?'var(--red-soft)':'#4da6ff')+'">$'+fmt2(_amexSM)+(_amexTM>0?' / $'+fmt2(_amexTM):'')+'</span>';
+    h+='</div>';
+    if(_amexTM>0){h+='<div style="height:4px;border-radius:2px;background:rgba(255,255,255,0.06);overflow:hidden"><div style="height:100%;width:'+_amPct+'%;border-radius:2px;background:'+(_amOver?'var(--red-soft)':'linear-gradient(90deg,#006fcf,#4da6ff)')+'"></div></div>';}
+    h+='</div>';
+  }
   if(_isCurMonth&&_paidTotal>0){
     h+='<div style="display:flex;gap:16px;margin-bottom:10px">';
     h+='<div><div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.5)">Total</div><div style="font-size:1.1rem;font-weight:700;color:var(--red-soft)">$'+fmt2(dueTotal)+'</div></div>';
@@ -1984,6 +1999,17 @@ function renderFinances(){
   h+='<div class="card" style="padding:20px">';
   h+='<div style="margin-bottom:6px"><span style="font-size:0.9rem;font-weight:700;color:#fff">Due This Week</span></div>';
   h+='<div style="font-size:0.6rem;color:rgba(255,255,255,0.5);margin-bottom:10px">'+fmtShortDate(_weekStart)+' – '+fmtShortDate(_weekEnd)+'</div>';
+  if(_amexTW>0||_amexSW>0){
+    const _awPct=_amexTW>0?Math.min(100,Math.round(_amexSW/_amexTW*100)):0;
+    const _awOver=_amexTW>0&&_amexSW>_amexTW;
+    h+='<div style="padding:8px 10px;border-radius:8px;background:rgba(0,111,207,0.06);border:1px solid rgba(0,111,207,0.12);margin-bottom:10px">';
+    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">';
+    h+='<span style="font-size:0.6rem;font-weight:600;color:#4da6ff">AMEX Spend This Week</span>';
+    h+='<span style="font-size:0.75rem;font-weight:700;color:'+(_awOver?'var(--red-soft)':'#4da6ff')+'">$'+fmt2(_amexSW)+(_amexTW>0?' / $'+fmt2(_amexTW):'')+'</span>';
+    h+='</div>';
+    if(_amexTW>0){h+='<div style="height:4px;border-radius:2px;background:rgba(255,255,255,0.06);overflow:hidden"><div style="height:100%;width:'+_awPct+'%;border-radius:2px;background:'+(_awOver?'var(--red-soft)':'linear-gradient(90deg,#006fcf,#4da6ff)')+'"></div></div>';}
+    h+='</div>';
+  }
   if(weekPaid>0){
     h+='<div style="display:flex;gap:16px;margin-bottom:14px">';
     h+='<div><div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.5)">Total</div><div style="font-size:1.1rem;font-weight:700;color:var(--red-soft)">$'+fmt2(weekTotal)+'</div></div>';
