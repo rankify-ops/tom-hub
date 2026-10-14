@@ -26,7 +26,7 @@ async function psGet(path) {
   return res.json();
 }
 
-const { kvGet, kvSet } = require('../db');
+const { kvGet, kvSet, fireWebhook } = require('../db');
 
 module.exports = async function handler(req, res) {
   try {
@@ -99,11 +99,27 @@ module.exports = async function handler(req, res) {
       updated: now.toISOString(),
     });
 
+    let staleAlert = null;
+    const amexTxns = transactions.filter(t => t.acctId === 5643758);
+    if (amexTxns.length) {
+      const latestAmexDate = amexTxns.reduce((m, t) => t.date > m ? t.date : m, '');
+      const daysSince = Math.floor((now - new Date(latestAmexDate)) / 86400000);
+      if (daysSince >= 2) {
+        staleAlert = `Amex feed stale — last transaction ${latestAmexDate} (${daysSince} days ago)`;
+        await fireWebhook('amex_feed_stale', {
+          lastTransaction: latestAmexDate,
+          daysSince,
+          message: `Amex feed stale — last transaction was ${latestAmexDate} (${daysSince} days ago). Reauthorize MFA in PocketSmith → Manage → Feeds → American Express → REAUTHORIZE.`,
+        });
+      }
+    }
+
     return res.status(200).json({
       success: true,
       accounts: accounts.length,
       transactions: transactions.length,
       synced: now.toISOString(),
+      staleAlert,
     });
   } catch (err) {
     console.error('PocketSmith sync error:', err);
