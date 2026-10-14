@@ -1354,6 +1354,7 @@ const _payDayAmount=2474.54;
 let _finCatFilter='All';
 let _finDueMonth=new Date().getMonth();
 let _finDueYear=new Date().getFullYear();
+let _finWeekOffset=0;
 
 function renderFinancesShell(){
   const t=_finSubTab;
@@ -1974,16 +1975,17 @@ function renderFinances(){
   h+='</div>';
 
   // DUE THIS WEEK card
-  const _weekStart=new Date(_today);_weekStart.setDate(_weekStart.getDate()-_weekStart.getDay()+1);
+  const _weekStart=new Date(_today);_weekStart.setDate(_weekStart.getDate()-_weekStart.getDay()+1+(_finWeekOffset*7));
   const _weekEnd=new Date(_weekStart);_weekEnd.setDate(_weekEnd.getDate()+6);
   _weekEnd.setHours(23,59,59,999);
+  const _isThisWeek=_finWeekOffset===0;
   let weekItems=[];
   _costTracking.filter(c=>c.status!=='paused').forEach(c=>{
     if(c.cycle==='Weekly'||c.cycle==='Fortnightly'){
-      const pays=getPayDatesInMonth(c.renewal,c.cycle,_today.getMonth(),_today.getFullYear());
+      const pays=getPayDatesInMonth(c.renewal,c.cycle,_weekStart.getMonth(),_weekStart.getFullYear());
       pays.forEach(pd=>{
         if(pd>=_weekStart&&pd<=_weekEnd){
-          weekItems.push({name:c.name,amount:c.weekly||deriveCosts(c).weekly,date:pd,paid:pd<_today,payment:c.payment,category:c.category});
+          weekItems.push({name:c.name,amount:c.weekly||deriveCosts(c).weekly,date:pd,paid:_isThisWeek&&pd<_today,payment:c.payment,category:c.category});
         }
       });
     } else if(c.cycle==='Monthly'||c.cycle==='6 Monthly'||c.cycle==='Annual'){
@@ -1992,7 +1994,7 @@ function renderFinances(){
       if(rd>=_weekStart&&rd<=_weekEnd){
         const d=deriveCosts(c);
         const amt=c.cycle==='Annual'?d.annual:c.cycle==='6 Monthly'?d.sixMonth:d.monthly;
-        weekItems.push({name:c.name,amount:amt,date:rd,paid:rd<_today,payment:c.payment,category:c.category});
+        weekItems.push({name:c.name,amount:amt,date:rd,paid:_isThisWeek&&rd<_today,payment:c.payment,category:c.category});
       }
     }
   });
@@ -2001,7 +2003,13 @@ function renderFinances(){
   const weekPaid=weekItems.filter(i=>i.paid).reduce((s,i)=>s+i.amount,0);
   const weekRem=weekTotal-weekPaid;
   h+='<div class="card" style="padding:20px">';
-  h+='<div style="margin-bottom:6px"><span style="font-size:0.9rem;font-weight:700;color:#fff">Due This Week</span></div>';
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">';
+  h+='<span style="font-size:0.9rem;font-weight:700;color:#fff">'+(_isThisWeek?'Due This Week':'Week of '+fmtShortDate(_weekStart))+'</span>';
+  h+='<div style="display:flex;align-items:center;gap:8px">';
+  h+='<button onclick="_finWeekOffset--;renderFinances()" style="background:none;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:var(--text-secondary);padding:4px 10px;cursor:pointer;font-family:var(--font);font-size:0.7rem">←</button>';
+  if(!_isThisWeek){h+='<button onclick="_finWeekOffset=0;renderFinances()" style="background:none;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:var(--text-secondary);padding:4px 10px;cursor:pointer;font-family:var(--font);font-size:0.6rem">Today</button>';}
+  h+='<button onclick="_finWeekOffset++;renderFinances()" style="background:none;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:var(--text-secondary);padding:4px 10px;cursor:pointer;font-family:var(--font);font-size:0.7rem">→</button>';
+  h+='</div></div>';
   h+='<div style="font-size:0.6rem;color:rgba(255,255,255,0.5);margin-bottom:10px">'+fmtShortDate(_weekStart)+' – '+fmtShortDate(_weekEnd)+'</div>';
   if(_amexTW>0||_amexSW>0){
     const _awPct=_amexTW>0?Math.min(100,Math.round(_amexSW/_amexTW*100)):0;
@@ -2025,9 +2033,9 @@ function renderFinances(){
     h+='<div><span style="font-size:1.1rem;font-weight:700;color:var(--red-soft)">$'+fmt2(weekTotal)+'</span></div>';
     h+='</div>';
   }
-  const _wkPayDates=getPayDatesInMonth(_payDayAnchor,'Weekly',_today.getMonth(),_today.getFullYear()).filter(pd=>pd>=_weekStart&&pd<=_weekEnd);
+  const _wkPayDates=getPayDatesInMonth(_payDayAnchor,'Weekly',_weekStart.getMonth(),_weekStart.getFullYear()).filter(pd=>pd>=_weekStart&&pd<=_weekEnd);
   if(_wkPayDates.length){
-    const _wkPayGot=_wkPayDates[0]<_today;
+    const _wkPayGot=_isThisWeek&&_wkPayDates[0]<_today;
     h+='<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:rgba(48,164,108,0.06);border:1px solid rgba(48,164,108,0.12);margin-bottom:8px'+ (_wkPayGot?';opacity:0.55':'')+'">';
     h+='<div style="width:4px;height:28px;border-radius:2px;background:var(--teal)"></div>';
     h+='<div style="flex:1;min-width:0"><div style="font-size:0.75rem;font-weight:600;color:var(--teal)">Salary'+(_wkPayGot?' <span style="font-size:0.55rem;font-weight:700;color:var(--teal);background:rgba(48,164,108,0.15);padding:1px 6px;border-radius:3px;margin-left:6px">RECEIVED</span>':'')+'</div><div style="font-size:0.6rem;color:rgba(255,255,255,0.6)">Wed '+fmtShortDate(_wkPayDates[0])+'</div></div>';
