@@ -65,6 +65,21 @@ module.exports = async function handler(req, res) {
         return res.status(200).json({ success: true, spentMonth: amex.amexSpentMonth, targetMonth: amex.amexTargetMonth, spentWeek: amex.amexSpentWeek, targetWeek: amex.amexTargetWeek });
       }
 
+      if (action === 'update_rankify_expenses') {
+        const { monthly } = req.body;
+        if (monthly === undefined || monthly === null) return res.status(400).json({ error: 'monthly required' });
+        const costs = await kvGet(KV_COSTS);
+        if (!costs || !costs.items) return res.status(404).json({ error: 'No cost data found' });
+        const rk = costs.items.find(c => c.name === 'Rankify Expenses');
+        if (!rk) return res.status(404).json({ error: 'Rankify Expenses item not found' });
+        rk.monthly = parseFloat(monthly);
+        rk.annual = parseFloat(monthly) * 12;
+        rk.sixMonth = parseFloat(monthly) * 6;
+        costs.updated = new Date().toISOString();
+        await kvSet(KV_COSTS, costs);
+        return res.status(200).json({ success: true, monthly: rk.monthly });
+      }
+
       return res.status(400).json({ error: 'Unknown action' });
     }
 
