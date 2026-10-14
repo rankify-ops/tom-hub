@@ -1142,7 +1142,7 @@ async function loadFinances(){
       const d=await res.json();
       _finances=d.entries||[];
       if(d.updated)document.getElementById('finances-updated').textContent='Saved: '+fmt(d.updated);
-      const COST_VERSION=14;
+      const COST_VERSION=15;
       if(d.costTracking&&d.costTracking.length&&d.costsVersion>=COST_VERSION){
         _costTracking=d.costTracking;
         _weeklyIncome=d.weeklyIncome??2469.54;
@@ -1156,7 +1156,7 @@ async function loadFinances(){
   }catch(e){console.warn('Finances load failed',e)}
 }
 async function saveCostTracking(){
-  try{await fetch('/api/finances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save_costs',items:_costTracking,weeklyIncome:_weeklyIncome,version:14})})}catch(e){console.warn('Cost tracking save failed',e)}
+  try{await fetch('/api/finances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save_costs',items:_costTracking,weeklyIncome:_weeklyIncome,version:15})})}catch(e){console.warn('Cost tracking save failed',e)}
 }
 async function saveFinances(){
   try{await fetch('/api/finances',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save',entries:_finances})});document.getElementById('finances-updated').textContent='Saved: '+fmt(new Date().toISOString())}catch(e){console.warn('Finances save failed',e)}
@@ -1222,7 +1222,7 @@ const _defaultCosts=[
   {name:'Amazon Prime',owner:'Thomas Flood',monthly:11.99,annual:143.88,sixMonth:null,cycle:'Monthly',category:'Entertainment',catColor:'#96c7f2',status:'active',payment:'Amex',payColor:'#006FCF',renewal:'2026-07-13',url:null},
   {name:'Spotify',owner:'Thomas Flood',monthly:7.99,annual:95.88,sixMonth:null,cycle:'Monthly',category:'Entertainment',catColor:'#96c7f2',status:'active',payment:'Amex',payColor:'#006FCF',renewal:'2026-07-09',url:null},
   {name:'Shooters Union',owner:'Thomas Flood',monthly:null,annual:55,sixMonth:null,cycle:'Annually',category:'Utilities',catColor:'#92ceac',status:'active',payment:'Visa 0779',payColor:'#0091ff',renewal:'2027-08-25',url:null},
-  {name:'AMEX Balance',owner:'Thomas Flood',monthly:0,annual:null,sixMonth:null,cycle:'Monthly',category:'Utilities',catColor:'#92ceac',status:'active',payment:'AMEX',payColor:'#006fcf',renewal:'2026-11-04',url:null,editable:true,billingDay:5},
+  {name:'AMEX Balance',owner:'Thomas Flood',monthly:0,annual:null,sixMonth:null,cycle:'Monthly',category:'Utilities',catColor:'#92ceac',status:'active',payment:'AMEX',payColor:'#006fcf',renewal:'2026-11-18',url:null,editable:true,billingDay:5,billingGrace:14},
 ];
 const PAY_COLORS={'Qantas CC':'#e5484d','Transfer to Commbank':'#ffc53d','Subscription & Bills NAB':'#0091ff','Rankify Transfer':'#30a46c','Manual Payment':'#b6b6ff','Visa 0779':'#0091ff','Amex':'#006FCF'};
 let _costTracking=[];
@@ -1746,6 +1746,34 @@ function renderFinances(){
   h+='<div style="text-align:center"><div style="font-size:0.85rem;font-weight:600;color:'+(annualNet>=0?'var(--teal)':'var(--red-soft)')+'">$'+fmt2(Math.abs(annualNet))+'</div><div style="font-size:0.55rem;color:var(--text-faint)">Surplus /yr</div></div>';
   h+='</div></div>';
 
+  // AMEX persistent card
+  const _amex=_costTracking.find(c=>c.billingDay&&c.status!=='paused');
+  if(_amex){
+    const _abd=_amex.billingDay,_agr=_amex.billingGrace||14;
+    const _aNow=new Date();_aNow.setHours(0,0,0,0);
+    let _abpS,_abpE;
+    if(_aNow.getDate()<_abd){_abpS=new Date(_aNow.getFullYear(),_aNow.getMonth()-1,_abd);_abpE=new Date(_aNow.getFullYear(),_aNow.getMonth(),_abd-1);}
+    else{_abpS=new Date(_aNow.getFullYear(),_aNow.getMonth(),_abd);_abpE=new Date(_aNow.getFullYear(),_aNow.getMonth()+1,_abd-1);}
+    const _aDue=new Date(_abpE);_aDue.setDate(_aDue.getDate()+_agr);
+    const _aDaysIn=Math.max(0,Math.ceil((_aNow-_abpS)/86400000));
+    const _aDaysTotal=Math.ceil((_abpE-_abpS)/86400000)+1;
+    const _aPct=Math.min(100,Math.round(_aDaysIn/_aDaysTotal*100));
+    const _aBal=_amex.monthly||0;
+    h+='<div style="padding:14px 16px;border-radius:10px;background:rgba(0,111,207,0.06);border:1px solid rgba(0,111,207,0.15);margin-bottom:16px">';
+    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
+    h+='<div style="display:flex;align-items:center;gap:10px"><span style="font-size:0.85rem;font-weight:700;color:#fff">AMEX Statement</span>';
+    h+='<span style="font-size:0.55rem;padding:2px 8px;border-radius:3px;background:rgba(0,111,207,0.15);color:#4da6ff">'+fmtShortDate(_abpS)+' – '+fmtShortDate(_abpE)+'</span></div>';
+    h+='<button onclick="updateEditableCost(\'AMEX Balance\')" style="background:rgba(0,111,207,0.15);border:1px solid rgba(0,111,207,0.3);border-radius:6px;color:#4da6ff;padding:4px 12px;cursor:pointer;font-size:0.65rem;font-family:var(--font);font-weight:600">Update Balance</button>';
+    h+='</div>';
+    h+='<div style="display:flex;gap:20px;margin-bottom:10px">';
+    h+='<div><div style="font-size:0.5rem;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.4)">Current Balance</div><div style="font-size:1.3rem;font-weight:700;color:'+(+_aBal>0?'#fff':'rgba(255,255,255,0.3)')+'">$'+fmt2(_aBal)+'</div></div>';
+    h+='<div><div style="font-size:0.5rem;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.4)">Due Date</div><div style="font-size:1.3rem;font-weight:700;color:var(--amber)">'+fmtShortDate(_aDue)+'</div></div>';
+    h+='<div><div style="font-size:0.5rem;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.4)">Period</div><div style="font-size:1.3rem;font-weight:700;color:rgba(255,255,255,0.6)">Day '+_aDaysIn+'/'+_aDaysTotal+'</div></div>';
+    h+='</div>';
+    h+='<div style="height:5px;border-radius:3px;background:rgba(255,255,255,0.06);overflow:hidden"><div style="height:100%;width:'+_aPct+'%;border-radius:3px;background:linear-gradient(90deg,#006fcf,#4da6ff)"></div></div>';
+    h+='</div>';
+  }
+
   // Due This Month section
   const mNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
   const dueItems=_costTracking.filter(c=>{
@@ -1851,14 +1879,19 @@ function renderFinances(){
   h+='<button onclick="_finDueMonth--;if(_finDueMonth<0){_finDueMonth=11;_finDueYear--;}renderFinances()" style="background:none;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:var(--text-secondary);padding:4px 10px;cursor:pointer;font-family:var(--font);font-size:0.7rem">←</button>';
   h+='<button onclick="_finDueMonth++;if(_finDueMonth>11){_finDueMonth=0;_finDueYear++;}renderFinances()" style="background:none;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:var(--text-secondary);padding:4px 10px;cursor:pointer;font-family:var(--font);font-size:0.7rem">→</button>';
   h+='</div></div>';
+  const _amexBal=_amex?(_amex.monthly||0):0;
   if(_isCurMonth&&_paidTotal>0){
     h+='<div style="display:flex;gap:16px;margin-bottom:10px">';
     h+='<div><div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.5)">Total</div><div style="font-size:1.1rem;font-weight:700;color:var(--red-soft)">$'+fmt2(dueTotal)+'</div></div>';
     h+='<div><div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.5)">Paid</div><div style="font-size:1.1rem;font-weight:700;color:var(--teal)">$'+fmt2(_paidTotal)+'</div></div>';
     h+='<div><div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.5)">Remaining</div><div style="font-size:1.1rem;font-weight:700;color:#fff">$'+fmt2(_remTotal)+'</div></div>';
+    if(_amexBal>0){h+='<div><div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.08em;color:#4da6ff">AMEX</div><div style="font-size:1.1rem;font-weight:700;color:#4da6ff">$'+fmt2(_amexBal)+'</div></div>';}
     h+='</div>';
   } else {
-    h+='<div style="margin-bottom:10px"><span style="font-size:1.1rem;font-weight:700;color:var(--red-soft)">$'+fmt2(dueTotal)+'</span></div>';
+    h+='<div style="display:flex;gap:16px;margin-bottom:10px">';
+    h+='<div><span style="font-size:1.1rem;font-weight:700;color:var(--red-soft)">$'+fmt2(dueTotal)+'</span></div>';
+    if(_amexBal>0){h+='<div><div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.08em;color:#4da6ff">AMEX</div><div style="font-size:1.1rem;font-weight:700;color:#4da6ff">$'+fmt2(_amexBal)+'</div></div>';}
+    h+='</div>';
   }
   h+='<div style="padding:8px 10px;border-radius:8px;background:rgba(48,164,108,0.06);border:1px solid rgba(48,164,108,0.12);margin-bottom:10px">';
   h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">';
@@ -1871,31 +1904,6 @@ function renderFinances(){
     h+='<span style="font-size:0.55rem;padding:2px 6px;border-radius:3px;'+(got?'background:rgba(48,164,108,0.15);color:var(--teal)':'background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.6)')+'">'+fmtShortDate(pd)+(got?' ✓':'')+'</span>';
   });
   h+='</div></div>';
-  // AMEX billing period card (pinned at top)
-  const _amexItem=dueItems.find(c=>c.billingDay);
-  if(_amexItem){
-    const bd=_amexItem.billingDay;
-    let bpStart,bpEnd;
-    const dn=new Date(_finDueYear,_finDueMonth,1);
-    if(dn.getDate()<bd){bpStart=new Date(dn.getFullYear(),dn.getMonth()-1,bd);bpEnd=new Date(dn.getFullYear(),dn.getMonth(),bd-1);}
-    else{bpStart=new Date(dn.getFullYear(),dn.getMonth(),bd);bpEnd=new Date(dn.getFullYear(),dn.getMonth()+1,bd-1);}
-    const daysIn=Math.max(0,Math.ceil((_today-bpStart)/(86400000)));
-    const daysTotal=Math.ceil((bpEnd-bpStart)/(86400000))+1;
-    const pct=Math.min(100,Math.round(daysIn/daysTotal*100));
-    const bal=_amexItem.monthly||0;
-    h+='<div style="padding:10px;border-radius:8px;background:rgba(0,111,207,0.08);border:1px solid rgba(0,111,207,0.2);margin-bottom:8px">';
-    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">';
-    h+='<div><span style="font-size:0.75rem;font-weight:700;color:#fff">AMEX Balance</span>';
-    h+=' <span style="font-size:0.55rem;color:rgba(255,255,255,0.5);margin-left:6px">'+fmtShortDate(bpStart)+' – '+fmtShortDate(bpEnd)+'</span></div>';
-    h+='<div style="display:flex;align-items:center;gap:8px">';
-    h+='<button onclick="updateEditableCost(\'AMEX Balance\')" style="background:none;border:1px solid rgba(0,111,207,0.3);border-radius:4px;color:#4da6ff;padding:2px 8px;cursor:pointer;font-size:0.6rem;font-family:var(--font)">update</button>';
-    h+='<span style="font-size:1rem;font-weight:700;color:'+(bal>0?'#fff':'rgba(255,255,255,0.3)')+'">$'+fmt2(bal)+'</span>';
-    h+='</div></div>';
-    h+='<div style="height:4px;border-radius:2px;background:rgba(255,255,255,0.06);overflow:hidden"><div style="height:100%;width:'+pct+'%;border-radius:2px;background:linear-gradient(90deg,#006fcf,#4da6ff)"></div></div>';
-    h+='<div style="display:flex;justify-content:space-between;margin-top:4px;font-size:0.5rem;color:rgba(255,255,255,0.4)">';
-    h+='<span>Day '+daysIn+' of '+daysTotal+'</span><span>Due '+fmtShortDate(bpEnd)+'</span></div>';
-    h+='</div>';
-  }
   const _regularDueItems=dueItems.filter(c=>!c.billingDay);
   if(_regularDueItems.length){
     h+='<div style="display:flex;flex-direction:column;gap:6px;max-height:500px;overflow-y:auto">';
@@ -1981,9 +1989,13 @@ function renderFinances(){
     h+='<div><div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.5)">Total</div><div style="font-size:1.1rem;font-weight:700;color:var(--red-soft)">$'+fmt2(weekTotal)+'</div></div>';
     h+='<div><div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.5)">Paid</div><div style="font-size:1.1rem;font-weight:700;color:var(--teal)">$'+fmt2(weekPaid)+'</div></div>';
     h+='<div><div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.08em;color:rgba(255,255,255,0.5)">Remaining</div><div style="font-size:1.1rem;font-weight:700;color:#fff">$'+fmt2(weekRem)+'</div></div>';
+    if(_amexBal>0){h+='<div><div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.08em;color:#4da6ff">AMEX</div><div style="font-size:1.1rem;font-weight:700;color:#4da6ff">$'+fmt2(_amexBal)+'</div></div>';}
     h+='</div>';
   } else {
-    h+='<div style="margin-bottom:14px"><span style="font-size:1.1rem;font-weight:700;color:var(--red-soft)">$'+fmt2(weekTotal)+'</span></div>';
+    h+='<div style="display:flex;gap:16px;margin-bottom:14px">';
+    h+='<div><span style="font-size:1.1rem;font-weight:700;color:var(--red-soft)">$'+fmt2(weekTotal)+'</span></div>';
+    if(_amexBal>0){h+='<div><div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:0.08em;color:#4da6ff">AMEX</div><div style="font-size:1.1rem;font-weight:700;color:#4da6ff">$'+fmt2(_amexBal)+'</div></div>';}
+    h+='</div>';
   }
   const _wkPayDates=getPayDatesInMonth(_payDayAnchor,'Weekly',_today.getMonth(),_today.getFullYear()).filter(pd=>pd>=_weekStart&&pd<=_weekEnd);
   if(_wkPayDates.length){
