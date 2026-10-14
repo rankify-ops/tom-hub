@@ -1279,6 +1279,16 @@ function deriveCosts(c){
   if(!m)m=0;
   return{weekly:+(m*12/52).toFixed(2),monthly:+m.toFixed(2),sixMonth:+(m*6).toFixed(2),annual:+(m*12).toFixed(2)};
 }
+function actualMonthlyCost(c,month,year){
+  if(c.cycle==='Weekly'||c.cycle==='Fortnightly'){
+    const pays=getPayDatesInMonth(c.renewal,c.cycle,month,year);
+    return(c.weekly||deriveCosts(c).weekly)*pays.length;
+  }
+  const d=deriveCosts(c);
+  if(c.cycle==='Annual')return d.annual/12;
+  if(c.cycle==='6 Monthly')return d.sixMonth/6;
+  return d.monthly;
+}
 
 let _pieState={};
 function pieHover(i){
@@ -1382,7 +1392,8 @@ function renderNetPosition(){
   const taxBill2025=4000;
 
   const activeItems=_costTracking.filter(c=>c.status==='active');
-  const totalMonthlyCosts=activeItems.reduce((s,c)=>s+deriveCosts(c).monthly,0);
+  const _nowCF=new Date(),_cfMo=_nowCF.getMonth(),_cfYr=_nowCF.getFullYear();
+  const totalMonthlyCosts=activeItems.reduce((s,c)=>s+actualMonthlyCost(c,_cfMo,_cfYr),0);
   const monthlyLiving=_weeklyLiving*52/12;
   const monthlyIncome=income.weekly*52/12;
   const monthlySurplus=monthlyIncome-totalMonthlyCosts-monthlyLiving;
@@ -1674,10 +1685,10 @@ function renderFinances(){
   const monthlyIncome=weeklyIncome*52/12;
   const annualIncome=weeklyIncome*52;
   const activeItems=_costTracking.filter(c=>c.status==='active');
-  const activeDerived=activeItems.map(c=>deriveCosts(c));
-  const totalMonthly=activeDerived.reduce((s,d)=>s+d.monthly,0);
-  const totalWeekly=activeDerived.reduce((s,d)=>s+d.weekly,0);
-  const totalAnnual=activeDerived.reduce((s,d)=>s+d.annual,0);
+  const _nowFin=new Date(),_finMo=_nowFin.getMonth(),_finYr=_nowFin.getFullYear();
+  const totalMonthly=activeItems.reduce((s,c)=>s+actualMonthlyCost(c,_finMo,_finYr),0);
+  const totalWeekly=totalMonthly*12/52;
+  const totalAnnual=totalMonthly*12;
   const weeklyLiving=_weeklyLiving;
   const monthlyLiving=weeklyLiving*52/12;
   const annualLiving=weeklyLiving*52;
@@ -1696,13 +1707,13 @@ function renderFinances(){
   const grouped=catGroups.map(g=>{
     const items=_costTracking.filter(c=>g.cats.includes(c.category));
     const derived=items.map(c=>({...c,...deriveCosts(c)}));
-    const totalM=derived.reduce((s,d)=>s+d.monthly,0);
+    const totalM=items.reduce((s,c)=>s+actualMonthlyCost(c,_finMo,_finYr),0);
     return{...g,items:derived,totalMonthly:totalM,totalAnnual:totalM*12,totalWeekly:totalM*12/52};
   });
   const uncategorized=_costTracking.filter(c=>!c.category);
   if(uncategorized.length){
     const derived=uncategorized.map(c=>({...c,...deriveCosts(c)}));
-    const totalM=derived.reduce((s,d)=>s+d.monthly,0);
+    const totalM=uncategorized.reduce((s,c)=>s+actualMonthlyCost(c,_finMo,_finYr),0);
     grouped.push({label:'Other',cats:[],color:'#888',icon:'📋',items:derived,totalMonthly:totalM,totalAnnual:totalM*12,totalWeekly:totalM*12/52});
   }
 
@@ -4267,7 +4278,8 @@ function renderOverview(){
   // Finance data — sync income from bank if available
   if(_bankingData){const ri=calcRealIncome();if(ri.source==='synced')_weeklyIncome=ri.weekly;}
   const activeItems=_costTracking.filter(c=>c.status==='active');
-  const totalMonthly=activeItems.reduce((s,c)=>s+deriveCosts(c).monthly,0);
+  const _nowOv=new Date(),_ovMo=_nowOv.getMonth(),_ovYr=_nowOv.getFullYear();
+  const totalMonthly=activeItems.reduce((s,c)=>s+actualMonthlyCost(c,_ovMo,_ovYr),0);
   const monthlyLiving=_weeklyLiving*52/12;
   const monthlyIncome=_weeklyIncome*52/12;
   const surplus=monthlyIncome-totalMonthly-monthlyLiving;
@@ -4333,11 +4345,11 @@ function renderOverview(){
   panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Surplus</div><div style="font-weight:700;color:'+(surplus>=0?'var(--teal)':'var(--red-soft)')+'">$'+fmt2(surplus)+'</div></div>';
   panels+='</div>';
   // mini bar of top 3 costs
-  const topCosts=[...activeItems].sort((a,b)=>deriveCosts(b).monthly-deriveCosts(a).monthly).slice(0,3);
+  const topCosts=[...activeItems].sort((a,b)=>actualMonthlyCost(b,_ovMo,_ovYr)-actualMonthlyCost(a,_ovMo,_ovYr)).slice(0,3);
   topCosts.forEach(c=>{
-    const d=deriveCosts(c);
+    const amt=actualMonthlyCost(c,_ovMo,_ovYr);
     panels+='<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:0.7rem;border-top:1px solid rgba(255,255,255,0.04)">';
-    panels+='<span style="color:var(--text-secondary)">'+c.name+'</span><span style="color:#fff;font-weight:600">$'+fmt2(d.monthly)+'/mo</span></div>';
+    panels+='<span style="color:var(--text-secondary)">'+c.name+'</span><span style="color:#fff;font-weight:600">$'+fmt2(amt)+'/mo</span></div>';
   });
   panels+='</div>';
 
