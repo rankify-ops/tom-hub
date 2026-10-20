@@ -703,6 +703,7 @@ select.form-input{cursor:pointer;background:#1a1a1a}
 
 <script src="/lib/tax-config.js"></script>
 <script src="/lib/tax.js"></script>
+<script src="/lib/net-position.js"></script>
 <script>
 // ─── PIN Gate ───
 const PIN='6975';
@@ -1620,30 +1621,30 @@ function calcRealIncome(){
   return{weekly:wages[0].amount,source:'synced',count:wages.length,from:wages[wages.length-1].date,to:wages[0].date};
 }
 
+function currentNetPosition(){
+  const prop=getPropertyValue();
+  const summary=_taxSummary||(typeof TomTax!=='undefined'?TomTax.buildSummary(TAX_CONFIG):null);
+  return TomNet.personalNetPosition({
+    accounts:(_bankingData&&_bankingData.accounts)||[],
+    groupOf:acctBucket,
+    propertyValue:prop?prop.value:0,
+    taxSummary:summary,
+    costItems:_costTracking,
+  });
+}
+
 function renderNetPosition(){
   const el=document.getElementById('netposition-content');if(!el)return;
-  const accts=_bankingData?.accounts||[];
   const income=calcRealIncome();
   _weeklyIncome=income.weekly;
 
-  const personalAccts=accts.filter(a=>acctBucket(a)==='personal'&&a.balance>=0);
-  const bizAccts=accts.filter(a=>['rankify','hiatus','excluded'].includes(acctBucket(a)));
-  const loanAccts=accts.filter(a=>acctBucket(a)==='loan');
-  const ccAccts=accts.filter(a=>acctBucket(a)==='personal'&&a.balance<0);
-
-  const totalCash=personalAccts.reduce((s,a)=>s+a.balance,0)+bizAccts.reduce((s,a)=>s+a.balance,0);
-  const ccDebt=ccAccts.reduce((s,a)=>s+Math.abs(a.balance),0);
-  const homeLoanFull=loanAccts.reduce((s,a)=>s+Math.abs(a.balance),0);
-  const homeLoanShare=Math.round(homeLoanFull/2*100)/100;
-
-  // Additional debts
-  const carLoanOwing=18133.93;
-  const carValue=22000;
-  const carPaymentMonthly=566.42;
-  const carPaymentsLeft=Math.ceil(carLoanOwing/carPaymentMonthly);
+  const np=currentNetPosition();
+  const homeLoanFull=np.homeLoanFull;
+  const homeLoanShare=np.homeLoanShare;
+  const propShare=np.propertyShare;
+  const equity=np.equity;
+  const carPaymentsLeft=np.carLoan.paymentsLeft;
   const carPaidOffDate=new Date();carPaidOffDate.setMonth(carPaidOffDate.getMonth()+carPaymentsLeft);
-  const oweToDOM=1000;
-  const taxBill2025=4000;
 
   const activeItems=_costTracking.filter(c=>c.status==='active');
   const _nowCF=new Date(),_cfMo=_nowCF.getMonth(),_cfYr=_nowCF.getFullYear();
@@ -1651,13 +1652,7 @@ function renderNetPosition(){
   const monthlyIncome=income.weekly*52/12;
   const monthlySurplus=monthlyIncome-totalMonthlyCosts;
 
-  const propVal=getPropertyValue();
-  const propShare=propVal?Math.round(propVal.value/2*100)/100:0;
-  const equity=propShare-homeLoanShare;
-
-  const totalAssets=totalCash+propShare+carValue;
-  const totalDebts=ccDebt+homeLoanShare+carLoanOwing+oweToDOM+taxBill2025;
-  const netWorth=totalAssets-totalDebts;
+  const netWorth=np.net;
 
   let h='';
   // Salary card (guaranteed income only)
@@ -1786,57 +1781,79 @@ function renderNetPosition(){
   h+='<div style="font-size:0.72rem;font-weight:600;color:var(--white);text-transform:uppercase;letter-spacing:0.5px">Net Position</div>';
   h+='<div style="font-size:1.3rem;font-weight:700;color:'+nwColor+'">'+$(netWorth)+'</div>';
   h+='</div>';
+  if(np.ato.pending){
+    h+='<div style="font-size:0.62rem;color:var(--amber);margin:-4px 0 10px">FY26 ATO owing is pending and is not in this total.</div>';
+  }
 
   // Assets
-  h+='<div style="font-size:0.65rem;font-weight:600;color:var(--teal);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;margin-top:6px">Assets</div>';
-  for(const a of personalAccts){
-    if(a.balance<=0)continue;
+  h+='<div style="font-size:0.65rem;font-weight:600;color:var(--teal);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;margin-top:6px">Assets</div>';
+  h+='<div style="font-size:0.6rem;color:var(--text-faint);margin-bottom:8px">Personal accounts only. Rankify and Hiatus are left out.</div>';
+  for(const a of np.cashAccounts){
     h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
     h+='<span style="color:var(--text-secondary)">'+a.name+' <span style="font-size:0.55rem;color:var(--text-faint)">'+a.bank+'</span></span>';
     h+='<span style="color:var(--teal);font-weight:600">'+$(a.balance)+'</span></div>';
   }
-  for(const a of bizAccts){
-    if(a.balance<=0)continue;
-    const _bucket=acctBucket(a);
-    const _tag=_bucket==='hiatus'?'Hiatus':_bucket==='excluded'?'Not Rankify Pty Ltd':_bucket==='rankify'?'Rankify Pty Ltd':'';
-    h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
-    h+='<span style="color:var(--text-secondary)">'+a.name+entityTag(_tag)+' <span style="font-size:0.55rem;color:var(--text-faint)">'+a.bank+'</span></span>';
-    h+='<span style="color:var(--teal);font-weight:600">'+$(a.balance)+'</span></div>';
-  }
   if(propShare>0){
     h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
-    h+='<span style="color:var(--text-secondary)">33/286 The Esplanade <span style="font-size:0.55rem;color:var(--text-faint)">50% share (full: '+$(propVal.value)+')</span></span>';
+    h+='<span style="color:var(--text-secondary)">33/286 The Esplanade <span style="font-size:0.55rem;color:var(--text-faint)">50% share (full: '+$(np.propertyFull)+')</span></span>';
     h+='<span style="color:var(--teal);font-weight:600">'+$(propShare)+'</span></div>';
   }
   h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
   h+='<span style="color:var(--text-secondary)">Car <span style="font-size:0.55rem;color:var(--text-faint)">estimated value</span></span>';
-  h+='<span style="color:var(--teal);font-weight:600">'+$(carValue)+'</span></div>';
+  h+='<span style="color:var(--teal);font-weight:600">'+$(np.carValue)+'</span></div>';
+  if(np.directorLoan.asset>0){
+    h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
+    h+='<span style="color:var(--text-secondary)">Director loan <span style="font-size:0.55rem;color:var(--text-faint)">booked · Rankify owes Tom'+(np.directorLoan.syncLabel?' · '+np.directorLoan.syncLabel:'')+'</span></span>';
+    h+='<span style="color:var(--teal);font-weight:600">'+$(np.directorLoan.asset)+'</span></div>';
+  }
+  if(np.ato.asset>0){
+    h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
+    h+='<span style="color:var(--text-secondary)">FY26 tax bill <span style="font-size:0.55rem;color:var(--text-faint)">ATO refund</span></span>';
+    h+='<span style="color:var(--teal);font-weight:600">'+$(np.ato.asset)+'</span></div>';
+  }
   h+='<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:0.78rem;font-weight:600;border-top:1px solid rgba(255,255,255,0.08);margin-top:4px">';
-  h+='<span style="color:var(--white)">Total Assets</span><span style="color:var(--teal)">'+$(totalAssets)+'</span></div>';
+  h+='<span style="color:var(--white)">Total Assets</span><span style="color:var(--teal)">'+$(np.totalAssets)+'</span></div>';
 
   // Debts
   h+='<div style="font-size:0.65rem;font-weight:600;color:var(--red-soft);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;margin-top:16px">Debts</div>';
-  ccAccts.forEach(cc=>{
+  np.cards.forEach(row=>{
+    const cc=row.account;
+    const hint=row.bankFeed?'bank feed'+(cc.number?' · #'+cc.number:''):(cc.bank+(cc.number?' #'+cc.number:''));
     h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
-    h+='<span style="color:var(--text-secondary)">'+cc.name+' <span style="font-size:0.55rem;color:var(--text-faint)">'+cc.bank+(cc.number?' #'+cc.number:'')+'</span></span>';
-    h+='<span style="color:var(--red-soft);font-weight:600">-'+$(Math.abs(cc.balance))+'</span></div>';
+    h+='<span style="color:var(--text-secondary)">'+cc.name+' <span style="font-size:0.55rem;color:var(--text-faint)">'+hint+'</span></span>';
+    h+='<span style="color:var(--red-soft);font-weight:600">-'+$(row.owing)+'</span></div>';
   });
+  if(np.amexCostIgnored>0&&np.amex.owing!=null&&np.amexCostIgnored!==np.amex.owing){
+    h+='<div style="font-size:0.58rem;color:var(--text-faint);padding:2px 0 6px">Bank feed only. The '+$(np.amexCostIgnored)+' AMEX Balance cost line is not included.</div>';
+  }
   if(homeLoanFull>0){
     h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
     h+='<span style="color:var(--text-secondary)">Home Loan <span style="font-size:0.55rem;color:var(--text-faint)">CommBank · 50% share (full: '+$(homeLoanFull)+')</span></span>';
     h+='<span style="color:var(--red-soft);font-weight:600">-'+$(homeLoanShare)+'</span></div>';
   }
   h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
-  h+='<span style="color:var(--text-secondary)">Car Loan <span style="font-size:0.55rem;color:var(--text-faint)">'+carPaymentsLeft+' payments left · paid off '+carPaidOffDate.toLocaleDateString('en-AU',{month:'short',year:'numeric'})+'</span></span>';
-  h+='<span style="color:var(--red-soft);font-weight:600">-'+$(carLoanOwing)+'</span></div>';
+  h+='<span style="color:var(--text-secondary)">Car Loan <span style="font-size:0.55rem;color:var(--text-faint)">'+np.carLoan.note+' · '+carPaymentsLeft+' payments left · paid off '+carPaidOffDate.toLocaleDateString('en-AU',{month:'short',year:'numeric'})+'</span></span>';
+  h+='<span style="color:var(--red-soft);font-weight:600">-'+$(np.carLoan.owing)+'</span></div>';
   h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
   h+='<span style="color:var(--text-secondary)">Owe to Dom <span style="font-size:0.55rem;color:var(--text-faint)">property contribution</span></span>';
-  h+='<span style="color:var(--red-soft);font-weight:600">-'+$(oweToDOM)+'</span></div>';
-  h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
-  h+='<span style="color:var(--text-secondary)">2025 Tax Bill <span style="font-size:0.55rem;color:var(--text-faint)">ATO</span></span>';
-  h+='<span style="color:var(--red-soft);font-weight:600">-'+$(taxBill2025)+'</span></div>';
+  h+='<span style="color:var(--red-soft);font-weight:600">-'+$(np.oweToDom)+'</span></div>';
+  if(np.directorLoan.debt>0){
+    h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
+    h+='<span style="color:var(--text-secondary)">Director loan <span style="font-size:0.55rem;color:var(--text-faint)">booked · Tom owes Rankify'+(np.directorLoan.syncLabel?' · '+np.directorLoan.syncLabel:'')+'</span></span>';
+    h+='<span style="color:var(--red-soft);font-weight:600">-'+$(np.directorLoan.debt)+'</span></div>';
+  }else if(!np.directorLoan.included){
+    h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
+    h+='<span style="color:var(--text-secondary)">Director loan <span style="font-size:0.55rem;color:var(--text-faint)">booked</span></span>';
+    h+='<span style="color:var(--amber);font-weight:600">pending</span></div>';
+  }
+  if(np.ato.asset<=0){
+    h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
+    h+='<span style="color:var(--text-secondary)">FY26 tax bill <span style="font-size:0.55rem;color:var(--text-faint)">ATO</span></span>';
+    h+=np.ato.pending?'<span style="color:var(--amber);font-weight:600">pending</span>':'<span style="color:var(--red-soft);font-weight:600">-'+$(np.ato.debt)+'</span>';
+    h+='</div>';
+  }
   h+='<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:0.78rem;font-weight:600;border-top:1px solid rgba(255,255,255,0.08);margin-top:4px">';
-  h+='<span style="color:var(--white)">Total Debts</span><span style="color:var(--red-soft)">-'+$(totalDebts)+'</span></div>';
+  h+='<span style="color:var(--white)">Total Debts</span><span style="color:var(--red-soft)">-'+$(np.totalDebts)+'</span></div>';
 
   // Property equity
   if(propShare>0){
@@ -2429,31 +2446,18 @@ function renderBanking(){
   const excludedAccts=accts.filter(a=>acctBucket(a)==='excluded');
   const hiatusAccts=accts.filter(a=>acctBucket(a)==='hiatus');
   const loanAccts=accts.filter(a=>acctBucket(a)==='loan');
-  const bizAccts=rankifyAccts.concat(excludedAccts,hiatusAccts);
 
   const totalPersonal=personalAccts.reduce((s,a)=>s+a.balance,0);
   const totalRankify=rankifyAccts.reduce((s,a)=>s+a.balance,0);
   const totalHiatus=hiatusAccts.reduce((s,a)=>s+a.balance,0);
-  const totalBiz=bizAccts.reduce((s,a)=>s+a.balance,0);
-  const totalLoanFull=loanAccts.reduce((s,a)=>s+Math.abs(a.balance),0);
-  const totalLoanShare=Math.round(totalLoanFull/2*100)/100;
-  const totalCash=personalAccts.filter(a=>a.balance>0).reduce((s,a)=>s+a.balance,0)+totalBiz;
-  const ccDebt=accts.filter(a=>a.balance<0&&a.group!=='loan').reduce((s,a)=>s+Math.abs(a.balance),0);
-  const propVal=getPropertyValue();
-  const propShare=propVal?Math.round(propVal.value/2*100)/100:0;
-  const carValue=22000;
-  const carLoanOwing=18133.93;
-  const oweToDOM=1000;
-  const taxBill2025=4000;
-  const totalAssets=totalCash+propShare+carValue;
-  const totalDebts=ccDebt+totalLoanShare+carLoanOwing+oweToDOM+taxBill2025;
-  const totalNet=totalAssets-totalDebts;
+  const np=currentNetPosition();
+  const totalNet=np.net;
 
   let h='<div class="metrics-grid" style="margin-bottom:16px;grid-template-columns:repeat(4,1fr)">';
   h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:var(--teal)">'+$(totalPersonal)+'</div><div class="metric-label">Personal</div></div>';
   h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:var(--amber)">'+$(totalRankify)+'</div><div class="metric-label">Rankify Pty Ltd</div></div>';
   h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:#c4b5fd">'+$(totalHiatus)+'</div><div class="metric-label">Hiatus</div></div>';
-  h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:'+(totalNet>=0?'var(--teal)':'var(--red-soft)')+'">'+$(totalNet)+'</div><div class="metric-label">Net Position</div></div>';
+  h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:'+(totalNet>=0?'var(--teal)':'var(--red-soft)')+'">'+$(totalNet)+'</div><div class="metric-label">Net Position</div>'+(np.ato.pending?'<div style="font-size:0.55rem;color:var(--amber);margin-top:2px">FY26 tax pending</div>':'')+'</div>';
   h+='</div>';
 
   // Account cards grouped

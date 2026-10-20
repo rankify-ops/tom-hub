@@ -270,7 +270,7 @@ test('the tax API uses a mocked feed, then the dated fallback, and never leaks t
 });
 
 test('browser files never mention the shared key or the Rankify loan URL', () => {
-  const files = ['index.html', 'lib/tax.js', 'lib/tax-config.js'];
+  const files = ['index.html', 'lib/tax.js', 'lib/tax-config.js', 'lib/net-position.js'];
   for (const file of files) {
     const src = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
     assert.equal(src.includes('x-hub-key'), false, file);
