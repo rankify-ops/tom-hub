@@ -1511,8 +1511,8 @@ function renderTax(){
   if(s.priorYearTaxDebt){
     const pd=s.priorYearTaxDebt;
     const confirmed=!!(s.fy26Debt&&s.fy26Debt.confirmed);
-    const shown=pd.netPositionLabel+(confirmed?'':' (unconfirmed)');
-    h+=taxRow(pd.label, pd.amount, confirmed?pend:taxPill('Unconfirmed','pending'), 'Shown as "'+escTax(shown)+'" in Net Position. Due date: '+(pd.dueDate||'not recorded')+'. ATO payment plan: '+(pd.paymentPlan||'none recorded')+'.');
+    const shown=pd.netPositionLabel+(confirmed?'':" (Tom's estimate)");
+    h+=taxRow(pd.label, pd.amount, confirmed?pend:taxPill("Tom's estimate",'estimate'), 'Shown as "'+escTax(shown)+'" in Net Position. Due date: '+(pd.dueDate||'not recorded')+'. ATO payment plan: '+(pd.paymentPlan||'none recorded')+'.');
   }
   h+='<div class="tax-row"><div class="tax-label"><div style="color:#fff;font-weight:600">Key date '+pend+'</div><div class="tax-note">'+s.fy27.returnDueLabel+'</div></div><div class="tax-amt">31 Oct 2027</div></div>';
   h+='<div class="tax-note">'+s.estimateNote+'</div>';

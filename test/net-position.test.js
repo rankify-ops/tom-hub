@@ -79,7 +79,7 @@ test('live balances: net position was $24,994.11 and is now $13,838.41', () => {
   assert.equal(after.directorLoan.asset, 0);
   assert.equal(after.fy26Tax.debt, 4000);
   assert.equal(after.fy26Tax.confirmed, false);
-  assert.equal(after.fy26Tax.label, '2025 Tax Bill (unconfirmed)');
+  assert.equal(after.fy26Tax.label, "2025 Tax Bill (Tom's estimate)");
   assert.notEqual(after.oweToDom, 3000);
   assert.equal(after.propertyShare, 473500);
   assert.equal(after.homeLoanShare, 455626.44);
@@ -145,16 +145,16 @@ test('net position uses the booked shared-feed loan, not the proposed balance', 
   assert.equal(after.directorLoan.asset, 0);
   assert.equal(after.directorLoan.live, true);
   assert.equal(after.fy26Tax.debt, 4000);
-  assert.equal(after.fy26Tax.label, '2025 Tax Bill (unconfirmed)');
+  assert.equal(after.fy26Tax.label, "2025 Tax Bill (Tom's estimate)");
   assert.equal(after.oweToDom, 1000);
 });
 
-test('FY26 tax is the unconfirmed $4,000 from fy26Debt, not a proposed or guessed replacement', () => {
+test("FY26 tax is Tom's $4,000 estimate from fy26Debt, and it stays in the total", () => {
   const base = position();
   assert.equal(summary.fy26Debt.amount, 4000);
   assert.equal(summary.fy26Debt.confirmed, false);
   assert.equal(base.fy26Tax.debt, 4000);
-  assert.equal(base.fy26Tax.label, '2025 Tax Bill (unconfirmed)');
+  assert.equal(base.fy26Tax.label, "2025 Tax Bill (Tom's estimate)");
   assert.equal(base.oweToDom, 1000);
 
   const confirmed = JSON.parse(JSON.stringify(summary));
@@ -185,13 +185,15 @@ test('the Net Position card uses the shared function and drops the old hard-code
   assert.equal(html.includes('taxBill2025'), false);
   assert.match(html, /TomNet\.personalNetPosition/);
   assert.match(html, /np\.fy26Tax\.label/);
-  assert.match(html, /Unconfirmed/);
+  assert.match(html, /Tom's estimate/);
+  assert.equal(html.includes('unconfirmed'), false);
   assert.match(html, /Estimated refund/);
   assert.equal(html.includes('FY26 ATO owing is pending'), false);
   assert.match(html, /Personal accounts only/);
   assert.match(html, /bank feed/);
   const src = fs.readFileSync(path.join(__dirname, '../lib/net-position.js'), 'utf8');
-  assert.match(src, /2025 Tax Bill \(unconfirmed\)/);
+  assert.match(src, /2025 Tax Bill \(Tom's estimate\)/);
+  assert.equal(src.includes('unconfirmed'), false);
   assert.match(src, /fy26Debt/);
   assert.match(src, /bookedSigned/);
   assert.equal(src.includes('atoOwing'), false);
