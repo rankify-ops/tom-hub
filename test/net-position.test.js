@@ -78,7 +78,9 @@ test('live balances: net position was $24,994.11 and is now $13,838.41', () => {
   assert.equal(after.directorLoan.bookedSigned, -4393.91);
   assert.equal(after.directorLoan.asset, 0);
   assert.equal(after.fy26Tax.debt, 4000);
-  assert.equal(after.fy26Tax.label, 'FY26 tax (estimate, unconfirmed)');
+  assert.equal(after.fy26Tax.confirmed, false);
+  assert.equal(after.fy26Tax.label, '2025 Tax Bill (unconfirmed)');
+  assert.notEqual(after.oweToDom, 3000);
   assert.equal(after.propertyShare, 473500);
   assert.equal(after.homeLoanShare, 455626.44);
   assert.equal(after.totalAssets, 499030.80);
@@ -129,18 +131,42 @@ test('director loan debt is the booked figure, not the proposed balance', () => 
   assert.equal(asset.net, 18482.32);
 });
 
-test('FY26 tax stays the unconfirmed $4,000 and ignores a tax-summary debt', () => {
-  const base = position();
-  assert.equal(base.fy26Tax.debt, 4000);
-  assert.equal(base.fy26Tax.label, 'FY26 tax (estimate, unconfirmed)');
+test('net position uses the booked shared-feed loan, not the proposed balance', () => {
+  const live = tax.applyRankifyLoan(summary, {
+    asOf: '2026-10-21',
+    booked: -10,
+    withProposed: 25,
+    div7a: { tax: 3, interest: 1 },
+  });
+  const after = position({ taxSummary: live });
+  assert.equal(live.directorLoan.withProposedSigned, 25);
+  assert.equal(after.directorLoan.bookedSigned, -10);
+  assert.equal(after.directorLoan.debt, 10);
+  assert.equal(after.directorLoan.asset, 0);
+  assert.equal(after.directorLoan.live, true);
+  assert.equal(after.fy26Tax.debt, 4000);
+  assert.equal(after.fy26Tax.label, '2025 Tax Bill (unconfirmed)');
+  assert.equal(after.oweToDom, 1000);
+});
 
-  const withFigure = JSON.parse(JSON.stringify(summary));
-  withFigure.fy26Debt = 9999;
-  withFigure.fy26 = { atoOwing: 2500 };
-  withFigure.ato = { owing: 80 };
-  const ignored = position({ taxSummary: withFigure });
-  assert.equal(ignored.fy26Tax.debt, 4000);
-  assert.equal(ignored.net, base.net);
+test('FY26 tax is the unconfirmed $4,000 from fy26Debt, not a proposed or guessed replacement', () => {
+  const base = position();
+  assert.equal(summary.fy26Debt.amount, 4000);
+  assert.equal(summary.fy26Debt.confirmed, false);
+  assert.equal(base.fy26Tax.debt, 4000);
+  assert.equal(base.fy26Tax.label, '2025 Tax Bill (unconfirmed)');
+  assert.equal(base.oweToDom, 1000);
+
+  const confirmed = JSON.parse(JSON.stringify(summary));
+  confirmed.fy26Debt.confirmed = true;
+  assert.equal(position({ taxSummary: confirmed }).fy26Tax.label, '2025 Tax Bill');
+
+  const otherFields = JSON.parse(JSON.stringify(summary));
+  otherFields.fy26 = { atoOwing: 2500 };
+  otherFields.ato = { owing: 80 };
+  const stillBooked = position({ taxSummary: otherFields });
+  assert.equal(stillBooked.fy26Tax.debt, 4000);
+  assert.equal(stillBooked.net, base.net);
 });
 
 test('a missing Amex feed is not filled in from the $1,998.94 cost line', () => {
@@ -159,13 +185,15 @@ test('the Net Position card uses the shared function and drops the old hard-code
   assert.equal(html.includes('taxBill2025'), false);
   assert.match(html, /TomNet\.personalNetPosition/);
   assert.match(html, /np\.fy26Tax\.label/);
+  assert.match(html, /Unconfirmed/);
+  assert.match(html, /Estimated refund/);
   assert.equal(html.includes('FY26 ATO owing is pending'), false);
-  assert.equal(html.includes('fy26Debt'), false);
   assert.match(html, /Personal accounts only/);
   assert.match(html, /bank feed/);
   const src = fs.readFileSync(path.join(__dirname, '../lib/net-position.js'), 'utf8');
-  assert.match(src, /FY26 tax \(estimate, unconfirmed\)/);
-  assert.equal(src.includes('fy26Debt'), false);
+  assert.match(src, /2025 Tax Bill \(unconfirmed\)/);
+  assert.match(src, /fy26Debt/);
+  assert.match(src, /bookedSigned/);
   assert.equal(src.includes('atoOwing'), false);
   assert.equal(src.includes('x-hub-key'), false);
   assert.equal(src.includes('HUB_SHARED_KEY'), false);

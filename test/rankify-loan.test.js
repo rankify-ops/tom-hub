@@ -137,6 +137,11 @@ test('applying the feed replaces headlines and Div 7A without recomputing tax', 
   assert.equal(live.directorLoan.proposed.gearSale, 3000);
   assert.equal(live.div7a.booked.tax, 3);
   assert.equal(live.div7a.booked.interest, 1);
+  assert.equal(live.fy26Debt.amount, 4000);
+  assert.equal(live.fy26Debt.confirmed, false);
+  assert.equal(summary.fy27Estimate.ifDeemedDividendSigned, -1509.62);
+  assert.equal(live.fy27Estimate.ifDeemedDividendSigned, 201);
+  assert.notEqual(live.fy27Estimate.ifDeemedDividendSigned, tax.round2(204 - 10 * 0.39));
   assert.equal(live.div7a.minimumYearly, 2.5);
   assert.notEqual(live.div7a.booked.tax, tax.round2(10 * 0.39));
   assert.equal(live.companyTax.tax, 4200);
