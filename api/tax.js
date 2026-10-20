@@ -1,7 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 const config = require('../lib/tax-config');
-const { buildSummary, parseAssetRegister, summariseFeed } = require('../lib/tax');
+const { buildSummary, parseAssetRegister, summariseFeed, applyRankifyLoan } = require('../lib/tax');
+const { fetchDirectorLoan } = require('../lib/rankify-loan');
 const { kvGet } = require('./db');
 
 module.exports = async function handler(req, res) {
@@ -9,7 +10,11 @@ module.exports = async function handler(req, res) {
   try {
     const csv = fs.readFileSync(path.join(__dirname, '../data/asset-register.csv'), 'utf8');
     const assets = parseAssetRegister(csv);
-    const summary = buildSummary(config, assets);
+    let summary = buildSummary(config, assets);
+    try {
+      const live = await fetchDirectorLoan();
+      if (live.ok) summary = applyRankifyLoan(summary, live.data);
+    } catch (_) {}
     let feed = null;
     try {
       const ps = await kvGet('tom_pocketsmith');
@@ -35,7 +40,7 @@ module.exports = async function handler(req, res) {
         };
       }
     } catch (_) {}
-    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Cache-Control', 'private, no-store');
     return res.status(200).json({ ...summary, feed });
   } catch (err) {
     console.error('tax error:', err);

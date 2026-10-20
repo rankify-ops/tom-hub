@@ -15,7 +15,7 @@ test('booked director loan: Tom owes Rankify $4,393.91', () => {
   assert.equal(loan.tomOwes, true);
   assert.equal(loan.bookedSigned, -4393.91);
   assert.equal(loan.bookedAbs, 4393.91);
-  assert.equal(loan.headline, 'You owe Rankify $4,393.91');
+  assert.equal(loan.headline, 'Tom owes Rankify $4,393.91');
   assert.equal(loan.netPaidToTom, 14384.27);
   assert.equal(loan.expensesTomPaid, 9990.36);
   assert.equal(loan.reverseReimbursement, 2447.73);
@@ -31,7 +31,9 @@ test('proposed items bring the loan to about $1,413', () => {
   assert.equal(loan.proposed.phoneInternetPersonal, 26.55);
   assert.equal(loan.withProposedSigned, -1413.46);
   assert.equal(loan.withProposedAbs, 1413.46);
-  assert.equal(loan.proposedHeadline, 'You owe Rankify $1,413.46');
+  assert.equal(loan.proposedHeadline, 'Tom owes Rankify $1,413.46');
+  assert.equal(summary.loanSync.live, false);
+  assert.equal(summary.loanSync.label, 'Not live, last synced 20 Oct 2026');
 });
 
 test('Div 7A estimate uses 39% and the 8.77% benchmark', () => {
@@ -203,4 +205,29 @@ test('feed totals keep reimbursable, Hiatus and 4750 out of personal spend', () 
   assert.equal(totals.personalSpend, 41);
   assert.equal(totals.hiatusSpend, 37);
   assert.equal(totals.excludedSpend, 350);
+});
+
+test('FY27 estimate: about a $204 refund before Div 7A', () => {
+  const fe = summary.fy27Estimate;
+  assert.equal(fe.paygProjected, 51324);
+  assert.equal(fe.liability, 51120);
+  assert.equal(fe.mls, 0);
+  assert.equal(fe.helpDebt, 0);
+  assert.equal(fe.refund, 204);
+  assert.equal(fe.ifDeemedDividendSigned, -1509.62);
+  assert.equal(summary.shareholderPct, 1);
+});
+
+test('prior-year ATO debt mirrors Net Position $4,000, no due date or plan', () => {
+  const pd = summary.priorYearTaxDebt;
+  assert.equal(pd.amount, 4000);
+  assert.equal(pd.dueDate, null);
+  assert.equal(pd.paymentPlan, null);
+});
+
+test('fy26Debt is exposed for Net Position and marked unconfirmed', () => {
+  assert.equal(summary.fy26Debt.amount, 4000);
+  assert.equal(summary.fy26Debt.confirmed, false);
+  assert.equal(summary.fy26Debt.dueDate, null);
+  assert.equal(summary.fy26Debt.paymentPlan, null);
 });

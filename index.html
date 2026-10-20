@@ -58,6 +58,7 @@ body{font-family:var(--font);color:var(--text);min-height:100vh;overflow-x:hidde
 .nav-item.active{background:rgba(45,212,168,0.1);color:var(--teal);border-color:rgba(45,212,168,0.18);font-weight:600}
 .nav-item .nav-icon{width:20px;text-align:center;font-size:0.85rem;opacity:0.6}
 .nav-item.active .nav-icon{opacity:1}
+.nav-section{font-size:0.6rem;text-transform:uppercase;letter-spacing:0.14em;color:rgba(255,255,255,0.28);padding:14px 14px 4px;font-weight:600}
 .sidebar-links{padding:0 10px 14px;border-top:1px solid rgba(255,255,255,0.06);padding-top:14px}
 .sidebar-links-title{font-size:0.6rem;text-transform:uppercase;letter-spacing:0.14em;color:rgba(255,255,255,0.3);margin-bottom:8px;padding-left:14px;font-weight:500}
 .sidebar-link{display:flex;align-items:center;gap:9px;padding:7px 14px;font-size:0.76rem;color:rgba(255,255,255,0.5);text-decoration:none;border-radius:var(--radius-sm);transition:all var(--transition)}
@@ -113,6 +114,24 @@ body{font-family:var(--font);color:var(--text);min-height:100vh;overflow-x:hidde
 .tax-row .tax-label{color:var(--text-secondary);min-width:0}
 .tax-row .tax-amt{font-weight:650;color:#fff;white-space:nowrap;text-align:right}
 .tax-note{font-size:0.68rem;color:var(--text-muted);line-height:1.5;margin-top:6px}
+.loan-sync{display:inline-flex;align-items:center;gap:8px;font-size:0.72rem;font-weight:650;margin:0 0 12px;color:var(--amber)}
+.loan-sync.live{color:var(--teal)}
+.loan-sync-version{font-weight:500;color:var(--text-faint);font-size:0.65rem}
+.books-hero{border-radius:16px;padding:28px 22px 22px;margin-bottom:16px;text-align:center}
+.books-hero.ok{background:rgba(45,212,168,0.12);border:1px solid rgba(45,212,168,0.4)}
+.books-hero.bad{background:rgba(239,107,107,0.12);border:1px solid rgba(239,107,107,0.45)}
+.books-kicker{font-size:0.72rem;letter-spacing:0.14em;text-transform:uppercase;font-weight:700;margin-bottom:8px}
+.books-hero .big{font-size:2.6rem;font-weight:750;letter-spacing:-0.03em;line-height:1.05}
+.books-hero p{margin-top:8px;font-size:0.95rem;color:var(--text)}
+.books-split{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.books-label{font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-faint);margin-bottom:6px}
+.books-figure{font-size:1.7rem;font-weight:700;letter-spacing:-0.02em}
+.books-row{display:flex;justify-content:space-between;gap:12px;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--glass-border-subtle);font-size:0.92rem}
+.books-row strong{font-variant-numeric:tabular-nums}
+.books-total{border-bottom:none;border-top:2px solid var(--glass-border);margin-top:4px;font-weight:700}
+.books-note{font-size:0.78rem;color:var(--text-muted);line-height:1.45;margin-top:8px}
+.div7a{background:rgba(239,107,107,0.14);border:1px solid rgba(239,107,107,0.5);border-radius:12px;padding:14px 16px;margin:0 0 16px;color:var(--red-soft);font-size:0.92rem;line-height:1.45}
+@media(max-width:800px){.books-split{grid-template-columns:1fr}.books-hero .big{font-size:2rem}}
 .entity-tag{display:inline-block;padding:1px 6px;border-radius:4px;font-size:0.55rem;font-weight:700;letter-spacing:0.02em;margin-left:6px;vertical-align:middle;border:1px solid rgba(240,168,64,0.35);background:rgba(240,168,64,0.12);color:var(--amber)}
 .entity-tag.hiatus{border-color:rgba(167,139,250,0.4);background:rgba(167,139,250,0.12);color:#c4b5fd}
 .entity-tag.itm{border-color:rgba(96,165,250,0.4);background:rgba(96,165,250,0.12);color:#93c5fd}
@@ -255,12 +274,13 @@ select.form-input{cursor:pointer;background:#1a1a1a}
     </div>
     <nav class="sidebar-nav">
       <div class="nav-item active" data-tab="overview"><span class="nav-icon">◈</span><span>Overview</span></div>
+      <div class="nav-item" data-tab="finances"><span class="nav-icon">$</span><span>Money</span></div>
+      <div class="nav-item" data-tab="tax"><span class="nav-icon">§</span><span>Tax</span></div>
+      <div class="nav-section">Personal</div>
+      <div class="nav-item" data-tab="whoop"><span class="nav-icon">♡</span><span>Training & Recovery</span></div>
       <div class="nav-item" data-tab="checklists"><span class="nav-icon">☑</span><span>Checklists</span></div>
       <div class="nav-item" data-tab="notes"><span class="nav-icon">✎</span><span>Notes</span></div>
       <div class="nav-item" data-tab="goals"><span class="nav-icon">⊕</span><span>Goals</span></div>
-      <div class="nav-item" data-tab="finances"><span class="nav-icon">◇</span><span>Finances</span></div>
-      <div class="nav-item" data-tab="tax"><span class="nav-icon">▣</span><span>Tax</span></div>
-      <div class="nav-item" data-tab="whoop"><span class="nav-icon">♡</span><span>Training & Recovery</span></div>
       <div class="nav-item" data-tab="properties"><span class="nav-icon">🏠</span><span>Investment Properties</span></div>
       <div class="nav-item" data-tab="licenses"><span class="nav-icon">📜</span><span>Licenses & Certs</span></div>
     </nav>
@@ -287,13 +307,13 @@ select.form-input{cursor:pointer;background:#1a1a1a}
         <div class="card">
           <div class="card-header"><span class="card-title">Quick Navigation</span></div>
           <div class="quick-links">
+            <span class="quick-link" onclick="switchTab('finances')">$ Money</span>
+            <span class="quick-link" onclick="switchTab('tax')">§ Tax</span>
+            <span class="quick-link" onclick="switchTab('finances');_finSubTab='banking';renderFinancesShell()">🏦 Banking</span>
+            <span class="quick-link" onclick="switchTab('whoop')">♡ Training & Recovery</span>
             <span class="quick-link" onclick="switchTab('checklists')">☑ Checklists</span>
             <span class="quick-link" onclick="switchTab('notes')">✎ Notes</span>
             <span class="quick-link" onclick="switchTab('goals')">⊕ Goals</span>
-            <span class="quick-link" onclick="switchTab('finances')">◇ Finances</span>
-            <span class="quick-link" onclick="switchTab('tax')">▣ Tax</span>
-            <span class="quick-link" onclick="switchTab('finances');_finSubTab='banking';renderFinancesShell()">🏦 Banking</span>
-            <span class="quick-link" onclick="switchTab('whoop')">♡ Training & Recovery</span>
             <span class="quick-link" onclick="switchTab('properties')">🏠 Properties</span>
             <span class="quick-link" onclick="switchTab('licenses')">📜 Licenses & Certs</span>
           </div>
@@ -345,7 +365,7 @@ select.form-input{cursor:pointer;background:#1a1a1a}
     <!-- ═══ FINANCES TAB ═══ -->
     <div class="tab-panel" id="tab-finances">
       <div class="section-header">
-        <h2>Finances</h2>
+        <h2>Money</h2>
         <div style="display:flex;gap:8px;align-items:center">
           <div class="updated" id="finances-updated"></div>
           <div class="updated" id="banking-updated" style="display:none"></div>
@@ -683,6 +703,7 @@ select.form-input{cursor:pointer;background:#1a1a1a}
 
 <script src="/lib/tax-config.js"></script>
 <script src="/lib/tax.js"></script>
+<script src="/lib/net-position.js"></script>
 <script>
 // ─── PIN Gate ───
 const PIN='6975';
@@ -1369,52 +1390,130 @@ function taxPill(text,kind){
   const cls=kind==='booked'?'badge-teal':kind==='pending'?'badge-amber':'badge-silver';
   return '<span class="card-badge '+cls+'" style="margin-left:6px">'+text+'</span>';
 }
+function escTax(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function taxMoney(n){
+  if(n==null||n==='') return '—';
+  if(typeof TomTax!=='undefined'&&TomTax.formatAud) return TomTax.formatAud(n);
+  return $(n);
+}
 function renderTax(){
   const el=document.getElementById('tax-content'); if(!el) return;
   const s=_taxSummary||(typeof TomTax!=='undefined'?TomTax.buildSummary(TAX_CONFIG):null);
   if(!s){el.innerHTML='<div class="empty-state"><h3>Tax figures unavailable</h3></div>';return;}
   const loan=s.directorLoan;
   const d=s.div7a;
-  const owe=loan.tomOwes?'var(--red-soft)':'var(--teal)';
-  const pct=n=>Math.round(n*100);
-  let h='<div class="tax-grid two">';
-  h+='<div class="card">';
-  h+='<div class="card-header"><span class="card-title">Director loan · Rankify Pty Ltd</span>'+taxPill('Booked','booked')+'</div>';
-  h+='<div class="tax-figure" style="color:'+owe+'">'+loan.headline+'</div>';
-  h+='<div class="tax-note">Booked as of 20 Oct 2026. Only NAB '+loan.ptyAccountNumbers.join(' and NAB ')+' are Rankify Pty Ltd. NAB '+loan.excludedAccountNumber+' is not.</div>';
-  h+='<div class="tax-row"><div class="tax-label">Rankify costs you paid, on your Amex and NAB card</div><div class="tax-amt">'+$(loan.expensesTomPaid)+'</div></div>';
-  h+='<div class="tax-row"><div class="tax-label">Net paid across to you</div><div class="tax-amt">'+$(loan.netPaidToTom)+'</div></div>';
-  h+='<div class="tax-row"><div class="tax-label">Of which reverse reimbursement (you paying Rankify back)</div><div class="tax-amt">'+$(loan.reverseReimbursement)+'</div></div>';
-  h+='<div class="tax-note" style="margin-top:14px">With the gear sale, the licence fee since 10 Oct, and your 10% of phone and internet:</div>';
-  h+='<div class="tax-row"><div class="tax-label">Gear sale to Rankify</div><div class="tax-amt" style="color:var(--teal)">+'+$(loan.proposed.gearSale)+'</div></div>';
-  h+='<div class="tax-row"><div class="tax-label">Licence fee, '+loan.proposed.licenceDays+' days from 10 Oct, about $84/week</div><div class="tax-amt" style="color:var(--teal)">+'+$(loan.proposed.licenceFee)+'</div></div>';
-  h+='<div class="tax-row"><div class="tax-label">Your 10% of phone and internet</div><div class="tax-amt">−'+$(loan.proposed.phoneInternetPersonal)+'</div></div>';
-  h+='<div class="tax-row"><div class="tax-label" style="color:#fff;font-weight:600">With proposed items '+taxPill('Estimate','estimate')+'</div><div class="tax-amt" style="color:'+(loan.withProposedSigned<0?'var(--red-soft)':'var(--teal)')+'">'+loan.proposedHeadline+'</div></div>';
+  const sync=s.loanSync||{live:false,label:'Not live, last synced '+(typeof TomTax!=='undefined'?TomTax.formatIsoDate(loan.bookedAsOf):loan.bookedAsOf)};
+  const owes=!!loan.tomOwes;
+  const oweColor=owes?'var(--red-soft)':'var(--teal)';
+  const proposedOwes=loan.withProposedSigned<0;
+  const asOfText=(typeof TomTax!=='undefined'&&TomTax.formatIsoDate)?TomTax.formatIsoDate(loan.bookedAsOf):loan.bookedAsOf;
+  const pct=n=>Math.round(Number(n)*100);
+  const ratePct=n=>(Math.round(Number(n)*10000)/100).toFixed(2);
+  let h='<div class="loan-sync'+(sync.live?' live':'')+'">'+(sync.live?'✓ ':'')+escTax(sync.label);
+  if(sync.live&&sync.configVersion) h+='<span class="loan-sync-version">'+escTax(sync.configVersion)+'</span>';
   h+='</div>';
-  h+='<div class="card">';
-  h+='<div class="card-header"><span class="card-title">If you don\'t repay Rankify</span>'+taxPill('Estimate','estimate')+'</div>';
-  h+='<div class="tax-figure" style="color:var(--amber)">'+$(d.booked.tax)+'</div>';
-  h+='<div class="tax-note">Personal tax if that debit balance is treated as an unfranked Division 7A deemed dividend. '+pct(d.incomeTax)+'% marginal + '+pct(d.medicare)+'% Medicare = '+pct(d.combined)+'%. ITM salary is about '+$(d.salaryApprox)+'.</div>';
-  h+='<div class="tax-row"><div class="tax-label">Or a loan agreement at '+(d.benchmarkRate*100).toFixed(2)+'%</div><div class="tax-amt">'+$(d.booked.interest)+'<span style="font-weight:500;color:var(--text-faint)"> first year</span></div></div>';
-  h+='<div class="tax-note">On the '+$(d.proposed.debit)+' with proposed items: tax about '+$(d.proposed.tax)+', or '+$(d.proposed.interest)+' of interest in the first year. The minimum yearly repayment is for your tax agent to set.</div>';
-  h+='</div></div>';
+  h+='<div class="books-hero '+(owes?'bad':'ok')+'">';
+  h+='<div class="books-kicker" style="color:'+oweColor+'">Director loan</div>';
+  h+='<div class="big" style="color:'+oweColor+'">'+taxMoney(loan.bookedAbs)+'</div>';
+  h+='<p>'+escTax(loan.headline)+'</p>';
+  h+='<div class="books-note">Booked as of '+escTax(asOfText)+'. Only NAB '+loan.ptyAccountNumbers.join(' and NAB ')+' are Rankify Pty Ltd. NAB '+loan.excludedAccountNumber+' is not. Hiatus and ITM stay separate.</div>';
+  if(sync.live&&s.bankBalances&&s.bankBalances.length){
+    h+='<div class="books-note">'+s.bankBalances.map(function(b){
+      const name=b.total?'Company bank':('NAB '+b.number+(b.name?' '+b.name:''));
+      return escTax(name)+' '+taxMoney(b.balance);
+    }).join(' · ')+'</div>';
+  }
+  if(sync.live&&s.reconciliation){
+    const ok=!!s.reconciliation.reconciled;
+    h+='<div class="books-note" style="color:'+(ok?'var(--teal)':'var(--red-soft)')+'">'+(ok?'Reconciled':'Not reconciled')+(s.reconciliation.headline?' · '+escTax(s.reconciliation.headline):'')+'</div>';
+  }
+  h+='</div>';
+  if(owes) h+='<div class="div7a"><strong>Division 7A.</strong> Tom owes Rankify. This needs a loan agreement or a repayment before Rankify\'s lodgment day.</div>';
+  h+='<div class="card" style="margin-bottom:16px"><div class="books-label">Booked</div>';
+  if(loan.expensesTomPaid!=null) h+='<div class="books-row"><span>Rankify costs Tom paid on his cards</span><strong>'+taxMoney(loan.expensesTomPaid)+'</strong></div>';
+  if(loan.netPaidToTom!=null) h+='<div class="books-row"><span>Net paid to Tom</span><strong>'+taxMoney(loan.netPaidToTom)+'</strong></div>';
+  if(loan.reverseReimbursement!=null) h+='<div class="books-row"><span>Money Tom paid back</span><strong>'+taxMoney(loan.reverseReimbursement)+'</strong></div>';
+  h+='<div class="books-row books-total"><span>'+(owes?'Tom owes Rankify':loan.bookedSigned>0?'Rankify owes Tom':'Settled')+'</span><strong style="color:'+oweColor+'">'+taxMoney(loan.bookedAbs)+'</strong></div>';
+  if(loan.expensesTomPaid!=null&&loan.netPaidToTom!=null) h+='<div class="books-note">Reimbursements paid, minus the costs Tom paid, minus the money he paid back. Amex and NAB card 0779 only.</div>';
+  h+='</div>';
+  const p=loan.proposed||{};
+  h+='<div class="card" style="margin-bottom:16px"><div class="books-label">Proposed, not booked</div>';
+  h+='<p class="books-note">Shown beside the booked balance. They are not in the '+taxMoney(loan.bookedAbs)+' figure above.</p>';
+  if(p.items&&p.items.length){
+    p.items.forEach(function(item){
+      h+='<div class="books-row"><span>'+escTax(item.label)+'</span><strong>'+taxMoney(item.amount)+'</strong></div>';
+    });
+  }else{
+    if(p.gearSale!=null) h+='<div class="books-row"><div><div>Gear sale</div><div class="books-note">Tom sells gear to Rankify. Rankify would owe Tom this.</div></div><strong>+'+taxMoney(p.gearSale)+'</strong></div>';
+    if(p.licenceFee!=null){
+      const licenceWhen=[p.licenceDays!=null?p.licenceDays+' days':'',p.licenceFrom?'from '+escTax((typeof TomTax!=='undefined'&&TomTax.formatIsoDate)?TomTax.formatIsoDate(p.licenceFrom):p.licenceFrom):''].filter(Boolean).join(' ');
+      h+='<div class="books-row"><div><div>Licence fee</div><div class="books-note">'+(licenceWhen?licenceWhen+'. ':'')+'Rankify would owe Tom this.</div></div><strong>+'+taxMoney(p.licenceFee)+'</strong></div>';
+    }
+    if(p.phoneInternetPersonal!=null) h+='<div class="books-row"><div><div>10% of phone and internet</div><div class="books-note">Tom would owe Rankify this personal share.</div></div><strong>−'+taxMoney(p.phoneInternetPersonal)+'</strong></div>';
+  }
+  h+='<div class="books-row books-total"><span>If these were booked too</span><strong style="color:'+(proposedOwes?'var(--red-soft)':'var(--teal)')+'">'+escTax(loan.proposedHeadline)+'</strong></div>';
+  h+='</div>';
+  if(s.companyTax&&s.companyTax.tax!=null){
+    h+='<div class="card" style="margin-bottom:16px"><div class="books-label">Estimated company tax</div>';
+    h+='<div class="books-figure" style="color:var(--amber);margin:8px 0">'+taxMoney(s.companyTax.tax)+'</div>';
+    if(s.companyTax.explain) h+='<p>'+escTax(s.companyTax.explain)+'</p>';
+    h+='</div>';
+  }
+  h+='<div class="card" style="margin-bottom:16px"><div class="books-label">If you don\'t repay</div>'+taxPill('Estimate','estimate');
+  h+='<div class="books-split" style="margin-top:14px"><div><div class="books-label">Estimated tax if it becomes a dividend</div><div class="books-figure" style="color:var(--red-soft)">'+taxMoney(d.booked.tax)+'</div>';
+  if(!sync.live||d.ratesFromFeed) h+='<div class="books-note">'+pct(d.incomeTax)+'% marginal + '+pct(d.medicare)+'% Medicare = '+pct(d.combined)+'%.'+(!sync.live?' ITM salary is about '+taxMoney(d.salaryApprox)+'.':'')+'</div>';
+  else h+='<div class="books-note">Personal tax if that debit balance is treated as an unfranked Division 7A deemed dividend.</div>';
+  h+='</div>';
+  if(d.minimumYearly!=null){
+    h+='<div><div class="books-label">Minimum yearly repayment</div><div class="books-figure">'+taxMoney(d.minimumYearly)+'</div>';
+    h+='<div class="books-note">'+(d.benchmarkRate!=null?'7-year loan at the benchmark rate of '+ratePct(d.benchmarkRate)+'%.':'From Rankify Hub.')+'</div></div>';
+  }
+  h+='</div>';
+  if(d.booked.interest!=null){
+    const rateText=d.benchmarkRate!=null?ratePct(d.benchmarkRate)+'%':'the benchmark rate';
+    h+='<div class="books-row"><span>Or a loan agreement at '+rateText+'</span><strong>'+taxMoney(d.booked.interest)+'<span style="font-weight:500;color:var(--text-faint)"> first year</span></strong></div>';
+  }
+  if(d.proposed&&d.proposed.tax!=null){
+    let proposedNote='On the '+taxMoney(d.proposed.debit)+' with proposed items: tax about '+taxMoney(d.proposed.tax);
+    if(d.proposed.interest!=null) proposedNote+=', or '+taxMoney(d.proposed.interest)+' of interest in the first year';
+    h+='<div class="books-note">'+proposedNote+'.</div>';
+  }
+  if(!sync.live&&d.minimumYearly==null) h+='<div class="books-note">The minimum yearly repayment is for your tax agent to set.</div>';
+  if(d.explain) h+='<div class="books-note">'+escTax(d.explain)+'</div>';
+  h+='</div>';
   const fee=s.fy27.licence;
   const assets=s.assets||{};
   const est=taxPill('Estimate','estimate');
   const pend=taxPill('Pending tax agent','pending');
   function taxRow(label, amount, pills, detail){
-    return '<div class="tax-row"><div class="tax-label"><div style="color:#fff;font-weight:600">'+label+' '+pills+'</div><div class="tax-note">'+detail+'</div></div><div class="tax-amt">'+$(amount)+'</div></div>';
+    return '<div class="tax-row"><div class="tax-label"><div style="color:#fff;font-weight:600">'+label+' '+pills+'</div><div class="tax-note">'+detail+'</div></div><div class="tax-amt">'+taxMoney(amount)+'</div></div>';
   }
+  const saleProceeds=(sync.live&&p.gearSale!=null)?p.gearSale:assets.saleProceedsRounded;
   const depDetail=assets.marketValue!=null
-    ? 'Option B is the likely sale to Rankify on 20 Oct, '+$(assets.saleProceedsRounded)+' (register market value '+$(assets.marketValue)+'). You claim no decline in value. Option A, if you keep the gear, is about '+$(assets.optionADecline)+'.'
+    ? 'Option B is the likely sale to Rankify on 20 Oct, '+taxMoney(saleProceeds)+' (register market value '+taxMoney(assets.marketValue)+'). You claim no decline in value. Option A, if you keep the gear, is about '+taxMoney(assets.optionADecline)+'.'
     : s.fy27.depreciationNote;
   h+='<div class="card">';
   h+='<div class="card-header"><span class="card-title">Personal tax · '+s.fy27.label+'</span><span class="card-badge badge-silver">1 Jul 2026 – 30 Jun 2027</span></div>';
-  h+=taxRow('Licence fee from Rankify', fee.incomeAdopted, est+' '+pend, fee.room+', '+fee.floorPctLabel+' of your '+$(fee.rentWeeklyShare)+'/week, from 10 Oct 2026. About $'+fee.weeklyAbout+'/week (exactly '+$(fee.weeklyExact)+'). '+fee.daysAdopted+' days after dropping '+fee.itmOverlapDays+' ITM days in the office. From 10 Oct with no days removed: '+$(fee.incomeFromStart)+' over '+fee.daysFromStart+' days.');
+  h+=taxRow('Home office licence, FY27', fee.incomeAdopted, est+' '+pend, fee.room+', '+fee.floorPctLabel+' of your '+taxMoney(fee.rentWeeklyShare)+'/week, from 10 Oct 2026. About $'+fee.weeklyAbout+'/week (exactly '+taxMoney(fee.weeklyExact)+'). '+fee.daysAdopted+' days after dropping '+fee.itmOverlapDays+' ITM days in the office. From 10 Oct with no days removed: '+taxMoney(fee.incomeFromStart)+' over '+fee.daysFromStart+' days. This is the year\'s personal estimate. The licence fee on the loan card is only the days so far.');
   h+=taxRow('Matching rent deduction', s.fy27.rentDeduction, pend, 'The same share of your rent. At cost recovery this cancels the licence fee.');
   h+=taxRow('Running costs', s.fy27.runningCosts, pend, s.fy27.runningCostsNote);
   h+=taxRow('Depreciation', s.fy27.depreciation, est+' '+pend, depDetail);
-  h+=taxRow('Car', s.car.reimbursement, est+' '+pend, 'Rankify reimburses '+(s.car.ratePerKm*100).toFixed(0)+'c/km, up to '+Number(s.car.capKm).toLocaleString('en-AU')+' km, from a trip log. None logged yet. The cap is '+$(s.car.maxReimbursement)+'.');
+  h+=taxRow('Car', s.car.reimbursement, est+' '+pend, 'Rankify reimburses '+(s.car.ratePerKm*100).toFixed(0)+'c/km, up to '+Number(s.car.capKm).toLocaleString('en-AU')+' km, from a trip log. None logged yet. The cap is '+taxMoney(s.car.maxReimbursement)+'.');
+  if(s.fy27Estimate){
+    const fe=s.fy27Estimate;
+    const refundLabel=fe.resultSigned>=0?'Estimated refund':'Estimated tax payable';
+    const divEffect=fe.ifDeemedDividendSigned<0?' owing':' refund';
+    const hold=Math.round((s.shareholderPct||0)*100);
+    h+=taxRow('PAYG withheld (projected)', fe.paygProjected, est, taxMoney(fe.paygWeekly)+'/week from your ITM payslips × '+fe.paygWeeks+' weeks.');
+    h+=taxRow('Tax + Medicare on salary', fe.liability, est, 'About '+taxMoney(s.div7a.salaryApprox)+' salary. '+escTax(fe.mlsNote)+'. HELP debt '+taxMoney(fe.helpDebt)+'.');
+    h+=taxRow(refundLabel, Math.abs(fe.resultSigned), est+' '+pend, 'Before Div 7A. If the booked loan is taxed as a deemed dividend: about '+taxMoney(Math.abs(fe.ifDeemedDividendSigned))+divEffect+'. You hold '+hold+'% of Rankify, so Div 7A applies.');
+  }
+  if(s.priorYearTaxDebt){
+    const pd=s.priorYearTaxDebt;
+    const confirmed=!!(s.fy26Debt&&s.fy26Debt.confirmed);
+    const shown=pd.netPositionLabel+(confirmed?'':" (Tom's estimate)");
+    h+=taxRow(pd.label, pd.amount, confirmed?pend:taxPill("Tom's estimate",'estimate'), 'Shown as "'+escTax(shown)+'" in Net Position. Due date: '+(pd.dueDate||'not recorded')+'. ATO payment plan: '+(pd.paymentPlan||'none recorded')+'.');
+  }
   h+='<div class="tax-row"><div class="tax-label"><div style="color:#fff;font-weight:600">Key date '+pend+'</div><div class="tax-note">'+s.fy27.returnDueLabel+'</div></div><div class="tax-amt">31 Oct 2027</div></div>';
   h+='<div class="tax-note">'+s.estimateNote+'</div>';
   if(s.stillToConfirm&&s.stillToConfirm.length) h+='<div class="tax-note">Still to confirm: '+s.stillToConfirm.join(' · ')+'.</div>';
@@ -1438,7 +1537,7 @@ function renderTax(){
   }
   el.innerHTML=h;
   const updated=document.getElementById('tax-updated');
-  if(updated) updated.textContent='Personal · FY27 · booked 20 Oct 2026';
+  if(updated) updated.textContent='Personal · FY27 · '+(sync.live?'Matches Rankify Hub':sync.label);
 }
 function updateEditableCost(name){
   const item=_costTracking.find(c=>c.name===name);
@@ -1537,30 +1636,30 @@ function calcRealIncome(){
   return{weekly:wages[0].amount,source:'synced',count:wages.length,from:wages[wages.length-1].date,to:wages[0].date};
 }
 
+function currentNetPosition(){
+  const prop=getPropertyValue();
+  const summary=_taxSummary||(typeof TomTax!=='undefined'?TomTax.buildSummary(TAX_CONFIG):null);
+  return TomNet.personalNetPosition({
+    accounts:(_bankingData&&_bankingData.accounts)||[],
+    groupOf:acctBucket,
+    propertyValue:prop?prop.value:0,
+    taxSummary:summary,
+    costItems:_costTracking,
+  });
+}
+
 function renderNetPosition(){
   const el=document.getElementById('netposition-content');if(!el)return;
-  const accts=_bankingData?.accounts||[];
   const income=calcRealIncome();
   _weeklyIncome=income.weekly;
 
-  const personalAccts=accts.filter(a=>acctBucket(a)==='personal'&&a.balance>=0);
-  const bizAccts=accts.filter(a=>['rankify','hiatus','excluded'].includes(acctBucket(a)));
-  const loanAccts=accts.filter(a=>acctBucket(a)==='loan');
-  const ccAccts=accts.filter(a=>acctBucket(a)==='personal'&&a.balance<0);
-
-  const totalCash=personalAccts.reduce((s,a)=>s+a.balance,0)+bizAccts.reduce((s,a)=>s+a.balance,0);
-  const ccDebt=ccAccts.reduce((s,a)=>s+Math.abs(a.balance),0);
-  const homeLoanFull=loanAccts.reduce((s,a)=>s+Math.abs(a.balance),0);
-  const homeLoanShare=Math.round(homeLoanFull/2*100)/100;
-
-  // Additional debts
-  const carLoanOwing=18133.93;
-  const carValue=22000;
-  const carPaymentMonthly=566.42;
-  const carPaymentsLeft=Math.ceil(carLoanOwing/carPaymentMonthly);
+  const np=currentNetPosition();
+  const homeLoanFull=np.homeLoanFull;
+  const homeLoanShare=np.homeLoanShare;
+  const propShare=np.propertyShare;
+  const equity=np.equity;
+  const carPaymentsLeft=np.carLoan.paymentsLeft;
   const carPaidOffDate=new Date();carPaidOffDate.setMonth(carPaidOffDate.getMonth()+carPaymentsLeft);
-  const oweToDOM=1000;
-  const taxBill2025=4000;
 
   const activeItems=_costTracking.filter(c=>c.status==='active');
   const _nowCF=new Date(),_cfMo=_nowCF.getMonth(),_cfYr=_nowCF.getFullYear();
@@ -1568,13 +1667,7 @@ function renderNetPosition(){
   const monthlyIncome=income.weekly*52/12;
   const monthlySurplus=monthlyIncome-totalMonthlyCosts;
 
-  const propVal=getPropertyValue();
-  const propShare=propVal?Math.round(propVal.value/2*100)/100:0;
-  const equity=propShare-homeLoanShare;
-
-  const totalAssets=totalCash+propShare+carValue;
-  const totalDebts=ccDebt+homeLoanShare+carLoanOwing+oweToDOM+taxBill2025;
-  const netWorth=totalAssets-totalDebts;
+  const netWorth=np.net;
 
   let h='';
   // Salary card (guaranteed income only)
@@ -1705,55 +1798,66 @@ function renderNetPosition(){
   h+='</div>';
 
   // Assets
-  h+='<div style="font-size:0.65rem;font-weight:600;color:var(--teal);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;margin-top:6px">Assets</div>';
-  for(const a of personalAccts){
-    if(a.balance<=0)continue;
+  h+='<div style="font-size:0.65rem;font-weight:600;color:var(--teal);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;margin-top:6px">Assets</div>';
+  h+='<div style="font-size:0.6rem;color:var(--text-faint);margin-bottom:8px">Personal accounts only. Rankify and Hiatus are left out.</div>';
+  for(const a of np.cashAccounts){
     h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
     h+='<span style="color:var(--text-secondary)">'+a.name+' <span style="font-size:0.55rem;color:var(--text-faint)">'+a.bank+'</span></span>';
     h+='<span style="color:var(--teal);font-weight:600">'+$(a.balance)+'</span></div>';
   }
-  for(const a of bizAccts){
-    if(a.balance<=0)continue;
-    const _bucket=acctBucket(a);
-    const _tag=_bucket==='hiatus'?'Hiatus':_bucket==='excluded'?'Not Rankify Pty Ltd':_bucket==='rankify'?'Rankify Pty Ltd':'';
-    h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
-    h+='<span style="color:var(--text-secondary)">'+a.name+entityTag(_tag)+' <span style="font-size:0.55rem;color:var(--text-faint)">'+a.bank+'</span></span>';
-    h+='<span style="color:var(--teal);font-weight:600">'+$(a.balance)+'</span></div>';
-  }
   if(propShare>0){
     h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
-    h+='<span style="color:var(--text-secondary)">33/286 The Esplanade <span style="font-size:0.55rem;color:var(--text-faint)">50% share (full: '+$(propVal.value)+')</span></span>';
+    h+='<span style="color:var(--text-secondary)">33/286 The Esplanade <span style="font-size:0.55rem;color:var(--text-faint)">50% share (full: '+$(np.propertyFull)+')</span></span>';
     h+='<span style="color:var(--teal);font-weight:600">'+$(propShare)+'</span></div>';
   }
   h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
   h+='<span style="color:var(--text-secondary)">Car <span style="font-size:0.55rem;color:var(--text-faint)">estimated value</span></span>';
-  h+='<span style="color:var(--teal);font-weight:600">'+$(carValue)+'</span></div>';
+  h+='<span style="color:var(--teal);font-weight:600">'+$(np.carValue)+'</span></div>';
+  if(np.directorLoan.asset>0){
+    h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
+    h+='<span style="color:var(--text-secondary)">Director loan <span style="font-size:0.55rem;color:var(--text-faint)">booked · Rankify owes Tom'+(np.directorLoan.syncLabel?' · '+np.directorLoan.syncLabel:'')+'</span></span>';
+    h+='<span style="color:var(--teal);font-weight:600">'+$(np.directorLoan.asset)+'</span></div>';
+  }
   h+='<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:0.78rem;font-weight:600;border-top:1px solid rgba(255,255,255,0.08);margin-top:4px">';
-  h+='<span style="color:var(--white)">Total Assets</span><span style="color:var(--teal)">'+$(totalAssets)+'</span></div>';
+  h+='<span style="color:var(--white)">Total Assets</span><span style="color:var(--teal)">'+$(np.totalAssets)+'</span></div>';
 
   // Debts
   h+='<div style="font-size:0.65rem;font-weight:600;color:var(--red-soft);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;margin-top:16px">Debts</div>';
-  ccAccts.forEach(cc=>{
+  np.cards.forEach(row=>{
+    const cc=row.account;
+    const hint=row.bankFeed?'bank feed'+(cc.number?' · #'+cc.number:''):(cc.bank+(cc.number?' #'+cc.number:''));
     h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
-    h+='<span style="color:var(--text-secondary)">'+cc.name+' <span style="font-size:0.55rem;color:var(--text-faint)">'+cc.bank+(cc.number?' #'+cc.number:'')+'</span></span>';
-    h+='<span style="color:var(--red-soft);font-weight:600">-'+$(Math.abs(cc.balance))+'</span></div>';
+    h+='<span style="color:var(--text-secondary)">'+cc.name+' <span style="font-size:0.55rem;color:var(--text-faint)">'+hint+'</span></span>';
+    h+='<span style="color:var(--red-soft);font-weight:600">-'+$(row.owing)+'</span></div>';
   });
+  if(np.amexCostIgnored>0&&np.amex.owing!=null&&np.amexCostIgnored!==np.amex.owing){
+    h+='<div style="font-size:0.58rem;color:var(--text-faint);padding:2px 0 6px">Bank feed only. The '+$(np.amexCostIgnored)+' AMEX Balance cost line is not included.</div>';
+  }
   if(homeLoanFull>0){
     h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
     h+='<span style="color:var(--text-secondary)">Home Loan <span style="font-size:0.55rem;color:var(--text-faint)">CommBank · 50% share (full: '+$(homeLoanFull)+')</span></span>';
     h+='<span style="color:var(--red-soft);font-weight:600">-'+$(homeLoanShare)+'</span></div>';
   }
   h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
-  h+='<span style="color:var(--text-secondary)">Car Loan <span style="font-size:0.55rem;color:var(--text-faint)">'+carPaymentsLeft+' payments left · paid off '+carPaidOffDate.toLocaleDateString('en-AU',{month:'short',year:'numeric'})+'</span></span>';
-  h+='<span style="color:var(--red-soft);font-weight:600">-'+$(carLoanOwing)+'</span></div>';
+  h+='<span style="color:var(--text-secondary)">Car Loan <span style="font-size:0.55rem;color:var(--text-faint)">'+np.carLoan.note+' · '+carPaymentsLeft+' payments left · paid off '+carPaidOffDate.toLocaleDateString('en-AU',{month:'short',year:'numeric'})+'</span></span>';
+  h+='<span style="color:var(--red-soft);font-weight:600">-'+$(np.carLoan.owing)+'</span></div>';
   h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
   h+='<span style="color:var(--text-secondary)">Owe to Dom <span style="font-size:0.55rem;color:var(--text-faint)">property contribution</span></span>';
-  h+='<span style="color:var(--red-soft);font-weight:600">-'+$(oweToDOM)+'</span></div>';
+  h+='<span style="color:var(--red-soft);font-weight:600">-'+$(np.oweToDom)+'</span></div>';
+  if(np.directorLoan.debt>0){
+    h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
+    h+='<span style="color:var(--text-secondary)">Director loan <span style="font-size:0.55rem;color:var(--text-faint)">booked · Tom owes Rankify'+(np.directorLoan.syncLabel?' · '+np.directorLoan.syncLabel:'')+'</span></span>';
+    h+='<span style="color:var(--red-soft);font-weight:600">-'+$(np.directorLoan.debt)+'</span></div>';
+  }else if(!np.directorLoan.included){
+    h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
+    h+='<span style="color:var(--text-secondary)">Director loan <span style="font-size:0.55rem;color:var(--text-faint)">booked</span></span>';
+    h+='<span style="color:var(--amber);font-weight:600">pending</span></div>';
+  }
   h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
-  h+='<span style="color:var(--text-secondary)">2025 Tax Bill <span style="font-size:0.55rem;color:var(--text-faint)">ATO</span></span>';
-  h+='<span style="color:var(--red-soft);font-weight:600">-'+$(taxBill2025)+'</span></div>';
+  h+='<span style="color:var(--text-secondary)">'+np.fy26Tax.label+'</span>';
+  h+='<span style="color:var(--red-soft);font-weight:600">-'+$(np.fy26Tax.debt)+'</span></div>';
   h+='<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:0.78rem;font-weight:600;border-top:1px solid rgba(255,255,255,0.08);margin-top:4px">';
-  h+='<span style="color:var(--white)">Total Debts</span><span style="color:var(--red-soft)">-'+$(totalDebts)+'</span></div>';
+  h+='<span style="color:var(--white)">Total Debts</span><span style="color:var(--red-soft)">-'+$(np.totalDebts)+'</span></div>';
 
   // Property equity
   if(propShare>0){
@@ -2346,25 +2450,12 @@ function renderBanking(){
   const excludedAccts=accts.filter(a=>acctBucket(a)==='excluded');
   const hiatusAccts=accts.filter(a=>acctBucket(a)==='hiatus');
   const loanAccts=accts.filter(a=>acctBucket(a)==='loan');
-  const bizAccts=rankifyAccts.concat(excludedAccts,hiatusAccts);
 
   const totalPersonal=personalAccts.reduce((s,a)=>s+a.balance,0);
   const totalRankify=rankifyAccts.reduce((s,a)=>s+a.balance,0);
   const totalHiatus=hiatusAccts.reduce((s,a)=>s+a.balance,0);
-  const totalBiz=bizAccts.reduce((s,a)=>s+a.balance,0);
-  const totalLoanFull=loanAccts.reduce((s,a)=>s+Math.abs(a.balance),0);
-  const totalLoanShare=Math.round(totalLoanFull/2*100)/100;
-  const totalCash=personalAccts.filter(a=>a.balance>0).reduce((s,a)=>s+a.balance,0)+totalBiz;
-  const ccDebt=accts.filter(a=>a.balance<0&&a.group!=='loan').reduce((s,a)=>s+Math.abs(a.balance),0);
-  const propVal=getPropertyValue();
-  const propShare=propVal?Math.round(propVal.value/2*100)/100:0;
-  const carValue=22000;
-  const carLoanOwing=18133.93;
-  const oweToDOM=1000;
-  const taxBill2025=4000;
-  const totalAssets=totalCash+propShare+carValue;
-  const totalDebts=ccDebt+totalLoanShare+carLoanOwing+oweToDOM+taxBill2025;
-  const totalNet=totalAssets-totalDebts;
+  const np=currentNetPosition();
+  const totalNet=np.net;
 
   let h='<div class="metrics-grid" style="margin-bottom:16px;grid-template-columns:repeat(4,1fr)">';
   h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:var(--teal)">'+$(totalPersonal)+'</div><div class="metric-label">Personal</div></div>';
@@ -4661,7 +4752,7 @@ function renderOverview(){
   document.getElementById('overview-metrics').innerHTML=
     '<div class="card metric-tile" '+tc('finances')+'><div class="metric-value teal">$'+fmt2(surplus)+'</div><div class="metric-label">Surplus /mo</div></div>'+
     '<div class="card metric-tile" '+tc('finances')+'><div class="metric-value" style="color:var(--red-soft)">$'+fmt2(totalMonthly)+'</div><div class="metric-label">Costs /mo</div></div>'+
-    (_taxSummary?'<div class="card metric-tile" '+tc('tax')+'><div class="metric-value" style="color:var(--red-soft);font-size:1.15rem">'+$( _taxSummary.directorLoan.bookedAbs)+'</div><div class="metric-label">'+(_taxSummary.directorLoan.tomOwes?'Owe Rankify':'Rankify owes you')+'</div></div>':'')+
+    (_taxSummary?'<div class="card metric-tile" '+tc('tax')+'><div class="metric-value" style="color:'+(_taxSummary.directorLoan.tomOwes?'var(--red-soft)':'var(--teal)')+';font-size:1.15rem">'+$( _taxSummary.directorLoan.bookedAbs)+'</div><div class="metric-label">'+(_taxSummary.directorLoan.tomOwes?'Owe Rankify':'Rankify owes you')+(_taxSummary.loanSync&&_taxSummary.loanSync.live?' ✓':' · not live')+'</div></div>':'')+
     '<div class="card metric-tile" '+tc('whoop')+'><div class="metric-value" style="color:'+rc(recScore)+'">'+(recScore!=null?recScore+'%':'—')+'</div><div class="metric-label">Recovery</div></div>'+
     '<div class="card metric-tile" '+tc('whoop')+'><div class="metric-value" style="color:'+(streak>=3?'var(--teal)':'var(--amber)')+'">'+streak+'🔥</div><div class="metric-label">Streak</div></div>'+
     '<div class="card metric-tile" '+tc('goals')+'><div class="metric-value" style="color:var(--amber)">'+activeGoals+'</div><div class="metric-label">Active Goals</div></div>'+
@@ -4673,7 +4764,7 @@ function renderOverview(){
 
   // Finance snapshot
   panels+='<div class="card" style="cursor:pointer" onclick="switchTab(\'finances\')">';
-  panels+='<div class="card-header"><span class="card-title">💰 Finances</span><span style="font-size:0.65rem;color:var(--text-faint)">'+activeItems.length+' subscriptions</span></div>';
+  panels+='<div class="card-header"><span class="card-title">💰 Money</span><span style="font-size:0.65rem;color:var(--text-faint)">'+activeItems.length+' subscriptions</span></div>';
   panels+='<div style="display:flex;gap:12px;margin:10px 0">';
   panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Salary</div><div style="font-weight:700;color:var(--teal)">$'+fmt2(monthlyIncome)+'</div></div>';
   panels+='<div style="flex:1;text-align:center"><div style="font-size:0.65rem;color:var(--text-faint)">Costs</div><div style="font-weight:700;color:var(--red-soft)">$'+fmt2(totalMonthly)+'</div></div>';
