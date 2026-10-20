@@ -1499,6 +1499,21 @@ function renderTax(){
   h+=taxRow('Running costs', s.fy27.runningCosts, pend, s.fy27.runningCostsNote);
   h+=taxRow('Depreciation', s.fy27.depreciation, est+' '+pend, depDetail);
   h+=taxRow('Car', s.car.reimbursement, est+' '+pend, 'Rankify reimburses '+(s.car.ratePerKm*100).toFixed(0)+'c/km, up to '+Number(s.car.capKm).toLocaleString('en-AU')+' km, from a trip log. None logged yet. The cap is '+taxMoney(s.car.maxReimbursement)+'.');
+  if(s.fy27Estimate){
+    const fe=s.fy27Estimate;
+    const refundLabel=fe.resultSigned>=0?'Estimated refund':'Estimated tax payable';
+    const divEffect=fe.ifDeemedDividendSigned<0?' owing':' refund';
+    const hold=Math.round((s.shareholderPct||0)*100);
+    h+=taxRow('PAYG withheld (projected)', fe.paygProjected, est, taxMoney(fe.paygWeekly)+'/week from your ITM payslips × '+fe.paygWeeks+' weeks.');
+    h+=taxRow('Tax + Medicare on salary', fe.liability, est, 'About '+taxMoney(s.div7a.salaryApprox)+' salary. '+escTax(fe.mlsNote)+'. HELP debt '+taxMoney(fe.helpDebt)+'.');
+    h+=taxRow(refundLabel, Math.abs(fe.resultSigned), est+' '+pend, 'Before Div 7A. If the booked loan is taxed as a deemed dividend: about '+taxMoney(Math.abs(fe.ifDeemedDividendSigned))+divEffect+'. You hold '+hold+'% of Rankify, so Div 7A applies.');
+  }
+  if(s.priorYearTaxDebt){
+    const pd=s.priorYearTaxDebt;
+    const confirmed=!!(s.fy26Debt&&s.fy26Debt.confirmed);
+    const shown=pd.netPositionLabel+(confirmed?'':' (unconfirmed)');
+    h+=taxRow(pd.label, pd.amount, confirmed?pend:taxPill('Unconfirmed','pending'), 'Shown as "'+escTax(shown)+'" in Net Position. Due date: '+(pd.dueDate||'not recorded')+'. ATO payment plan: '+(pd.paymentPlan||'none recorded')+'.');
+  }
   h+='<div class="tax-row"><div class="tax-label"><div style="color:#fff;font-weight:600">Key date '+pend+'</div><div class="tax-note">'+s.fy27.returnDueLabel+'</div></div><div class="tax-amt">31 Oct 2027</div></div>';
   h+='<div class="tax-note">'+s.estimateNote+'</div>';
   if(s.stillToConfirm&&s.stillToConfirm.length) h+='<div class="tax-note">Still to confirm: '+s.stillToConfirm.join(' · ')+'.</div>';

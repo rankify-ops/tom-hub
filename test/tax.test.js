@@ -206,3 +206,28 @@ test('feed totals keep reimbursable, Hiatus and 4750 out of personal spend', () 
   assert.equal(totals.hiatusSpend, 37);
   assert.equal(totals.excludedSpend, 350);
 });
+
+test('FY27 estimate: about a $204 refund before Div 7A', () => {
+  const fe = summary.fy27Estimate;
+  assert.equal(fe.paygProjected, 51324);
+  assert.equal(fe.liability, 51120);
+  assert.equal(fe.mls, 0);
+  assert.equal(fe.helpDebt, 0);
+  assert.equal(fe.refund, 204);
+  assert.equal(fe.ifDeemedDividendSigned, -1509.62);
+  assert.equal(summary.shareholderPct, 1);
+});
+
+test('prior-year ATO debt mirrors Net Position $4,000, no due date or plan', () => {
+  const pd = summary.priorYearTaxDebt;
+  assert.equal(pd.amount, 4000);
+  assert.equal(pd.dueDate, null);
+  assert.equal(pd.paymentPlan, null);
+});
+
+test('fy26Debt is exposed for Net Position and marked unconfirmed', () => {
+  assert.equal(summary.fy26Debt.amount, 4000);
+  assert.equal(summary.fy26Debt.confirmed, false);
+  assert.equal(summary.fy26Debt.dueDate, null);
+  assert.equal(summary.fy26Debt.paymentPlan, null);
+});
