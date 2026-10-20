@@ -1781,9 +1781,6 @@ function renderNetPosition(){
   h+='<div style="font-size:0.72rem;font-weight:600;color:var(--white);text-transform:uppercase;letter-spacing:0.5px">Net Position</div>';
   h+='<div style="font-size:1.3rem;font-weight:700;color:'+nwColor+'">'+$(netWorth)+'</div>';
   h+='</div>';
-  if(np.ato.pending){
-    h+='<div style="font-size:0.62rem;color:var(--amber);margin:-4px 0 10px">FY26 ATO owing is pending and is not in this total.</div>';
-  }
 
   // Assets
   h+='<div style="font-size:0.65rem;font-weight:600;color:var(--teal);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;margin-top:6px">Assets</div>';
@@ -1805,11 +1802,6 @@ function renderNetPosition(){
     h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
     h+='<span style="color:var(--text-secondary)">Director loan <span style="font-size:0.55rem;color:var(--text-faint)">booked · Rankify owes Tom'+(np.directorLoan.syncLabel?' · '+np.directorLoan.syncLabel:'')+'</span></span>';
     h+='<span style="color:var(--teal);font-weight:600">'+$(np.directorLoan.asset)+'</span></div>';
-  }
-  if(np.ato.asset>0){
-    h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
-    h+='<span style="color:var(--text-secondary)">FY26 tax bill <span style="font-size:0.55rem;color:var(--text-faint)">ATO refund</span></span>';
-    h+='<span style="color:var(--teal);font-weight:600">'+$(np.ato.asset)+'</span></div>';
   }
   h+='<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:0.78rem;font-weight:600;border-top:1px solid rgba(255,255,255,0.08);margin-top:4px">';
   h+='<span style="color:var(--white)">Total Assets</span><span style="color:var(--teal)">'+$(np.totalAssets)+'</span></div>';
@@ -1846,12 +1838,9 @@ function renderNetPosition(){
     h+='<span style="color:var(--text-secondary)">Director loan <span style="font-size:0.55rem;color:var(--text-faint)">booked</span></span>';
     h+='<span style="color:var(--amber);font-weight:600">pending</span></div>';
   }
-  if(np.ato.asset<=0){
-    h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
-    h+='<span style="color:var(--text-secondary)">FY26 tax bill <span style="font-size:0.55rem;color:var(--text-faint)">ATO</span></span>';
-    h+=np.ato.pending?'<span style="color:var(--amber);font-weight:600">pending</span>':'<span style="color:var(--red-soft);font-weight:600">-'+$(np.ato.debt)+'</span>';
-    h+='</div>';
-  }
+  h+='<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.75rem">';
+  h+='<span style="color:var(--text-secondary)">'+np.fy26Tax.label+'</span>';
+  h+='<span style="color:var(--red-soft);font-weight:600">-'+$(np.fy26Tax.debt)+'</span></div>';
   h+='<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:0.78rem;font-weight:600;border-top:1px solid rgba(255,255,255,0.08);margin-top:4px">';
   h+='<span style="color:var(--white)">Total Debts</span><span style="color:var(--red-soft)">-'+$(np.totalDebts)+'</span></div>';
 
@@ -2457,7 +2446,7 @@ function renderBanking(){
   h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:var(--teal)">'+$(totalPersonal)+'</div><div class="metric-label">Personal</div></div>';
   h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:var(--amber)">'+$(totalRankify)+'</div><div class="metric-label">Rankify Pty Ltd</div></div>';
   h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:#c4b5fd">'+$(totalHiatus)+'</div><div class="metric-label">Hiatus</div></div>';
-  h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:'+(totalNet>=0?'var(--teal)':'var(--red-soft)')+'">'+$(totalNet)+'</div><div class="metric-label">Net Position</div>'+(np.ato.pending?'<div style="font-size:0.55rem;color:var(--amber);margin-top:2px">FY26 tax pending</div>':'')+'</div>';
+  h+='<div class="card metric-tile" style="padding:12px"><div class="metric-value" style="font-size:1.1rem;color:'+(totalNet>=0?'var(--teal)':'var(--red-soft)')+'">'+$(totalNet)+'</div><div class="metric-label">Net Position</div></div>';
   h+='</div>';
 
   // Account cards grouped

@@ -60,7 +60,7 @@ function position(extra) {
   }, extra));
 }
 
-test('live balances: net position was $24,994.11 and is now $17,838.41', () => {
+test('live balances: net position was $24,994.11 and is now $13,838.41', () => {
   const before = previousNetPosition(accounts, propertyValue);
   assert.equal(before.toFixed(2), '24994.11');
 
@@ -77,14 +77,14 @@ test('live balances: net position was $24,994.11 and is now $17,838.41', () => {
   assert.equal(after.directorLoan.debt, 4393.91);
   assert.equal(after.directorLoan.bookedSigned, -4393.91);
   assert.equal(after.directorLoan.asset, 0);
-  assert.equal(after.ato.pending, true);
-  assert.equal(after.ato.debt, 0);
+  assert.equal(after.fy26Tax.debt, 4000);
+  assert.equal(after.fy26Tax.label, 'FY26 tax (estimate, unconfirmed)');
   assert.equal(after.propertyShare, 473500);
   assert.equal(after.homeLoanShare, 455626.44);
   assert.equal(after.totalAssets, 499030.80);
-  assert.equal(after.totalDebts, 481192.39);
-  assert.equal(after.net, 17838.41);
-  assert.equal((before - after.net).toFixed(2), '7155.70');
+  assert.equal(after.totalDebts, 485192.39);
+  assert.equal(after.net, 13838.41);
+  assert.equal((before - after.net).toFixed(2), '11155.70');
 });
 
 test('cash leaves out Rankify 3314, Hiatus, and the other non-personal accounts', () => {
@@ -126,35 +126,21 @@ test('director loan debt is the booked figure, not the proposed balance', () => 
   const asset = position({ taxSummary: rankifyOwes });
   assert.equal(asset.directorLoan.debt, 0);
   assert.equal(asset.directorLoan.asset, 250);
-  assert.equal(asset.net, 22482.32);
+  assert.equal(asset.net, 18482.32);
 });
 
-test('FY26 ATO owing stays pending until /api/tax has a figure, and a figure replaces the old $4,000', () => {
-  const pending = position();
-  assert.equal(pending.ato.pending, true);
-  assert.equal(pending.totalDebts, 481192.39);
+test('FY26 tax stays the unconfirmed $4,000 and ignores a tax-summary debt', () => {
+  const base = position();
+  assert.equal(base.fy26Tax.debt, 4000);
+  assert.equal(base.fy26Tax.label, 'FY26 tax (estimate, unconfirmed)');
 
-  const withDiv7aOnly = JSON.parse(JSON.stringify(summary));
-  assert.equal(withDiv7aOnly.div7a.booked.tax, 1713.62);
-  assert.equal(position({ taxSummary: withDiv7aOnly }).ato.pending, true);
-
-  const owing = JSON.parse(JSON.stringify(summary));
-  owing.fy26 = { atoOwing: 2500 };
-  const billed = position({ taxSummary: owing });
-  assert.equal(billed.ato.pending, false);
-  assert.equal(billed.ato.debt, 2500);
-  assert.equal(billed.net, 17838.41 - 2500);
-
-  const zero = JSON.parse(JSON.stringify(summary));
-  zero.fy26AtoOwing = 0;
-  const settled = position({ taxSummary: zero });
-  assert.equal(settled.ato.pending, false);
-  assert.equal(settled.ato.amount, 0);
-  assert.equal(settled.net, 17838.41);
-
-  const alias = JSON.parse(JSON.stringify(summary));
-  alias.ato = { owing: 80 };
-  assert.equal(position({ taxSummary: alias }).ato.debt, 80);
+  const withFigure = JSON.parse(JSON.stringify(summary));
+  withFigure.fy26Debt = 9999;
+  withFigure.fy26 = { atoOwing: 2500 };
+  withFigure.ato = { owing: 80 };
+  const ignored = position({ taxSummary: withFigure });
+  assert.equal(ignored.fy26Tax.debt, 4000);
+  assert.equal(ignored.net, base.net);
 });
 
 test('a missing Amex feed is not filled in from the $1,998.94 cost line', () => {
@@ -172,11 +158,15 @@ test('the Net Position card uses the shared function and drops the old hard-code
   assert.equal(html.includes('2025 Tax Bill'), false);
   assert.equal(html.includes('taxBill2025'), false);
   assert.match(html, /TomNet\.personalNetPosition/);
-  assert.match(html, /FY26 tax bill/);
-  assert.match(html, /pending/);
+  assert.match(html, /np\.fy26Tax\.label/);
+  assert.equal(html.includes('FY26 ATO owing is pending'), false);
+  assert.equal(html.includes('fy26Debt'), false);
   assert.match(html, /Personal accounts only/);
   assert.match(html, /bank feed/);
   const src = fs.readFileSync(path.join(__dirname, '../lib/net-position.js'), 'utf8');
+  assert.match(src, /FY26 tax \(estimate, unconfirmed\)/);
+  assert.equal(src.includes('fy26Debt'), false);
+  assert.equal(src.includes('atoOwing'), false);
   assert.equal(src.includes('x-hub-key'), false);
   assert.equal(src.includes('HUB_SHARED_KEY'), false);
   assert.equal(src.includes('api/shared/director-loan'), false);
