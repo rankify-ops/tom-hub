@@ -15,7 +15,7 @@ test('booked director loan: Tom owes Rankify $4,393.91', () => {
   assert.equal(loan.tomOwes, true);
   assert.equal(loan.bookedSigned, -4393.91);
   assert.equal(loan.bookedAbs, 4393.91);
-  assert.equal(loan.headline, 'You owe Rankify $4,393.91');
+  assert.equal(loan.headline, 'Tom owes Rankify $4,393.91');
   assert.equal(loan.netPaidToTom, 14384.27);
   assert.equal(loan.expensesTomPaid, 9990.36);
   assert.equal(loan.reverseReimbursement, 2447.73);
@@ -31,7 +31,9 @@ test('proposed items bring the loan to about $1,413', () => {
   assert.equal(loan.proposed.phoneInternetPersonal, 26.55);
   assert.equal(loan.withProposedSigned, -1413.46);
   assert.equal(loan.withProposedAbs, 1413.46);
-  assert.equal(loan.proposedHeadline, 'You owe Rankify $1,413.46');
+  assert.equal(loan.proposedHeadline, 'Tom owes Rankify $1,413.46');
+  assert.equal(summary.loanSync.live, false);
+  assert.equal(summary.loanSync.label, 'Not live, last synced 20 Oct 2026');
 });
 
 test('Div 7A estimate uses 39% and the 8.77% benchmark', () => {
