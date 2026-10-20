@@ -1,15 +1,6 @@
 const PS_BASE = 'https://api.pocketsmith.com/v2';
 const PS_USER = 869698;
-
-const GROUP_MAP = {
-  5554543: 'personal', 5554553: 'personal', 5554558: 'personal',
-  5554563: 'personal', 5554568: 'personal', 5554573: 'personal',
-  5554598: 'personal', 5554613: 'personal', 5554608: 'personal',
-  5643758: 'personal',
-  5554548: 'loan',
-  5554578: 'business', 5554583: 'business', 5554588: 'business',
-  5554593: 'business', 5554603: 'business', 5554618: 'business',
-};
+const { pocketSmithGroup } = require('../../lib/tax');
 
 const BANK_MAP = {
   2038698: 'CommBank',
@@ -47,7 +38,7 @@ module.exports = async function handler(req, res) {
         bank: bankName,
         number: num,
         balance: a.current_balance,
-        group: GROUP_MAP[a.id] || 'personal',
+        group: pocketSmithGroup(a.id),
       };
     });
 
