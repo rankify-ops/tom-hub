@@ -112,6 +112,26 @@ module.exports = async function handler(req, res) {
     } catch (_) {}
   }
 
+  // C7: Poll CRM flow-health once per sweep
+  const crmHealthKey = process.env.HUB_SHARED_KEY || process.env.ROUTINE_SECRET;
+  if (crmHealthKey) {
+    try {
+      const hRes = await fetch('https://rankify-crm.vercel.app/api/health', {
+        headers: { 'Authorization': 'Bearer ' + crmHealthKey },
+      });
+      if (hRes.ok) {
+        const health = await hRes.json();
+        if (!health.ok) {
+          alerts.push({
+            event: 'crm_flow_health_alert',
+            data: { counts: health.counts, checkedAt: health.checkedAt },
+          });
+        }
+        await kvSet('tom_crm_flow_health', { ...health, polledAt: new Date().toISOString() });
+      }
+    } catch (_) {}
+  }
+
   if (!alerts.length) {
     return res.status(200).json({ success: true, alerts: 0, message: 'all clear' });
   }
