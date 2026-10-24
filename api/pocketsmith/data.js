@@ -1,8 +1,10 @@
 const { kvGet, kvSet } = require('../db');
+const { requireAuth } = require('../_auth');
 
 const KV_KEY = 'tom_pocketsmith';
 
 module.exports = async function handler(req, res) {
+  if (!requireAuth(req, res)) return;
   try {
     if (req.method === 'GET') {
       const data = await kvGet(KV_KEY) || { accounts: [], transactions: [], updated: null };

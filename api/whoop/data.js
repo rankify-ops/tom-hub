@@ -1,4 +1,5 @@
 const { kvGet, kvSet } = require('../db');
+const { requireAuth } = require('../_auth');
 
 async function refreshTokens(tokens) {
   const clientId = process.env.WHOOP_CLIENT_ID;
@@ -41,6 +42,7 @@ async function whoopGet(path, accessToken) {
 }
 
 module.exports = async function handler(req, res) {
+  if (!requireAuth(req, res)) return;
   try {
     let tokens = await kvGet('tom_whoop_tokens');
     if (!tokens) {
