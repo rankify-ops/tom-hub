@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tom's Hub v2 — Personal Operations</title>
+<link rel="icon" href="/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;overflow:hidden;height:100%}
+body{
+  font-family:'Inter',-apple-system,sans-serif;
+  color:#e2e4ec;
+  height:100%;
+  overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+  background:#10121a;
+}
+
+/* ─── Background ─── */
+.bg-image{position:fixed;inset:0;z-index:0;background:url('wallpaper.jpg') center/cover no-repeat}
+.bg-image::after{content:'';position:absolute;inset:0;background:rgba(6,7,10,0.45)}
+
+.ambient-glow{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+.ambient-glow .glow-warm{position:absolute;top:8%;left:22%;width:520px;height:520px;background:radial-gradient(circle,rgba(255,120,30,0.24) 0%,rgba(255,80,0,0.06) 45%,transparent 72%);filter:blur(60px);animation:glowPulse 8s ease-in-out infinite alternate}
+.ambient-glow .glow-cool{position:absolute;bottom:5%;right:8%;width:420px;height:420px;background:radial-gradient(circle,rgba(44,213,196,0.12) 0%,transparent 68%);filter:blur(55px);animation:glowPulse 10s ease-in-out infinite alternate-reverse}
+@keyframes glowPulse{0%{opacity:.7;transform:scale(1)}100%{opacity:1;transform:scale(1.08)}}
+
+/* ─── Layout Container ─── */
+.dashboard{position:relative;z-index:2;display:flex;height:100vh;padding:14px;gap:14px}
+
+/* ─── Sidebar Pill ─── */
+.sidebar-pill{
+  width:62px;
+  height:calc(100vh - 28px);
+  border-radius:34px;
+  background:linear-gradient(180deg,rgba(255,255,255,0.10) 0%,rgba(14,16,22,0.50) 100%);
+  backdrop-filter:blur(36px) saturate(220%);
+  -webkit-backdrop-filter:blur(36px) saturate(220%);
+  border:1px solid rgba(255,255,255,0.18);
+  box-shadow:0 12px 40px rgba(0,0,0,0.4),inset 0 1.5px 2px 0 rgba(255,255,255,0.30);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:20px 0;
+  gap:4px;
+  flex-shrink:0;
+  position:relative;
+  z-index:10;
+}
+.sidebar-pill .logo{
+  width:36px;height:36px;border-radius:12px;
+  background:linear-gradient(135deg,#ff7a22 0%,#ee5300 100%);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:14px;color:#fff;
+  margin-bottom:18px;
+  box-shadow:0 4px 16px rgba(255,122,34,0.35);
+  letter-spacing:-0.5px;
+}
+.sidebar-pill nav{display:flex;flex-direction:column;gap:6px;align-items:center;flex:1}
+.nav-btn{
+  width:42px;height:42px;border-radius:14px;
+  border:1px solid transparent;
+  background:transparent;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .25s cubic-bezier(.4,0,.2,1);
+  color:rgba(255,255,255,0.45);font-size:16px;
+  position:relative;
+}
+.nav-btn:hover{background:rgba(255,255,255,0.08);color:#fff}
+.nav-btn.active{
+  background:linear-gradient(135deg,#ff7a22 0%,#ee5300 100%);
+  color:#fff;
+  border-color:rgba(255,122,34,0.4);
+  box-shadow:0 4px 18px rgba(255,122,34,0.35);
+}
+.nav-btn .tooltip{
+  position:absolute;left:56px;top:50%;transform:translateY(-50%);
+  background:rgba(0,0,0,0.85);color:#fff;font-size:11px;font-weight:500;
+  padding:5px 10px;border-radius:8px;white-space:nowrap;
+  opacity:0;pointer-events:none;transition:opacity .2s;
+  box-shadow:0 4px 12px rgba(0,0,0,0.4);
+}
+.nav-btn:hover .tooltip{opacity:1}
+.sidebar-pill .bottom-icon{margin-top:auto}
+
+/* ─── Main Glass Panel ─── */
+.main-panel{
+  flex:1;
+  height:calc(100vh - 28px);
+  background:linear-gradient(135deg,rgba(255,255,255,0.11) 0%,rgba(22,24,30,0.42) 45%,rgba(14,15,20,0.48) 100%);
+  backdrop-filter:blur(40px) saturate(210%);
+  -webkit-backdrop-filter:blur(40px) saturate(210%);
+  border:1px solid rgba(255,255,255,0.22);
+  border-radius:30px;
+  box-shadow:0 16px 56px rgba(0,0,0,0.4),inset 0 1.5px 2px 0 rgba(255,255,255,0.35);
+  display:flex;
+  overflow:hidden;
+  position:relative;
+}
+.main-content{
+  flex:1;
+  overflow-y:auto;
+  padding:32px 30px;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(255,255,255,0.12) transparent;
+}
+.main-content::-webkit-scrollbar{width:5px}
+.main-content::-webkit-scrollbar-track{background:transparent}
+.main-content::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.12);border-radius:3px}
+
+/* ─── Right Sidebar ─── */
+.right-sidebar{
+  width:260px;
+  border-left:1px solid rgba(255,255,255,0.12);
+  padding:28px 20px;
+  display:flex;flex-direction:column;gap:16px;
+  overflow-y:auto;flex-shrink:0;
+  background:rgba(12,14,18,0.25);
+  scrollbar-width:thin;
+  scrollbar-color:rgba(255,255,255,0.08) transparent;
+}
+
+/* ─── Header ─── */
+.panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px}
+.panel-header h1{font-size:22px;font-weight:700;color:#fff;letter-spacing:-0.3px}
+.panel-header .sub{font-size:11px;color:#8c90a2;margin-top:2px;font-weight:500}
+.header-actions{display:flex;gap:8px}
+.icon-btn{
+  width:36px;height:36px;border-radius:50%;
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.16);
+  display:flex;align-items:center;justify-content:center;
+  color:rgba(255,255,255,0.85);cursor:pointer;
+  transition:all .2s;font-size:14px;position:relative;
+}
+.icon-btn:hover{background:rgba(255,255,255,0.16);color:#fff;transform:scale(1.06)}
+.notif-dot{position:absolute;top:7px;right:8px;width:6px;height:6px;background:#f54336;border-radius:50%;box-shadow:0 0 6px #f54336}
+
+/* ─── Metrics Row ─── */
+.metrics-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.metric-pill{
+  background:rgba(255,255,255,0.06);
+  backdrop-filter:blur(20px) saturate(180%);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:18px;
+  padding:18px 16px;
+  text-align:center;
+  box-shadow:inset 0 1px 1px rgba(255,255,255,0.15);
+  transition:all .25s;
+}
+.metric-pill:hover{background:rgba(255,255,255,0.09);border-color:rgba(255,255,255,0.2);transform:translateY(-2px)}
+.metric-pill .value{font-size:24px;font-weight:700;color:#fff;letter-spacing:-0.5px;line-height:1}
+.metric-pill .value.orange{color:#ff7a22}
+.metric-pill .value.green{color:#26c281}
+.metric-pill .value.cyan{color:#2cd5c4}
+.metric-pill .value.red{color:#f54336}
+.metric-pill .label{font-size:10.5px;color:#8c90a2;text-transform:uppercase;letter-spacing:0.1em;margin-top:7px;font-weight:500}
+
+/* ─── Glass Card ─── */
+.glass-card{
+  background:rgba(18,20,26,0.38);
+  backdrop-filter:blur(24px) saturate(180%);
+  -webkit-backdrop-filter:blur(24px) saturate(180%);
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:22px;
+  padding:22px;
+  position:relative;
+  overflow:hidden;
+  box-shadow:inset 0 1px 1px rgba(255,255,255,0.12);
+  transition:all .25s;
+}
+.glass-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent)}
+.glass-card:hover{background:rgba(18,20,26,0.48);border-color:rgba(255,255,255,0.18);transform:translateY(-1px)}
+.glass-card .card-title{font-size:15px;font-weight:600;color:#fff;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+
+/* ─── Content Grid ─── */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+
+/* ─── Table ─── */
+.data-table{width:100%;border-collapse:collapse}
+.data-table th{font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:#6b6f82;padding:8px 12px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.06);font-weight:600}
+.data-table td{padding:10px 12px;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.03);color:#c0c3d2}
+.data-table tr:hover td{background:rgba(255,255,255,0.03)}
+
+/* ─── Badges ─── */
+.badge{font-size:10px;padding:3px 9px;border-radius:20px;font-weight:600;letter-spacing:0.04em}
+.badge-orange{background:rgba(255,122,34,0.14);color:#ff7a22;border:1px solid rgba(255,122,34,0.3)}
+.badge-green{background:rgba(38,194,129,0.14);color:#26c281;border:1px solid rgba(38,194,129,0.3)}
+.badge-red{background:rgba(245,67,54,0.12);color:#f54336;border:1px solid rgba(245,67,54,0.2)}
+.badge-cyan{background:rgba(44,213,196,0.14);color:#2cd5c4;border:1px solid rgba(44,213,196,0.3)}
+.badge-muted{background:rgba(255,255,255,0.05);color:#8c90a2;border:1px solid rgba(255,255,255,0.08)}
+
+/* ─── Progress Bar ─── */
+.progress-bar{height:6.5px;border-radius:3.5px;background:rgba(255,255,255,0.10);overflow:hidden}
+.progress-fill{height:100%;border-radius:3.5px;background:linear-gradient(90deg,#ff7a22,#ffa15d);box-shadow:0 0 10px rgba(255,122,34,0.4);transition:width .6s ease}
+
+/* ─── List Items ─── */
+.list-item{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 14px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.06);
+  border-radius:14px;
+  transition:all .2s;
+  margin-bottom:8px;
+}
+.list-item:hover{background:rgba(255,255,255,0.07);border-color:rgba(255,255,255,0.12)}
+.list-item .item-icon{
+  width:38px;height:38px;border-radius:12px;
+  background:rgba(255,255,255,0.06);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;flex-shrink:0;
+}
+.list-item .item-info{flex:1;min-width:0}
+.list-item .item-name{font-size:13px;font-weight:600;color:#fff;line-height:1.2}
+.list-item .item-sub{font-size:10.5px;color:#8c90a2;margin-top:2px}
+.list-item .item-amount{font-size:14px;font-weight:700;color:#fff;text-align:right}
+.list-item .item-amount.red{color:#f54336}
+.list-item .item-amount.green{color:#26c281}
+.list-item.paid{opacity:0.4}
+
+/* ─── Right Sidebar Sections ─── */
+.rs-section-title{font-size:14px;font-weight:600;color:#fff;margin-bottom:12px}
+.rs-card{
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.10);
+  border-radius:16px;padding:14px;
+  box-shadow:inset 0 1px 1px rgba(255,255,255,0.08);
+}
+
+/* ─── Quick Nav Pills ─── */
+.quick-nav{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px}
+.qn-pill{
+  padding:6px 14px;border-radius:20px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.08);
+  color:#8c90a2;font-size:11.5px;font-weight:500;
+  cursor:pointer;transition:all .2s;
+}
+.qn-pill:hover,.qn-pill.active{
+  border-color:rgba(255,122,34,0.3);
+  color:#ff7a22;background:rgba(255,122,34,0.08);
+}
+
+/* ─── Spend Bar ─── */
+.spend-bar{
+  height:8px;border-radius:4px;
+  background:rgba(255,255,255,0.08);
+  overflow:hidden;margin:8px 0;
+}
+.spend-bar-fill{height:100%;border-radius:4px;transition:width .5s ease}
+
+/* ─── Tab Panel ─── */
+.tab-panel{display:none;animation:fadeUp .4s ease}
+.tab-panel.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* ─── Buttons ─── */
+.btn-primary{
+  padding:8px 18px;border-radius:12px;border:none;
+  background:linear-gradient(135deg,#ff7a22 0%,#ee5300 100%);
+  color:#fff;font-weight:700;font-size:12px;cursor:pointer;
+  font-family:inherit;transition:all .2s;
+  box-shadow:0 4px 14px rgba(255,122,34,0.3);
+}
+.btn-primary:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.btn-ghost{
+  padding:7px 16px;border-radius:10px;
+  background:rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.10);
+  color:#c0c3d2;font-size:12px;font-weight:500;
+  cursor:pointer;font-family:inherit;transition:all .2s;
+}
+.btn-ghost:hover{border-color:rgba(255,255,255,0.2);color:#fff}
+
+/* ─── Mobile ─── */
+.mobile-toggle{display:none;position:fixed;top:14px;left:14px;z-index:200;width:42px;height:42px;border-radius:14px;background:rgba(0,0,0,0.5);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.12);color:#fff;font-size:18px;cursor:pointer;align-items:center;justify-content:center}
+
+@media(max-width:1100px){.right-sidebar{display:none}}
+@media(max-width:900px){
+  .dashboard{padding:0;gap:0}
+  .sidebar-pill{display:none}
+  .mobile-toggle{display:flex}
+  .main-panel{border-radius:0;height:100vh;border:none}
+  .main-content{padding:60px 16px 16px}
+  .metrics-row{grid-template-columns:repeat(2,1fr);gap:8px}
+  .grid-2,.grid-3{grid-template-columns:1fr}
+}
+@media(max-width:520px){
+  .main-content{padding:56px 12px 12px}
+  .metric-pill{padding:12px 10px}
+  .metric-pill .value{font-size:18px}
+  .glass-card{padding:14px;border-radius:16px}
+  .panel-header h1{font-size:18px}
+}
+</style>
+</head>
+<body>
+
+<div class="bg-image"></div>
+<div class="ambient-glow">
+  <div class="glow-warm"></div>
+  <div class="glow-cool"></div>
+</div>
+
+<button class="mobile-toggle" id="mob-toggle">☰</button>
+
+<div class="dashboard">
+  <!-- Sidebar Pill -->
+  <div class="sidebar-pill" id="sidebar-pill">
+    <div class="logo">TH</div>
+    <nav>
+      <button class="nav-btn active" data-tab="overview" onclick="switchTab('overview')">◈<span class="tooltip">Overview</span></button>
+      <button class="nav-btn" data-tab="costs" onclick="switchTab('costs')">$<span class="tooltip">Costs</span></button>
+      <button class="nav-btn" data-tab="finance" onclick="switchTab('finance')">📊<span class="tooltip">Finance</span></button>
+      <button class="nav-btn" data-tab="due" onclick="switchTab('due')">📅<span class="tooltip">Due This Month</span></button>
+      <button class="nav-btn" data-tab="banking" onclick="switchTab('banking')">🏦<span class="tooltip">Banking</span></button>
+      <button class="nav-btn" data-tab="whoop" onclick="switchTab('whoop')">♡<span class="tooltip">Training</span></button>
+      <button class="nav-btn" data-tab="goals" onclick="switchTab('goals')">⊕<span class="tooltip">Goals</span></button>
+      <button class="nav-btn" data-tab="properties" onclick="switchTab('properties')">🏠<span class="tooltip">Properties</span></button>
+    </nav>
+    <button class="nav-btn bottom-icon" onclick="location.reload()">↻<span class="tooltip">Refresh</span></button>
+  </div>
+
+  <!-- Main Glass Panel -->
+  <div class="main-panel">
+    <div class="main-content" id="main-content">
+
+      <!-- OVERVIEW TAB -->
+      <div class="tab-panel active" id="tab-overview">
+        <div class="panel-header">
+          <div>
+            <h1>Overview</h1>
+            <div class="sub" id="ov-updated">Loading...</div>
+          </div>
+          <div class="header-actions">
+            <div class="icon-btn" onclick="location.reload()">↻</div>
+          </div>
+        </div>
+
+        <div class="metrics-row" id="ov-metrics">
+          <div class="metric-pill"><div class="value" id="ov-surplus">—</div><div class="label">Surplus / Mo</div></div>
+          <div class="metric-pill"><div class="value" id="ov-costs">—</div><div class="label">Costs / Mo</div></div>
+          <div class="metric-pill"><div class="value" id="ov-weekly">—</div><div class="label">Surplus / Wk</div></div>
+          <div class="metric-pill"><div class="value orange" id="ov-due-count">—</div><div class="label">Due This Month</div></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="glass-card">
+            <div class="card-title">Due This Week <span class="badge badge-orange" id="ov-week-badge">0</span></div>
+            <div id="ov-week-items"></div>
+          </div>
+          <div class="glass-card">
+            <div class="card-title">Quick Navigate</div>
+            <div class="quick-nav">
+              <span class="qn-pill" onclick="switchTab('costs')">$ Costs</span>
+              <span class="qn-pill" onclick="switchTab('finance')">📊 Finance</span>
+              <span class="qn-pill" onclick="switchTab('due')">📅 Due</span>
+              <span class="qn-pill" onclick="switchTab('banking')">🏦 Banking</span>
+              <span class="qn-pill" onclick="switchTab('whoop')">♡ Training</span>
+              <span class="qn-pill" onclick="switchTab('goals')">⊕ Goals</span>
+              <span class="qn-pill" onclick="switchTab('properties')">🏠 Properties</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-card" style="margin-top:14px">
+          <div class="card-title">Monthly Subscriptions <span class="badge badge-muted" id="ov-sub-count">0</span></div>
+          <div id="ov-subs"></div>
+        </div>
+      </div>
+
+      <!-- COSTS TAB -->
+      <div class="tab-panel" id="tab-costs">
+        <div class="panel-header">
+          <div><h1>Cost Tracking</h1><div class="sub" id="ct-updated">Loading...</div></div>
+        </div>
+        <div class="metrics-row" id="ct-metrics">
+          <div class="metric-pill"><div class="value orange" id="ct-monthly">—</div><div class="label">Monthly</div></div>
+          <div class="metric-pill"><div class="value" id="ct-weekly">—</div><div class="label">Weekly</div></div>
+          <div class="metric-pill"><div class="value" id="ct-annual">—</div><div class="label">Annual</div></div>
+          <div class="metric-pill"><div class="value green" id="ct-surplus">—</div><div class="label">Surplus / Mo</div></div>
+        </div>
+        <div class="glass-card">
+          <div class="card-title">All Costs</div>
+          <div id="ct-table"></div>
+        </div>
+      </div>
+
+      <!-- FINANCE TAB -->
+      <div class="tab-panel" id="tab-finance">
+        <div class="panel-header"><div><h1>Finance</h1><div class="sub">Income & expenses breakdown</div></div></div>
+        <div class="metrics-row" id="fin-metrics">
+          <div class="metric-pill"><div class="value green" id="fin-income">—</div><div class="label">Income / Mo</div></div>
+          <div class="metric-pill"><div class="value red" id="fin-expenses">—</div><div class="label">Expenses / Mo</div></div>
+          <div class="metric-pill"><div class="value" id="fin-surplus">—</div><div class="label">Surplus / Mo</div></div>
+          <div class="metric-pill"><div class="value cyan" id="fin-weekly-surplus">—</div><div class="label">Surplus / Wk</div></div>
+        </div>
+        <div id="fin-content"></div>
+      </div>
+
+      <!-- DUE TAB -->
+      <div class="tab-panel" id="tab-due">
+        <div class="panel-header"><div><h1>Due This Month</h1><div class="sub" id="due-sub">Loading...</div></div></div>
+        <div id="due-content"></div>
+      </div>
+
+      <!-- BANKING TAB -->
+      <div class="tab-panel" id="tab-banking">
+        <div class="panel-header"><div><h1>Banking</h1><div class="sub">PocketSmith sync</div></div></div>
+        <div id="bank-content"><div style="text-align:center;padding:40px;color:#8c90a2">Loading banking data...</div></div>
+      </div>
+
+      <!-- WHOOP TAB -->
+      <div class="tab-panel" id="tab-whoop">
+        <div class="panel-header"><div><h1>Training & Recovery</h1><div class="sub">WHOOP integration</div></div></div>
+        <div id="whoop-content"><div style="text-align:center;padding:40px;color:#8c90a2">Connect to WHOOP to see data</div></div>
+      </div>
+
+      <!-- GOALS TAB -->
+      <div class="tab-panel" id="tab-goals">
+        <div class="panel-header"><div><h1>Goals</h1><div class="sub">Track your progress</div></div></div>
+        <div id="goals-content"><div style="text-align:center;padding:40px;color:#8c90a2">No goals set yet</div></div>
+      </div>
+
+      <!-- PROPERTIES TAB -->
+      <div class="tab-panel" id="tab-properties">
+        <div class="panel-header"><div><h1>Investment Properties</h1><div class="sub">Portfolio tracker</div></div></div>
+        <div id="prop-content"><div style="text-align:center;padding:40px;color:#8c90a2">No properties tracked</div></div>
+      </div>
+
+    </div>
+
+    <!-- Right Sidebar -->
+    <div class="right-sidebar">
+      <div>
+        <div class="rs-section-title">AMEX Spend</div>
+        <div class="rs-card" id="rs-amex">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+            <span style="font-size:20px;font-weight:700;color:#fff" id="rs-amex-spent">$0</span>
+            <span style="font-size:11px;color:#8c90a2" id="rs-amex-target">/ $0</span>
+          </div>
+          <div class="spend-bar"><div class="spend-bar-fill" id="rs-amex-bar" style="width:0;background:linear-gradient(90deg,#ff7a22,#ffa15d)"></div></div>
+          <div style="font-size:10px;color:#8c90a2;margin-top:4px" id="rs-amex-label">Monthly spend</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="rs-section-title">Pay Breakdown</div>
+        <div id="rs-pay-breakdown"></div>
+      </div>
+
+      <div>
+        <div class="rs-section-title">Due This Week</div>
+        <div id="rs-due-week"></div>
+      </div>
+
+      <div style="margin-top:auto">
+        <div class="rs-card" style="text-align:center">
+          <div style="font-size:10px;color:#6b6f82;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">Powered by</div>
+          <div style="font-size:13px;font-weight:600;color:#ff7a22">Tom's Hub</div>
+          <div style="font-size:10px;color:#6b6f82;margin-top:2px">tomshub.vercel.app</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API='/api/finances';
+const fmt2=n=>(n||0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',');
+const fmtInt=n=>Math.round(n||0).toLocaleString();
+let _data=null;
+let _costs=[];
+let _weeklyIncome=0;
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const _today=new Date();
+const _thisMo=_today.getMonth();
+const _thisYr=_today.getFullYear();
+
+function switchTab(id){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const panel=document.getElementById('tab-'+id);
+  if(panel) panel.classList.add('active');
+  const btn=document.querySelector('.nav-btn[data-tab="'+id+'"]');
+  if(btn) btn.classList.add('active');
+}
+
+function actualMonthlyCost(c,mo,yr){
+  if(c.status==='paused') return 0;
+  if(c.frequency==='annual'){
+    if(c.renewalMonth!==undefined&&c.renewalMonth!==null){
+      return c.renewalMonth===mo?c.annual:0;
+    }
+    return (c.annual||0)/12;
+  }
+  if(c.frequency==='sixMonth'){
+    if(c.renewalMonth!==undefined){
+      const months=[(c.renewalMonth)%12,(c.renewalMonth+6)%12];
+      return months.includes(mo)?(c.sixMonth||0):0;
+    }
+    return (c.sixMonth||0)/6;
+  }
+  return c.monthly||0;
+}
+
+function deriveCosts(c){
+  const m=c.monthly||0;
+  return {monthly:m,weekly:m*12/52,annual:m*12};
+}
+
+function nextRenewal(c){
+  if(!c.renewalMonth&&c.renewalMonth!==0&&!c.renewalDay) return null;
+  const d=new Date(_thisYr,c.renewalMonth||0,c.renewalDay||1);
+  if(d<_today) d.setFullYear(_thisYr+1);
+  return d;
+}
+
+function isThisWeek(date){
+  const start=new Date(_today);start.setDate(_today.getDate()-_today.getDay()+1);start.setHours(0,0,0,0);
+  const end=new Date(start);end.setDate(start.getDate()+6);end.setHours(23,59,59,999);
+  return date>=start&&date<=end;
+}
+
+function payBreakdown(items){
+  const map={};
+  items.forEach(i=>{let p=i.payment||'Other';if(p.toUpperCase()==='AMEX')p='Amex';if(!map[p])map[p]=0;map[p]+=i.amount;});
+  return Object.entries(map).sort((a,b)=>b[1]-a[1]);
+}
+
+async function loadData(){
+  try{
+    const r=await fetch(API);
+    _data=await r.json();
+    _costs=_data.costTracking||[];
+    _weeklyIncome=_data.weeklyIncome||0;
+    renderAll();
+  }catch(e){
+    console.error('Load failed:',e);
+    document.getElementById('ov-updated').textContent='Failed to load data';
+  }
+}
+
+function renderAll(){
+  const activeItems=_costs.filter(c=>c.status!=='paused');
+  const totalMonthlyCosts=activeItems.filter(c=>!c.billingDay).reduce((s,c)=>s+actualMonthlyCost(c,_thisMo,_thisYr),0);
+  const monthlyIncome=_weeklyIncome*52/12;
+  const surplus=monthlyIncome-totalMonthlyCosts;
+  const weeklySurplus=surplus*12/52;
+
+  // Overview metrics
+  document.getElementById('ov-surplus').textContent='$'+fmtInt(surplus);
+  document.getElementById('ov-surplus').className='value '+(surplus>=0?'green':'red');
+  document.getElementById('ov-costs').textContent='$'+fmtInt(totalMonthlyCosts);
+  document.getElementById('ov-weekly').textContent='$'+fmtInt(weeklySurplus);
+  document.getElementById('ov-weekly').className='value '+(weeklySurplus>=0?'cyan':'red');
+  document.getElementById('ov-updated').textContent='Last loaded: '+_today.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})+', '+_today.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'});
+
+  // Due this month items
+  const dueItems=[];
+  activeItems.forEach(c=>{
+    const cost=actualMonthlyCost(c,_thisMo,_thisYr);
+    if(cost>0){
+      let pd=null;
+      if(c.renewalDay){pd=new Date(_thisYr,_thisMo,c.renewalDay)}
+      else if(c.billingDay){pd=new Date(_thisYr,_thisMo,c.billingDay)}
+      dueItems.push({name:c.name,amount:cost,date:pd,paid:pd&&pd<=_today,payment:c.payment,category:c.category});
+    }
+  });
+  dueItems.sort((a,b)=>(a.date||new Date(9999,0))-(b.date||new Date(9999,0)));
+  document.getElementById('ov-due-count').textContent=dueItems.length;
+
+  // Week items
+  const weekItems=dueItems.filter(d=>d.date&&isThisWeek(d.date));
+  document.getElementById('ov-week-badge').textContent=weekItems.length;
+  let wh='';
+  if(weekItems.length===0) wh='<div style="text-align:center;padding:20px;color:#6b6f82;font-size:12px">Nothing due this week</div>';
+  else weekItems.forEach(w=>{
+    wh+='<div class="list-item'+(w.paid?' paid':'')+'"><div class="item-icon">'+(w.paid?'✓':'📅')+'</div><div class="item-info"><div class="item-name">'+w.name+'</div><div class="item-sub">'+(w.date?w.date.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}):'')+(w.payment?' · '+w.payment:'')+'</div></div><div class="item-amount">$'+fmt2(w.amount)+'</div></div>';
+  });
+  document.getElementById('ov-week-items').innerHTML=wh;
+
+  // Subscriptions (monthly recurring)
+  const subs=activeItems.filter(c=>c.frequency!=='annual'&&c.frequency!=='sixMonth'&&!c.billingDay);
+  document.getElementById('ov-sub-count').textContent=subs.length;
+  let sh='';
+  subs.sort((a,b)=>(b.monthly||0)-(a.monthly||0));
+  subs.forEach(s=>{
+    sh+='<div class="list-item"><div class="item-icon">'+getCategoryIcon(s.category)+'</div><div class="item-info"><div class="item-name">'+s.name+'</div><div class="item-sub">'+(s.category||'')+(s.payment?' · '+s.payment:'')+'</div></div><div class="item-amount">$'+fmt2(s.monthly)+'</div></div>';
+  });
+  document.getElementById('ov-subs').innerHTML=sh||'<div style="text-align:center;padding:20px;color:#6b6f82;font-size:12px">No subscriptions</div>';
+
+  // Cost tracking tab
+  document.getElementById('ct-monthly').textContent='$'+fmtInt(totalMonthlyCosts);
+  const totalWeekly=activeItems.filter(c=>!c.billingDay).reduce((s,c)=>s+deriveCosts(c).weekly,0);
+  const totalAnnual=activeItems.filter(c=>!c.billingDay).reduce((s,c)=>s+deriveCosts(c).annual,0);
+  document.getElementById('ct-weekly').textContent='$'+fmtInt(totalWeekly);
+  document.getElementById('ct-annual').textContent='$'+fmtInt(totalAnnual);
+  document.getElementById('ct-surplus').textContent='$'+fmtInt(surplus);
+  document.getElementById('ct-updated').textContent='Version '+(_data.costsVersion||0)+' · '+(_data.costsUpdated?new Date(_data.costsUpdated).toLocaleDateString('en-AU'):'—');
+
+  let th='<table class="data-table"><thead><tr><th>Name</th><th>Monthly</th><th>Weekly</th><th>Annual</th><th>Payment</th><th>Category</th></tr></thead><tbody>';
+  const sortedCosts=[...activeItems].sort((a,b)=>(b.monthly||0)-(a.monthly||0));
+  sortedCosts.forEach(c=>{
+    const d=deriveCosts(c);
+    th+='<tr><td style="color:#fff;font-weight:500">'+c.name+(c.billingDay?' <span style="font-size:9px;color:#6b6f82">(AMEX)</span>':'')+'</td><td>$'+fmt2(c.monthly)+'</td><td>$'+fmt2(d.weekly)+'</td><td>$'+fmtInt(d.annual)+'</td><td>'+(c.payment||'—')+'</td><td>'+(c.category||'—')+'</td></tr>';
+  });
+  th+='</tbody></table>';
+  document.getElementById('ct-table').innerHTML=th;
+
+  // Finance tab
+  document.getElementById('fin-income').textContent='$'+fmtInt(monthlyIncome);
+  document.getElementById('fin-expenses').textContent='$'+fmtInt(totalMonthlyCosts);
+  document.getElementById('fin-surplus').textContent='$'+fmtInt(surplus);
+  document.getElementById('fin-surplus').className='value '+(surplus>=0?'green':'red');
+  document.getElementById('fin-weekly-surplus').textContent='$'+fmtInt(weeklySurplus);
+
+  // Due tab
+  document.getElementById('due-sub').textContent=MONTHS[_thisMo]+' '+_thisYr+' · '+dueItems.length+' items';
+  let dh='';
+  const duePayBreak=payBreakdown(dueItems);
+  if(duePayBreak.length){
+    dh+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">';
+    duePayBreak.forEach(([method,amt])=>{
+      dh+='<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:10px;font-size:11px;font-weight:600;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.7)">'+method+' <span style="color:#fff;font-weight:700">$'+fmt2(amt)+'</span></span>';
+    });
+    dh+='</div>';
+  }
+  dueItems.forEach(d=>{
+    dh+='<div class="list-item'+(d.paid?' paid':'')+'"><div class="item-icon">'+(d.paid?'✓':'📅')+'</div><div class="item-info"><div class="item-name">'+d.name+'</div><div class="item-sub">'+(d.date?d.date.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}):'No date')+(d.payment?' · '+d.payment:'')+'</div></div><div class="item-amount">$'+fmt2(d.amount)+'</div></div>';
+  });
+  document.getElementById('due-content').innerHTML=dh||'<div style="text-align:center;padding:40px;color:#6b6f82">Nothing due this month</div>';
+
+  // Right sidebar - AMEX spend
+  const amex=_costs.find(c=>c.name==='AMEX Balance');
+  if(amex){
+    const spent=amex.amexSpentMonth||0;
+    const target=amex.amexTargetMonth||1;
+    const pct=Math.min(100,Math.round(spent/target*100));
+    document.getElementById('rs-amex-spent').textContent='$'+fmtInt(spent);
+    document.getElementById('rs-amex-target').textContent='/ $'+fmtInt(target);
+    document.getElementById('rs-amex-bar').style.width=pct+'%';
+    const barColor=pct>90?'linear-gradient(90deg,#f54336,#ff6b5a)':pct>70?'linear-gradient(90deg,#f0a840,#ffc04d)':'linear-gradient(90deg,#ff7a22,#ffa15d)';
+    document.getElementById('rs-amex-bar').style.background=barColor;
+    document.getElementById('rs-amex-label').textContent=pct+'% of monthly target';
+  }
+
+  // Right sidebar - pay breakdown
+  const pbh=duePayBreak.map(([method,amt])=>'<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:12px"><span style="color:#8c90a2">'+method+'</span><span style="color:#fff;font-weight:600">$'+fmt2(amt)+'</span></div>').join('');
+  document.getElementById('rs-pay-breakdown').innerHTML='<div class="rs-card">'+pbh+'</div>';
+
+  // Right sidebar - due this week
+  let rwh='';
+  if(weekItems.length===0) rwh='<div class="rs-card" style="text-align:center;padding:14px;font-size:11px;color:#6b6f82">All clear</div>';
+  else{
+    rwh='<div class="rs-card">';
+    weekItems.slice(0,4).forEach(w=>{
+      rwh+='<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:12px;'+(w.paid?'opacity:0.4':'')+'"><span style="color:'+(w.paid?'#6b6f82':'#fff')+'">'+w.name+'</span><span style="color:#ff7a22;font-weight:600">$'+fmt2(w.amount)+'</span></div>';
+    });
+    rwh+='</div>';
+  }
+  document.getElementById('rs-due-week').innerHTML=rwh;
+}
+
+function getCategoryIcon(cat){
+  const icons={Housing:'🏠',Transport:'🚗',Insurance:'🛡',Utilities:'⚡',Entertainment:'🎮',Health:'💊',Subscriptions:'📱',Business:'💼',Food:'🍔',Education:'📚'};
+  return icons[cat]||'💰';
+}
+
+document.getElementById('mob-toggle').addEventListener('click',()=>{
+  const pill=document.getElementById('sidebar-pill');
+  pill.style.display=pill.style.display==='none'?'flex':'none';
+});
+
+loadData();
+</script>
+</body>
+</html>
