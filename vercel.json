@@ -1,19 +1,77 @@
 {
   "crons": [
-    { "path": "/api/whoop/sync", "schedule": "0 15 * * *" },
-    { "path": "/api/pocketsmith/sync", "schedule": "0 */6 * * *" },
-    { "path": "/api/cron/sweep", "schedule": "0 21 * * *" }
+    {
+      "path": "/api/whoop/sync",
+      "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/pocketsmith/sync",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/sweep",
+      "schedule": "0 21 * * *"
+    }
   ],
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/privacy", "destination": "/privacy.html" }
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    },
+    {
+      "source": "/privacy",
+      "destination": "/privacy.html"
+    },
+    {
+      "source": "/brain",
+      "destination": "/brain.html"
+    },
+    {
+      "source": "/login",
+      "destination": "/login.html"
+    }
   ],
   "headers": [
     {
       "source": "/api/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "s-maxage=60, stale-while-revalidate=120" }
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
       ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/test/:path*",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/data/:path*",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/node_modules/:path*",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/scripts/:path*",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/package.json",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/middleware.js",
+      "destination": "/",
+      "permanent": false
     }
   ]
 }

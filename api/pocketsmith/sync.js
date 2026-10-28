@@ -1,3 +1,4 @@
+const { requireCronOrAuth } = require('../_auth');
 const PS_BASE = 'https://api.pocketsmith.com/v2';
 const PS_USER = 869698;
 const { pocketSmithGroup } = require('../../lib/tax');
@@ -20,6 +21,8 @@ async function psGet(path) {
 const { kvGet, kvSet, fireWebhook } = require('../db');
 
 module.exports = async function handler(req, res) {
+  res.setHeader('Cache-Control', 'no-store');
+  if (!requireCronOrAuth(req, res)) return;
   try {
     const rawAccts = await psGet(`/users/${PS_USER}/transaction_accounts`);
     const accounts = rawAccts.map(a => {

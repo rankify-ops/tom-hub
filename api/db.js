@@ -36,6 +36,17 @@ async function kvSet(key, value) {
   });
 }
 
+async function kvSetEx(key, seconds, value) {
+  const url = kvUrl();
+  if (!url || !process.env.KV_REST_API_TOKEN) throw new Error('KV not configured');
+  const raw = typeof value === 'string' ? value : JSON.stringify(value);
+  await fetch(url, {
+    method: 'POST',
+    headers: kvHeaders(),
+    body: JSON.stringify(['SET', key, raw, 'EX', String(seconds)]),
+  });
+}
+
 async function kvDel(key) {
   const url = kvUrl();
   if (!url || !process.env.KV_REST_API_TOKEN) return;
@@ -64,4 +75,4 @@ async function fireWebhook(event, payload) {
   } catch (_) {}
 }
 
-module.exports = { kvGet, kvSet, kvDel, fireWebhook };
+module.exports = { kvGet, kvSet, kvSetEx, kvDel, fireWebhook };

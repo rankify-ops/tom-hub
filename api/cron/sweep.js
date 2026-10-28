@@ -1,15 +1,15 @@
 const { kvGet, kvSet, fireWebhook } = require('../db');
+const { cronAuthorised } = require('../../lib/http-auth');
 
 module.exports = async function handler(req, res) {
+  res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'GET') return res.status(405).end();
+  // Vercel cron only: Authorization: Bearer CRON_SECRET (same as Rankify Hub).
+  if (!cronAuthorised(req)) return res.status(401).json({ error: 'Unauthorized' });
 
-  const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret) {
-    const authHeader = req.headers.authorization;
-    if (authHeader !== `Bearer ${cronSecret}` && !req.headers['x-vercel-cron']) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-  }
+  // dry=1: compute what WOULD be sent; never fires webhooks or writes KV.
+  const dry = String((req.query || {}).dry || '') === '1';
+  const save = dry ? async () => {} : kvSet;
 
   const webhookUrl = process.env.GROKBOT_WEBHOOK_URL;
   const webhookKey = process.env.GROKBOT_WEBHOOK_KEY;
@@ -107,7 +107,7 @@ module.exports = async function handler(req, res) {
             }
           }
         }
-        await kvSet('tom_crm_projects', { tracks: projects, fetchedAt: now.toISOString() });
+        await save('tom_crm_projects', { tracks: projects, fetchedAt: now.toISOString() });
       }
     } catch (_) {}
   }
@@ -127,9 +127,13 @@ module.exports = async function handler(req, res) {
             data: { counts: health.counts, checkedAt: health.checkedAt },
           });
         }
-        await kvSet('tom_crm_flow_health', { ...health, polledAt: new Date().toISOString() });
+        await save('tom_crm_flow_health', { ...health, polledAt: new Date().toISOString() });
       }
     } catch (_) {}
+  }
+
+  if (dry) {
+    return res.status(200).json({ success: true, dry: true, alerts: alerts.length, wouldSend: alerts.map(a => a.event) });
   }
 
   if (!alerts.length) {

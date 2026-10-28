@@ -1,3 +1,4 @@
+const { requireCronOrAuth } = require('../_auth');
 const { kvGet, kvSet } = require('../db');
 
 async function refreshTokens(tokens) {
@@ -32,6 +33,8 @@ async function whoopGet(path, accessToken) {
 }
 
 module.exports = async function handler(req, res) {
+  res.setHeader('Cache-Control', 'no-store');
+  if (!requireCronOrAuth(req, res)) return;
   try {
     let tokens = await kvGet('tom_whoop_tokens');
     if (!tokens) {

@@ -33,7 +33,7 @@ test('proposed items bring the loan to about $1,413', () => {
   assert.equal(loan.withProposedAbs, 1413.46);
   assert.equal(loan.proposedHeadline, 'Tom owes Rankify $1,413.46');
   assert.equal(summary.loanSync.live, false);
-  assert.equal(summary.loanSync.label, 'Not live, last synced 20 Oct 2026');
+  assert.match(summary.loanSync.label, /^Not live: Rankify Hub did not answer\. This is the 20 Oct 2026 snapshot/);
 });
 
 test('Div 7A estimate uses 39% and the 8.77% benchmark', () => {

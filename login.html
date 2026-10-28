@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Tom's Hub — Sign in</title>
+<link rel="icon" href="/favicon.ico">
+<link rel="apple-touch-icon" href="/icon-180.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--font:'Inter',-apple-system,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:#111}
+/* ─── PIN Screen ─── */
+.pin-screen{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;transition:opacity 0.5s ease,visibility 0.5s ease}
+.pin-screen.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.pin-bg{position:absolute;inset:0;background:url('wallpaper.jpg') center center/cover no-repeat}
+.pin-bg::after{content:'';position:absolute;inset:0;backdrop-filter:blur(30px) saturate(1.2);-webkit-backdrop-filter:blur(30px) saturate(1.2);background:rgba(0,0,0,0.3)}
+.pin-card{position:relative;z-index:1;background:rgba(255,255,255,0.12);backdrop-filter:blur(40px) saturate(1.5);-webkit-backdrop-filter:blur(40px) saturate(1.5);border:1px solid rgba(255,255,255,0.15);border-radius:24px;padding:48px 40px;text-align:center;width:340px;max-width:90vw;box-shadow:0 24px 80px rgba(0,0,0,0.3)}
+.pin-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);border-radius:24px 24px 0 0}
+.pin-title{font-family:var(--font);font-size:1.1rem;font-weight:700;color:#fff;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px}
+.pin-sub{font-family:var(--font);font-size:0.65rem;color:rgba(255,255,255,0.45);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:28px}
+.pin-divider{width:40px;height:1px;background:rgba(255,255,255,0.15);margin:0 auto 24px}
+.pin-label{font-size:0.6rem;color:rgba(255,255,255,0.5);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:12px}
+.pin-inputs{display:flex;gap:10px;justify-content:center;margin-bottom:20px}
+.pin-input{width:48px;height:56px;border-radius:12px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);color:#fff;font-family:var(--font);font-size:1.4rem;font-weight:600;text-align:center;outline:none;transition:all 0.2s ease;-webkit-appearance:none;-moz-appearance:textfield}
+.pin-input::-webkit-inner-spin-button,.pin-input::-webkit-outer-spin-button{-webkit-appearance:none}
+.pin-input:focus{border-color:rgba(16,185,129,0.5);background:rgba(16,185,129,0.08);box-shadow:0 0 20px rgba(16,185,129,0.1)}
+.pin-input.error{border-color:rgba(220,74,74,0.6);background:rgba(220,74,74,0.08);animation:pinShake 0.4s ease}
+@keyframes pinShake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.pin-error{font-size:0.7rem;color:#e85d5d;height:20px;margin-bottom:4px;opacity:0;transition:opacity 0.2s}
+.pin-error.show{opacity:1}
+@media(max-width:480px){.pin-card{padding:36px 28px;border-radius:20px}}
+</style>
+</head>
+<body>
+<div class="pin-screen" id="pin-screen">
+  <div class="pin-bg"></div>
+  <div class="pin-card">
+    <div class="pin-title">Tom's Hub</div>
+    <div class="pin-sub">Personal Operations</div>
+    <div class="pin-divider"></div>
+    <div class="pin-label">Enter PIN</div>
+    <div class="pin-inputs" id="pin-inputs">
+      <input class="pin-input" type="password" maxlength="1" inputmode="numeric" autocomplete="off" aria-label="PIN digit 1">
+      <input class="pin-input" type="password" maxlength="1" inputmode="numeric" autocomplete="off" aria-label="PIN digit 2">
+      <input class="pin-input" type="password" maxlength="1" inputmode="numeric" autocomplete="off" aria-label="PIN digit 3">
+      <input class="pin-input" type="password" maxlength="1" inputmode="numeric" autocomplete="off" aria-label="PIN digit 4">
+    </div>
+    <div class="pin-error" id="pin-error">Incorrect PIN</div>
+  </div>
+</div>
+<script>
+// Server-checked login (POST /api/auth), same flow as Rankify Hub.
+const pinInputs=document.querySelectorAll('.pin-input');
+const pinError=document.getElementById('pin-error');
+function nextUrl(){
+  const n=new URLSearchParams(location.search).get('next')||'/';
+  return (n.startsWith('/')&&!n.startsWith('//'))?n:'/';
+}
+fetch('/api/auth',{credentials:'include'}).then(r=>r.json()).then(d=>{if(d.authenticated)location.replace(nextUrl())}).catch(()=>{});
+let busy=false;
+function showError(msg){
+  pinError.textContent=msg;pinError.classList.add('show');
+  pinInputs.forEach(p=>{p.classList.add('error');p.value=''});
+  pinInputs[0].focus();
+  setTimeout(()=>{pinError.classList.remove('show');pinInputs.forEach(p=>p.classList.remove('error'))},2500);
+}
+async function checkPin(){
+  const code=[...pinInputs].map(p=>p.value).join('');
+  if(code.length!==4||busy) return;
+  busy=true;
+  try{
+    const r=await fetch('/api/auth',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'login',pin:code})});
+    const d=await r.json().catch(()=>({}));
+    if(r.ok&&d.success){location.replace(nextUrl());return}
+    showError(d.message||d.error||'Incorrect PIN');
+  }catch(e){showError('Network error, try again')}
+  finally{busy=false}
+}
+pinInputs.forEach((input,i)=>{
+  input.addEventListener('input',()=>{
+    input.value=input.value.replace(/[^0-9]/g,'');
+    if(input.value.length>1) input.value=input.value.charAt(0);
+    if(input.value&&i<pinInputs.length-1) pinInputs[i+1].focus();
+    checkPin();
+  });
+  input.addEventListener('keydown',e=>{
+    if(e.key==='Backspace'){
+      if(input.value){input.value=''}
+      else if(i>0){pinInputs[i-1].focus();pinInputs[i-1].value=''}
+      e.preventDefault();
+    } else if(e.key>='0'&&e.key<='9'){
+      input.value='';
+    }
+  });
+});
+setTimeout(()=>pinInputs[0]?.focus(),300);
+</script>
+</body>
+</html>

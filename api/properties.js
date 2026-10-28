@@ -1,8 +1,11 @@
+const { requireAuth } = require('./_auth');
 const { kvGet, kvSet } = require('./db');
 
 const KV_KEY = 'tom_properties';
 
 module.exports = async function handler(req, res) {
+  res.setHeader('Cache-Control', 'no-store');
+  if (!requireAuth(req, res)) return;
   try {
     if (req.method === 'GET') {
       const data = await kvGet(KV_KEY) || { properties: [] };
