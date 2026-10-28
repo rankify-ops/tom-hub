@@ -247,7 +247,7 @@ select.form-input{cursor:pointer;background:#1a1a1a}
 </head>
 <body>
 <!-- PIN Screen -->
-<div class="pin-screen" id="pin-screen">
+<div class="pin-screen hidden" id="pin-screen">
   <div class="pin-bg"></div>
   <div class="pin-card">
     <div class="pin-title">Tom's Hub</div>
@@ -280,6 +280,7 @@ select.form-input{cursor:pointer;background:#1a1a1a}
       <div class="nav-item" data-tab="whoop"><span class="nav-icon">♡</span><span>Training & Recovery</span></div>
       <div class="nav-item" data-tab="checklists"><span class="nav-icon">☑</span><span>Checklists</span></div>
       <div class="nav-item" data-tab="notes"><span class="nav-icon">✎</span><span>Notes</span></div>
+      <a class="nav-item" href="/brain" style="text-decoration:none"><span class="nav-icon">◉</span><span>Brain &amp; To-do</span></a>
       <div class="nav-item" data-tab="goals"><span class="nav-icon">⊕</span><span>Goals</span></div>
       <div class="nav-item" data-tab="properties"><span class="nav-icon">🏠</span><span>Investment Properties</span></div>
       <div class="nav-item" data-tab="licenses"><span class="nav-icon">📜</span><span>Licenses & Certs</span></div>
@@ -706,21 +707,22 @@ select.form-input{cursor:pointer;background:#1a1a1a}
 <script src="/lib/net-position.js"></script>
 <script>
 // ─── PIN Gate ───
-const PIN='6975';
 const pinInputs=document.querySelectorAll('.pin-input');
 const pinError=document.getElementById('pin-error');
 const pinScreen=document.getElementById('pin-screen');
 
-if(sessionStorage.getItem('tom_hub_auth')==='true'){
-  pinScreen.classList.add('hidden');
-}
+pinScreen.classList.add('hidden');
+// Server-side session (tom_session cookie). Middleware already blocks this page
+// without it; this also sends you back to /login if the session expires.
+function toLogin(){location.replace('/login?next='+encodeURIComponent(location.pathname+location.search))}
+(function(){const f=window.fetch.bind(window);window.fetch=async function(u,o){const r=await f(u,Object.assign({credentials:'include'},o||{}));try{const s=typeof u==='string'?u:(u&&u.url)||'';if(r.status===401&&s.indexOf('/api/')!==-1&&s.indexOf('/api/auth')===-1)toLogin()}catch(_){}return r}})();
+fetch('/api/auth').then(r=>r.json()).then(d=>{if(!d.authenticated)toLogin()}).catch(()=>{});
+
 
 function checkPin(){
   const code=[...pinInputs].map(p=>p.value).join('');
   if(code.length===4){
-    if(code===PIN){
-      sessionStorage.setItem('tom_hub_auth','true');
-      pinScreen.classList.add('hidden');
+    toLogin(); if(false){
     } else {
       pinError.classList.add('show');
       pinInputs.forEach(p=>{p.classList.add('error');p.value=''});
@@ -746,7 +748,7 @@ pinInputs.forEach((input,i)=>{
     }
   });
 });
-if(!sessionStorage.getItem('tom_hub_auth')) setTimeout(()=>pinInputs[0]?.focus(),300);
+
 
 // ─── Tab Navigation ───
 function switchTab(tab){
@@ -761,7 +763,7 @@ function switchTab(tab){
   if(tab==='finances') renderFinancesShell();
   if(tab==='tax') renderTax();
 }
-document.querySelectorAll('.nav-item').forEach(item=>{
+document.querySelectorAll('.nav-item[data-tab]').forEach(item=>{
   item.addEventListener('click',()=>switchTab(item.dataset.tab));
 });
 

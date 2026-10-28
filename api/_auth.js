@@ -1,3 +1,5 @@
+const { authorised, cronAuthorised } = require('../lib/http-auth');
+
 function handleCors(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -6,12 +8,18 @@ function handleCors(req, res) {
   return false;
 }
 
+// Dashboard session cookie OR bot bearer key (ROUTINE_SECRET).
 function requireAuth(req, res) {
-  const secret = process.env.ROUTINE_SECRET;
-  if (!secret) { res.status(503).json({ error: 'ROUTINE_SECRET not configured' }); return false; }
-  const auth = (req.headers.authorization || '').replace('Bearer ', '');
-  if (auth !== secret) { res.status(401).json({ error: 'Unauthorized' }); return false; }
-  return true;
+  if (authorised(req)) return true;
+  res.status(401).json({ error: 'Not authenticated' });
+  return false;
 }
 
-module.exports = { handleCors, requireAuth };
+// Vercel cron (Bearer CRON_SECRET), or a signed-in session / bot key.
+function requireCronOrAuth(req, res) {
+  if (cronAuthorised(req) || authorised(req)) return true;
+  res.status(401).json({ error: 'Not authenticated' });
+  return false;
+}
+
+module.exports = { handleCors, requireAuth, requireCronOrAuth };

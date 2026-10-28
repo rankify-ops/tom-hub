@@ -1,4 +1,4 @@
-const { kvSet } = require('../db');
+const { kvGet, kvSet, kvDel } = require('../db');
 
 module.exports = async function handler(req, res) {
   try {
@@ -11,6 +11,14 @@ module.exports = async function handler(req, res) {
     if (!code) {
       return res.redirect('/?whoop=error&msg=no_code');
     }
+
+    // Must match a one-time state issued by /api/whoop/auth (signed-in only).
+    const state = String(req.query.state || '');
+    const stateKey = 'tom_whoop_oauth_state:' + state;
+    if (!/^[a-f0-9]{48}$/.test(state) || !(await kvGet(stateKey))) {
+      return res.status(401).json({ error: 'Invalid or expired OAuth state' });
+    }
+    await kvDel(stateKey);
 
     const clientId = process.env.WHOOP_CLIENT_ID;
     const clientSecret = process.env.WHOOP_CLIENT_SECRET;

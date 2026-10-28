@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Personal Brain — Tom Hub</title>
+<link rel="icon" href="/favicon.ico">
+<link rel="apple-touch-icon" href="/icon-180.png">
+<meta name="theme-color" content="#000000">
+<meta name="robots" content="noindex,nofollow">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+:root{--text:#e8e8e8;--muted:#999;--faint:#777;--white:#fff;--teal:#2dd4a8;--teal-glow:rgba(45,212,168,.15);--teal-subtle:rgba(45,212,168,.07);--red:#ef6b6b;--amber:#f0a840;--green:#34d399;--blue:#60a5fa;--purple:#a78bfa;--pink:#f472b6;--glass:rgba(255,255,255,.08);--glass-h:rgba(255,255,255,.12);--border:rgba(255,255,255,.12);--border-s:rgba(255,255,255,.08);--font:'Inter',-apple-system,sans-serif;--r:16px}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;background:url('/wallpaper.jpg') center/cover fixed no-repeat #0a0a0a}
+body::before{content:'';position:fixed;inset:0;background:rgba(10,10,10,.82);z-index:0;pointer-events:none}
+body>*{position:relative;z-index:1}
+.pin{position:fixed;inset:0;z-index:999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px)}
+.pin.hidden{display:none}
+.pin-card{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.15);border-radius:24px;padding:40px 32px;text-align:center;width:320px;max-width:90vw}
+.pin-card h2{font-size:1rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:18px}
+.pin-card input{width:160px;height:48px;border-radius:12px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:#fff;font-size:1.4rem;text-align:center;letter-spacing:.4em;outline:none}
+.pin-err{color:var(--red);font-size:.75rem;height:18px;margin-top:10px}
+.topbar{position:sticky;top:0;z-index:50;background:rgba(15,15,30,.85);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border-bottom:1px solid var(--border);padding:12px 20px}
+.crumb{font-size:.75rem;color:var(--muted);margin-bottom:6px}.crumb a{color:var(--teal);text-decoration:none}
+.title-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-size:1.25rem;font-weight:700;color:#fff}h1 span{color:var(--teal)}
+.stats{display:flex;gap:8px;flex-wrap:wrap}
+.stat{background:var(--glass);border:1px solid var(--border-s);border-radius:999px;padding:4px 10px;font-size:.72rem;color:var(--muted)}.stat b{color:#fff}
+.tabs{display:flex;gap:6px;margin-top:10px;overflow-x:auto;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;padding:7px 14px;border-radius:10px;border:1px solid var(--border-s);background:var(--glass);color:var(--muted);font-size:.8rem;cursor:pointer;font-family:var(--font)}
+.tab.active{background:var(--teal-glow);color:var(--teal);border-color:rgba(45,212,168,.35)}
+main{padding:20px;max-width:1200px;margin:0 auto}
+.panel{display:none}.panel.active{display:block}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+.card{background:var(--glass);border:1px solid var(--border);border-radius:var(--r);padding:16px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+.card h3{font-size:.95rem;color:#fff;margin-bottom:6px}
+.meta{font-size:.72rem;color:var(--muted);margin-bottom:8px;display:flex;gap:6px;flex-wrap:wrap}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.66rem;font-weight:600;border:1px solid var(--border-s)}
+.p-red{color:var(--red);background:rgba(239,107,107,.1)}.p-amber{color:var(--amber);background:rgba(240,168,64,.1)}.p-green{color:var(--green);background:rgba(52,211,153,.1)}.p-blue{color:var(--blue);background:rgba(96,165,250,.1)}.p-grey{color:var(--muted)}.p-purple{color:var(--purple);background:rgba(167,139,250,.1)}
+.card ol,.card ul{padding-left:18px;font-size:.8rem;color:var(--text);line-height:1.55}
+.card p{font-size:.8rem;line-height:1.5}
+.src{font-size:.68rem;color:var(--faint);margin-top:8px;word-break:break-word}.src a{color:var(--blue)}
+.section-h{font-size:.7rem;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:22px 0 10px}
+.todo-add{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.todo-add input,.todo-add select{background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;color:#fff;padding:9px 12px;font-family:var(--font);font-size:.85rem}
+.todo-add input[type=text]{flex:1 1 260px}
+.btn{background:var(--teal-glow);color:var(--teal);border:1px solid rgba(45,212,168,.35);border-radius:10px;padding:8px 14px;font-size:.8rem;cursor:pointer;font-family:var(--font)}
+.btn.red{background:rgba(239,107,107,.1);color:var(--red);border-color:rgba(239,107,107,.3)}
+.todo{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border-s)}
+.todo:last-child{border-bottom:0}
+.todo input[type=checkbox]{margin-top:3px;width:18px;height:18px;accent-color:var(--teal)}
+.todo .t{font-size:.88rem;color:#fff}.todo.done .t{text-decoration:line-through;color:var(--faint)}
+.todo .d{font-size:.72rem;color:var(--muted);margin-top:3px}
+.todo .x{margin-left:auto;background:none;border:0;color:var(--faint);cursor:pointer;font-size:1rem}
+table{width:100%;border-collapse:collapse;font-size:.8rem}th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--border-s);vertical-align:top}th{color:var(--muted);font-weight:500;font-size:.7rem;text-transform:uppercase;letter-spacing:.08em}
+.tbl-wrap{overflow-x:auto}
+#map{width:100%;height:560px;border-radius:var(--r);background:rgba(0,0,0,.25);border:1px solid var(--border)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.72rem;color:var(--muted);margin-top:8px}.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.empty{color:var(--faint);font-size:.8rem;padding:14px}
+@media(max-width:640px){main{padding:12px}.grid{grid-template-columns:1fr}h1{font-size:1.05rem}#map{height:420px}th:nth-child(4),td:nth-child(4){display:none}}
+</style>
+</head>
+<body>
+<div class="pin hidden" id="pin"><div class="pin-card"><h2>Tom Hub</h2><input id="pin-in" type="password" inputmode="numeric" maxlength="4" autocomplete="off"><div class="pin-err" id="pin-err"></div></div></div>
+
+<div class="topbar">
+  <div class="crumb"><a href="/">Tom Hub</a> / Personal Brain</div>
+  <div class="title-row">
+    <h1>Personal <span>Brain</span></h1>
+    <div class="stats" id="stats"></div>
+  </div>
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-p="todo">To-do</button>
+    <button class="tab" data-p="compliance">Compliance</button>
+    <button class="tab" data-p="queue">Approval queue</button>
+    <button class="tab" data-p="sops">SOPs</button>
+    <button class="tab" data-p="flows">Flows</button>
+    <button class="tab" data-p="runs">Run log</button>
+    <button class="tab" data-p="map">Brain map</button>
+    <button class="tab" data-p="shared">Shared</button>
+  </div>
+</div>
+
+<main>
+  <section class="panel active" id="p-todo">
+    <div class="todo-add">
+      <input type="text" id="todo-text" placeholder="Add a personal to-do…">
+      <input type="date" id="todo-due">
+      <select id="todo-pri"><option value="high">High</option><option value="med" selected>Medium</option><option value="low">Low</option></select>
+      <button class="btn" onclick="addTodo()">Add</button>
+    </div>
+    <div class="card" style="padding:0" id="todo-list"></div>
+    <div class="section-h">Done</div>
+    <div class="card" style="padding:0" id="todo-done"></div>
+  </section>
+
+  <section class="panel" id="p-compliance">
+    <div class="section-h">Licences &amp; renewals (from Tom Hub Licences)</div>
+    <div class="card tbl-wrap"><table id="lic-table"></table></div>
+    <div class="section-h">Firearms licence obligations (QLD) — recurring checks</div>
+    <div class="grid" id="obligations"></div>
+  </section>
+
+  <section class="panel" id="p-queue"><div class="grid" id="queue"></div></section>
+  <section class="panel" id="p-sops"><div class="grid" id="sops"></div></section>
+  <section class="panel" id="p-flows"><div class="card tbl-wrap"><table id="flows"></table></div></section>
+  <section class="panel" id="p-runs"><div class="card tbl-wrap"><table id="runs"></table></div></section>
+  <section class="panel" id="p-map">
+    <svg id="map"></svg>
+    <div class="legend"><span><i style="background:#2dd4a8"></i>Brain</span><span><i style="background:#60a5fa"></i>Bot</span><span><i style="background:#a78bfa"></i>SOP</span><span><i style="background:#f0a840"></i>Flow</span><span><i style="background:#f472b6"></i>Shared link</span></div>
+  </section>
+  <section class="panel" id="p-shared"><div class="grid" id="shared"></div></section>
+</main>
+
+<script>
+document.getElementById('pin').classList.add('hidden');
+// Server-side session (tom_session cookie). Middleware already blocks this page
+// without it; this also sends you back to /login if the session expires.
+function toLogin(){location.replace('/login?next='+encodeURIComponent(location.pathname+location.search))}
+(function(){const f=window.fetch.bind(window);window.fetch=async function(u,o){const r=await f(u,Object.assign({credentials:'include'},o||{}));try{const s=typeof u==='string'?u:(u&&u.url)||'';if(r.status===401&&s.indexOf('/api/')!==-1&&s.indexOf('/api/auth')===-1)toLogin()}catch(_){}return r}})();
+fetch('/api/auth').then(r=>r.json()).then(d=>{if(!d.authenticated)toLogin()}).catch(()=>{});
+
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmtD=d=>{if(!d)return '—';const x=new Date(d.length===10?d+'T00:00:00+10:00':d);return x.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric',timeZone:'Australia/Brisbane'})};
+const fmtDT=d=>d?new Date(d).toLocaleString('en-AU',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit',timeZone:'Australia/Brisbane'})+' AEST':'—';
+const daysTo=d=>{if(!d)return null;const t=new Date(d+'T00:00:00+10:00');return Math.ceil((t-Date.now())/864e5)};
+const statusPill=s=>{const m={overdue:'p-red',urgent:'p-red',open:'p-amber',pending:'p-amber',unknown:'p-grey',ok:'p-green',approved:'p-green',done:'p-green',rejected:'p-grey',active:'p-green',watch:'p-blue',planned:'p-blue',live:'p-green'};return `<span class="pill ${m[s]||'p-grey'}">${esc(s)}</span>`};
+const priPill=p=>`<span class="pill ${p==='high'?'p-red':p==='low'?'p-grey':'p-amber'}">${esc(p)}</span>`;
+
+let S={todos:[],brain:{},licenses:[]};
+document.getElementById('tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(!b)return;document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t===b));document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id==='p-'+b.dataset.p));history.replaceState(null,'','#'+b.dataset.p);if(b.dataset.p==='map')drawMap()});
+if(location.hash){const b=document.querySelector('.tab[data-p="'+location.hash.slice(1)+'"]');if(b)b.click()}
+
+async function load(){
+  const [b,l]=await Promise.all([fetch('/api/brain?t='+Date.now()).then(r=>r.json()),fetch('/api/licenses?t='+Date.now()).then(r=>r.json()).catch(()=>({licenses:[]}))]);
+  S.todos=b.todos||[];S.brain=b.brain||{};S.licenses=l.licenses||[];render();
+}
+function render(){renderStats();renderTodos();renderCompliance();renderQueue();renderSops();renderFlows();renderRuns();renderShared();if(document.getElementById('p-map').classList.contains('active'))drawMap()}
+function renderStats(){
+  const open=S.todos.filter(t=>!t.done).length,q=(S.brain.queue||[]).filter(x=>x.status==='pending').length;
+  const soon=S.licenses.filter(l=>{const d=daysTo(l.expiryDate);return d!=null&&d<=30}).length;
+  document.getElementById('stats').innerHTML=`<span class="stat"><b>${open}</b> to-dos</span><span class="stat"><b>${q}</b> awaiting approval</span><span class="stat"><b>${soon}</b> due ≤30d</span><span class="stat"><b>${(S.brain.sops||[]).length}</b> SOPs</span><span class="stat"><b>${(S.brain.flows||[]).length}</b> flows</span>`;
+}
+const PR={high:0,med:1,low:2};
+function renderTodos(){
+  const row=t=>`<div class="todo ${t.done?'done':''}"><input type="checkbox" ${t.done?'checked':''} onchange="toggleTodo('${t.id}')"><div><div class="t">${esc(t.text)}</div><div class="d">${priPill(t.priority||'med')} ${t.due?'Due '+fmtD(t.due)+(t.done?'':(daysTo(t.due)<0?' · <span style="color:var(--red)">overdue</span>':'')):''} ${t.owner?'· '+esc(t.owner):''} ${t.link?'· '+esc(t.link):''}</div>${t.note?`<div class="d">${esc(t.note)}</div>`:''}</div><button class="x" title="Delete" onclick="delTodo('${t.id}')">×</button></div>`;
+  const open=S.todos.filter(t=>!t.done).sort((a,b)=>(PR[a.priority]??1)-(PR[b.priority]??1)||String(a.due||'9999').localeCompare(String(b.due||'9999')));
+  const done=S.todos.filter(t=>t.done);
+  document.getElementById('todo-list').innerHTML=open.map(row).join('')||'<div class="empty">Nothing open.</div>';
+  document.getElementById('todo-done').innerHTML=done.map(row).join('')||'<div class="empty">Nothing done yet.</div>';
+}
+async function saveTodos(){await fetch('/api/brain',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save_todos',todos:S.todos})})}
+function addTodo(){const t=document.getElementById('todo-text').value.trim();if(!t)return;S.todos.unshift({id:'td_'+Date.now(),text:t,due:document.getElementById('todo-due').value||null,priority:document.getElementById('todo-pri').value,owner:'Thomas',done:false,created:new Date().toISOString()});document.getElementById('todo-text').value='';render();saveTodos()}
+function toggleTodo(id){const t=S.todos.find(x=>x.id===id);if(!t)return;t.done=!t.done;t.doneAt=t.done?new Date().toISOString():null;render();saveTodos()}
+function delTodo(id){if(!confirm('Delete this to-do?'))return;S.todos=S.todos.filter(x=>x.id!==id);render();saveTodos()}
+function renderCompliance(){
+  const L=[...S.licenses].sort((a,b)=>String(a.expiryDate).localeCompare(String(b.expiryDate)));
+  document.getElementById('lic-table').innerHTML='<tr><th>Item</th><th>Expires / due</th><th>Days</th><th>Notes</th></tr>'+L.map(l=>{const d=daysTo(l.expiryDate);const c=d==null?'':d<0?'p-red':d<=30?'p-red':d<=90?'p-amber':'p-green';return `<tr><td><b style="color:#fff">${esc(l.name)}</b><br><span style="color:var(--faint);font-size:.7rem">Alerts: ${(l.alertDays||[]).join('/')} days</span></td><td>${fmtD(l.expiryDate)}</td><td><span class="pill ${c}">${d==null?'—':d}</span></td><td style="color:var(--muted)">${esc(l.notes||'')}</td></tr>`}).join('');
+  document.getElementById('obligations').innerHTML=(S.brain.obligations||[]).map(o=>`<div class="card"><h3>${esc(o.title)}</h3><div class="meta">${statusPill(o.status)}<span class="pill p-blue">${esc(o.recurrence)}</span>${o.nextCheck?`<span class="pill p-grey">next ${fmtD(o.nextCheck)}</span>`:''}<span class="pill p-purple">${esc(o.owner)}</span></div><p>${esc(o.rule)}</p>${o.action?`<p style="margin-top:6px;color:var(--amber)">Action: ${esc(o.action)}</p>`:''}<div class="src">Source: ${(o.sources||[]).map(s=>`<a href="${esc(s)}" target="_blank" rel="noopener">${esc(s.replace(/^https?:\/\//,''))}</a>`).join(' · ')}</div></div>`).join('')||'<div class="empty">No obligations yet.</div>';
+}
+function renderQueue(){
+  const Q=[...(S.brain.queue||[])].sort((a,b)=>(a.status==='pending'?0:1)-(b.status==='pending'?0:1));
+  document.getElementById('queue').innerHTML=Q.map(q=>`<div class="card"><h3>${esc(q.title)}</h3><div class="meta">${statusPill(q.status)}<span class="pill p-purple">${esc(q.owner)}</span>${q.urgent?'<span class="pill p-red">urgent</span>':''}<span class="pill p-grey">${fmtDT(q.created)}</span></div><p>${esc(q.detail)}</p>${q.confidence!=null?`<div class="src">Bot can do it: ${q.confidence}% confidence</div>`:''}${q.status==='pending'?`<div style="display:flex;gap:8px;margin-top:10px"><button class="btn" onclick="decide('${q.id}','approved')">Approve</button><button class="btn red" onclick="decide('${q.id}','rejected')">Reject</button></div>`:`<div class="src">Decided ${fmtDT(q.decidedAt)}</div>`}</div>`).join('')||'<div class="empty">Queue is empty.</div>';
+}
+async function decide(id,decision){const r=await fetch('/api/brain',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'queue_decide',id,decision})});if(r.ok)load()}
+function renderSops(){
+  document.getElementById('sops').innerHTML=(S.brain.sops||[]).map(s=>`<div class="card"><h3>${esc(s.title)}</h3><div class="meta"><span class="pill p-purple">${esc(s.owner)}</span><span class="pill p-blue">${esc(s.trigger)}</span>${statusPill(s.status||'active')}</div><ol>${(s.steps||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ol>${(s.branches||[]).length?`<div class="section-h" style="margin:10px 0 4px">Branches</div><ul>${s.branches.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}${(s.sources||[]).length?`<div class="src">Source: ${s.sources.map(u=>`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(u.replace(/^https?:\/\//,''))}</a>`).join(' · ')}</div>`:''}</div>`).join('');
+}
+function renderFlows(){
+  document.getElementById('flows').innerHTML='<tr><th>Flow</th><th>Owner</th><th>Schedule</th><th>SOP</th><th>Status</th></tr>'+(S.brain.flows||[]).map(f=>`<tr><td><b style="color:#fff">${esc(f.name)}</b><br><span style="color:var(--faint);font-size:.72rem">${esc(f.what||'')}</span></td><td>${esc(f.owner)}</td><td>${esc(f.schedule)}</td><td>${esc(f.sop||'—')}</td><td>${statusPill(f.status)}</td></tr>`).join('');
+}
+function renderRuns(){
+  const R=S.brain.runs||[];
+  document.getElementById('runs').innerHTML='<tr><th>When</th><th>Flow</th><th>Summary</th><th>Result</th></tr>'+(R.map(r=>`<tr><td>${fmtDT(r.at)}</td><td>${esc(r.flow)}</td><td>${esc(r.summary)}</td><td>${statusPill(r.result)}</td></tr>`).join('')||'<tr><td colspan="4" class="empty">No runs yet.</td></tr>');
+}
+function renderShared(){
+  document.getElementById('shared').innerHTML=(S.brain.shared||[]).map(s=>`<div class="card"><h3>${esc(s.title)}</h3><div class="meta"><span class="pill p-pink" style="color:var(--pink)">${esc(s.direction)}</span><span class="pill p-purple">${esc(s.owner)}</span></div><p>${esc(s.carries)}</p><p style="margin-top:6px;color:var(--muted)">${esc(s.rule)}</p><div style="margin-top:10px"><a class="btn" style="text-decoration:none;display:inline-block" href="${esc(s.url)}" target="_blank" rel="noopener">Open ${esc(s.target)} ↗</a></div></div>`).join('');
+}
+function drawMap(){
+  const svg=d3.select('#map');svg.selectAll('*').remove();
+  const el=document.getElementById('map'),W=el.clientWidth,H=el.clientHeight;
+  const B=S.brain,nodes=[{id:'brain',label:'Personal Brain',type:'brain'}],links=[];
+  const bots=new Set();(B.sops||[]).forEach(s=>bots.add(s.owner));(B.flows||[]).forEach(f=>bots.add(f.owner));
+  bots.forEach(b=>{nodes.push({id:'bot:'+b,label:b,type:'bot'});links.push({source:'brain',target:'bot:'+b})});
+  (B.sops||[]).forEach(s=>{nodes.push({id:'sop:'+s.id,label:s.title,type:'sop'});links.push({source:'bot:'+s.owner,target:'sop:'+s.id})});
+  (B.flows||[]).forEach(f=>{nodes.push({id:'flow:'+f.id,label:f.name,type:'flow'});const sop=(B.sops||[]).find(s=>s.title===f.sop);links.push({source:sop?'sop:'+sop.id:'bot:'+f.owner,target:'flow:'+f.id})});
+  (B.shared||[]).forEach(s=>{nodes.push({id:'sh:'+s.id,label:s.target,type:'shared'});links.push({source:'brain',target:'sh:'+s.id})});
+  const col={brain:'#2dd4a8',bot:'#60a5fa',sop:'#a78bfa',flow:'#f0a840',shared:'#f472b6'},rad={brain:18,bot:12,sop:7,flow:6,shared:11};
+  const g=svg.append('g');svg.call(d3.zoom().scaleExtent([.3,3]).on('zoom',e=>g.attr('transform',e.transform)));
+  const sim=d3.forceSimulation(nodes).force('link',d3.forceLink(links).id(d=>d.id).distance(d=>d.target.type==='bot'||d.target.type==='shared'?110:60)).force('charge',d3.forceManyBody().strength(-180)).force('center',d3.forceCenter(W/2,H/2)).force('collide',d3.forceCollide(16));
+  const link=g.append('g').selectAll('line').data(links).join('line').attr('stroke',d=>(d.target.type||'')==='shared'?'#f472b6':'rgba(255,255,255,.18)').attr('stroke-dasharray',d=>(d.target.type||'')==='shared'?'5,4':null);
+  const node=g.append('g').selectAll('g').data(nodes).join('g').call(d3.drag().on('start',(e,d)=>{if(!e.active)sim.alphaTarget(.3).restart();d.fx=d.x;d.fy=d.y}).on('drag',(e,d)=>{d.fx=e.x;d.fy=e.y}).on('end',(e,d)=>{if(!e.active)sim.alphaTarget(0);d.fx=null;d.fy=null}));
+  node.append('circle').attr('r',d=>rad[d.type]).attr('fill',d=>col[d.type]).attr('fill-opacity',.85).attr('stroke','rgba(255,255,255,.5)');
+  node.append('text').text(d=>d.label.length>28?d.label.slice(0,26)+'…':d.label).attr('x',d=>rad[d.type]+4).attr('y',4).attr('fill','#ddd').attr('font-size',d=>d.type==='sop'||d.type==='flow'?9:11);
+  sim.on('tick',()=>{link.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y).attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);node.attr('transform',d=>`translate(${d.x},${d.y})`)});
+}
+document.getElementById('todo-text').addEventListener('keydown',e=>{if(e.key==='Enter')addTodo()});
+load();
+</script>
+</body>
+</html>

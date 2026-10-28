@@ -1,5 +1,6 @@
 const { kvGet } = require('../db');
 const { handleCors } = require('../_auth');
+const { safeEqual } = require('../../lib/safe-equal');
 
 const KV_FINANCES = 'tom_finances';
 const KV_COSTS = 'tom_cost_tracking';
@@ -8,7 +9,7 @@ function requireHubKey(req, res) {
   const key = process.env.HUB_SHARED_KEY;
   if (!key) { res.status(503).json({ error: 'HUB_SHARED_KEY not configured' }); return false; }
   const provided = req.headers['x-hub-key'] || '';
-  if (provided !== key) { res.status(401).json({ error: 'Unauthorized' }); return false; }
+  if (!provided || !safeEqual(String(provided), key)) { res.status(401).json({ error: 'Unauthorized' }); return false; }
   return true;
 }
 

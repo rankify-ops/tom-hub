@@ -2,7 +2,7 @@
 // Holds ADMIN_API_KEY server-side so bots/editor never need the admin key.
 // Only GET requests are proxied; everything else is rejected.
 
-const { handleCors } = require('../_auth');
+const { handleCors, requireAuth } = require('../_auth');
 
 const CRM_BASE = 'https://rankify-crm.vercel.app';
 
@@ -13,11 +13,7 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'Editor proxy is read-only (GET only)' });
   }
 
-  const hubSecret = process.env.ROUTINE_SECRET;
-  const auth = (req.headers.authorization || '').replace('Bearer ', '');
-  if (!hubSecret || auth !== hubSecret) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+  if (!requireAuth(req, res)) return;
 
   const adminKey = process.env.CRM_ADMIN_API_KEY;
   if (!adminKey) {

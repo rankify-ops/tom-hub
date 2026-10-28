@@ -1,3 +1,4 @@
+const { requireAuth } = require('../_auth');
 const { kvGet, kvSet } = require('../db');
 
 async function refreshTokens(tokens) {
@@ -47,6 +48,8 @@ function toDateKey(isoStr) {
 }
 
 module.exports = async function handler(req, res) {
+  res.setHeader('Cache-Control', 'no-store');
+  if (!requireAuth(req, res)) return;
   try {
     let tokens = await kvGet('tom_whoop_tokens');
     if (!tokens) return res.status(200).json({ error: 'not_connected' });

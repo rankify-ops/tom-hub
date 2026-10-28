@@ -1,6 +1,9 @@
+const { requireAuth } = require('../_auth');
 const { kvGet } = require('../db');
 
 module.exports = async function handler(req, res) {
+  res.setHeader('Cache-Control', 'no-store');
+  if (!requireAuth(req, res)) return;
   try {
     const [history, meta] = await Promise.all([
       kvGet('tom_whoop_history'),

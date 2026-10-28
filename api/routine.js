@@ -12,6 +12,8 @@ const SPACES = {
   training:   { key: 'tom_training',      default: { templates: [], logs: [] } },
   licenses:   { key: 'tom_licenses',      default: { licenses: [] } },
   properties: { key: 'tom_properties',    default: { properties: [], valueLog: [] } },
+  todos:      { key: 'tom_todos',         default: { todos: [] } },
+  brain:      { key: 'tom_brain',         default: { sops: [], flows: [], runs: [], queue: [], shared: [] } },
 };
 
 module.exports = async function handler(req, res) {

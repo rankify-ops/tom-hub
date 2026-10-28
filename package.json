@@ -4,6 +4,10 @@
   "private": true,
   "engines": { "node": ">=18" },
   "scripts": {
-    "test": "node --test test/tax.test.js test/rankify-loan.test.js test/net-position.test.js"
+    "test": "node --test test/tax.test.js test/rankify-loan.test.js test/net-position.test.js test/auth.test.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2"
   }
 }

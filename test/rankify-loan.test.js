@@ -5,7 +5,9 @@ const path = require('path');
 const config = require('../lib/tax-config');
 const tax = require('../lib/tax');
 const {
+  BOOKS_URL,
   LOAN_URL,
+  fromBooks,
   normalizeDirectorLoan,
   fetchDirectorLoan,
   resetDirectorLoanCache,
@@ -128,7 +130,7 @@ test('applying the feed replaces headlines and Div 7A without recomputing tax', 
   assert.equal(summary.directorLoan.bookedSigned, -4393.91);
   assert.equal(summary.div7a.booked.tax, 1713.62);
   assert.equal(live.loanSync.live, true);
-  assert.equal(live.loanSync.label, 'Matches Rankify Hub');
+  assert.equal(live.loanSync.label, 'Live from Rankify Hub');
   assert.equal(live.loanSync.configVersion, 'fy27-1');
   assert.equal(live.directorLoan.bookedSigned, -10);
   assert.equal(live.directorLoan.headline, 'Tom owes Rankify $10.00');
@@ -154,6 +156,7 @@ test('fetch sends the hub key, caches briefly, and never returns the key', async
   const cache = { at: 0, key: '', data: null };
   let now = 1000000;
   const fetchImpl = async (url, opts) => {
+    if (url === BOOKS_URL) return { ok: false, status: 404, json: async () => ({}) };
     calls.push({ url, key: opts.headers['x-hub-key'], redirect: opts.redirect });
     return { ok: true, status: 200, json: async () => sample };
   };
@@ -219,6 +222,7 @@ test('missing key, errors, redirects, and invalid JSON do not become a live loan
   assert.equal(threw.reason, 'error');
 });
 
+process.env.ROUTINE_SECRET = process.env.ROUTINE_SECRET || 'test-bot-key';
 test('the tax API uses a mocked feed, then the dated fallback, and never leaks the key', async () => {
   const handler = require('../api/tax');
   const secret = 'do-not-leak-this-key';
@@ -232,6 +236,7 @@ test('the tax API uses a mocked feed, then the dated fallback, and never leaks t
   resetDirectorLoanCache();
 
   global.fetch = async (url, opts) => {
+    if (url === BOOKS_URL) return { ok: false, status: 404, json: async () => ({}) };
     assert.equal(url, LOAN_URL);
     assert.equal(opts.headers['x-hub-key'], secret);
     return {
@@ -241,11 +246,11 @@ test('the tax API uses a mocked feed, then the dated fallback, and never leaks t
     };
   };
   const live = mockRes();
-  await handler({ method: 'GET' }, live);
+  await handler({ method: 'GET', headers: { authorization: 'Bearer test-bot-key' } }, live);
   assert.equal(live.statusCode, 200);
   assert.equal(live.headers['Cache-Control'], 'private, no-store');
   assert.equal(live.body.loanSync.live, true);
-  assert.equal(live.body.loanSync.label, 'Matches Rankify Hub');
+  assert.match(live.body.loanSync.label, /^Live from Rankify Hub · synced \d+ \w+ \d{4}, \d+:\d\d [ap]m AEST$/);
   assert.equal(live.body.directorLoan.bookedSigned, -10);
   assert.equal(live.body.directorLoan.headline, 'Tom owes Rankify $10.00');
   assert.equal(live.body.div7a.booked.tax, 3);
@@ -256,9 +261,10 @@ test('the tax API uses a mocked feed, then the dated fallback, and never leaks t
   resetDirectorLoanCache();
   global.fetch = async () => ({ ok: false, status: 500, json: async () => ({}) });
   const fallback = mockRes();
-  await handler({ method: 'GET' }, fallback);
+  await handler({ method: 'GET', headers: { authorization: 'Bearer test-bot-key' } }, fallback);
   assert.equal(fallback.body.loanSync.live, false);
-  assert.equal(fallback.body.loanSync.label, 'Not live, last synced 20 Oct 2026');
+  assert.equal(fallback.body.loanSync.stale, true);
+  assert.match(fallback.body.loanSync.label, /^Not live: Rankify Hub did not answer\. This is the 20 Oct 2026 snapshot/);
   assert.equal(fallback.body.directorLoan.bookedSigned, -4393.91);
   assert.equal(fallback.body.div7a.booked.tax, 1713.62);
   assert.equal(fallback.body.companyTax, null);
@@ -290,6 +296,56 @@ test('browser files never mention the shared key or the Rankify loan URL', () =>
   assert.ok(labels.includes('Checklists') && labels.includes('Notes') && labels.includes('Goals'));
   assert.ok(labels.includes('Investment Properties') && labels.includes('Licenses & Certs'));
   assert.match(html, /Matches Rankify Hub/);
-  assert.match(html, /Not live, last synced/);
+  assert.match(html, /loan-sync/);
   assert.match(html, /Hiatus and ITM stay separate/);
+});
+
+const books = {
+  asOf: '2026-10-28',
+  tax: {
+    loan: { booked: -1881.42, withProposed: 1186.92, expensesTomPaid: 12502.85, reimbursements: 16832, reverseReimbursements: 2447.73, netPaidToTom: 14384.27 },
+    div7a: {
+      booked: { debit: 1881.42, personalTax: 733.75, annualInterest: 165, personalRate: 0.39, benchmarkRate: 0.0877 },
+      withProposed: { debit: 0, personalTax: 0, annualInterest: 0, personalRate: 0.39, benchmarkRate: 0.0877 },
+    },
+    proposed: [{ date: '2026-10-20', description: 'Gear sale', amount: 2875 }],
+    ledger: [{ description: 'Client Pty Ltd invoice', amount: 999 }],
+  },
+  reconciliation: { status: 'reconciled', outBy: 0, accounts: [{ number: '3314' }] },
+};
+
+test('Rankify Hub books are read with a bearer key and only the loan summary crosses', async () => {
+  const calls = [];
+  const cache = { at: 0, key: '', data: null };
+  const fetchImpl = async (url, opts) => {
+    calls.push({ url, auth: opts.headers.authorization });
+    if (opts.headers.authorization === 'Bearer wrong') return { ok: false, status: 401, json: async () => ({}) };
+    return { ok: true, status: 200, json: async () => books };
+  };
+  const r = await fetchDirectorLoan({ env: { CRM_ADMIN_API_KEY: 'wrong', HUB_SHARED_KEY: 'right' }, fetchImpl, cache, now: () => 5000 });
+  assert.equal(r.ok, true);
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0].url, BOOKS_URL);
+  assert.equal(r.data.booked, -1881.42);
+  assert.equal(r.data.withProposed, 1186.92);
+  assert.equal(r.data.costsTomPaid, 12502.85);
+  assert.equal(r.data.div7a.tax, 733.75);
+  assert.equal(r.data.reconciliation.reconciled, true);
+  assert.equal(JSON.stringify(r).includes('Client Pty Ltd'), false);
+  assert.equal(JSON.stringify(r).includes('right'), false);
+  const summary = tax.applyRankifyLoan(tax.buildSummary(config, assets), r.data, { syncedAt: r.syncedAt });
+  assert.equal(summary.directorLoan.headline, 'Tom owes Rankify $1,881.42');
+  assert.equal(summary.loanSync.live, true);
+  const stale = tax.applyRankifyLoan(tax.buildSummary(config, assets), r.data, { syncedAt: '2026-10-28T07:00:00Z', stale: true });
+  assert.equal(stale.loanSync.live, false);
+  assert.equal(stale.loanSync.label, 'Not live: Rankify Hub did not answer. Showing the last sync from 28 Oct 2026, 5:00 pm AEST');
+});
+
+test('cache is never longer than 5 minutes', async () => {
+  let n = 0;
+  const cache = { at: 0, key: '', data: null };
+  const fetchImpl = async () => { n++; return { ok: true, status: 200, json: async () => books }; };
+  await fetchDirectorLoan({ env: { HUB_SHARED_KEY: 'k' }, fetchImpl, cache, now: () => 0, ttlMs: 3600000 });
+  await fetchDirectorLoan({ env: { HUB_SHARED_KEY: 'k' }, fetchImpl, cache, now: () => 300001, ttlMs: 3600000 });
+  assert.equal(n, 2);
 });

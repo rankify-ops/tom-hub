@@ -1,8 +1,11 @@
+const { requireAuth } = require('./_auth');
 const { kvGet, kvSet } = require('./db');
 
 const KV_KEY = 'tom_calories';
 
 module.exports = async function handler(req, res) {
+  res.setHeader('Cache-Control', 'no-store');
+  if (!requireAuth(req, res)) return;
   try {
     if (req.method === 'GET') {
       const data = await kvGet(KV_KEY) || { savedFoods: [], logs: {}, settings: { height: 186, weight: 88, age: 31, activityMultiplier: 1.55, deficitGoal: 500, proteinGoal: 180 } };
