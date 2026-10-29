@@ -6,7 +6,7 @@
     "node": ">=18"
   },
   "scripts": {
-    "test": "node --test test/tax.test.js test/rankify-loan.test.js test/net-position.test.js test/auth.test.js test/life-projects.test.js"
+    "test": "node --test test/tax.test.js test/rankify-loan.test.js test/net-position.test.js test/auth.test.js test/life-projects.test.js test/daily-log.test.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

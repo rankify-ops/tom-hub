@@ -17,7 +17,18 @@ const SPACES = {
   // projects are read live from their own hubs by /api/life-projects, never stored here.
   projects:   { key: 'tom_projects',      default: { projects: [] } },
   brain:      { key: 'tom_brain',         default: { sops: [], flows: [], runs: [], queue: [], shared: [] } },
+  // Thomas's own daily log (hours, stop time, mood, stress, exercise, healing).
+  // READ-ONLY for bots: he writes it himself at /daily-log.
+  daily_log:  { key: 'tom_daily_log',     default: { entries: [] }, readOnly: true },
 };
+
+function readOnlyRefusal(res, space) {
+  if (SPACES[space] && SPACES[space].readOnly) {
+    res.status(403).json({ error: `${space} is read-only for bots` });
+    return true;
+  }
+  return false;
+}
 
 module.exports = async function handler(req, res) {
   if (handleCors(req, res)) return;
@@ -40,7 +51,7 @@ module.exports = async function handler(req, res) {
       }
 
       if (action === 'list_spaces') {
-        return res.status(200).json({ spaces: Object.keys(SPACES) });
+        return res.status(200).json({ spaces: Object.keys(SPACES), readOnly: Object.keys(SPACES).filter(k => SPACES[k].readOnly) });
       }
 
       if (action === 'get_space') {
@@ -52,6 +63,7 @@ module.exports = async function handler(req, res) {
 
       if (action === 'set_space') {
         const { space, data } = req.body;
+        if (readOnlyRefusal(res, space)) return;
         if (!space || !SPACES[space]) return res.status(400).json({ error: `Unknown space. Available: ${Object.keys(SPACES).join(', ')}` });
         if (!data || typeof data !== 'object') return res.status(400).json({ error: 'data object required' });
         data.updated = new Date().toISOString();
@@ -64,6 +76,7 @@ module.exports = async function handler(req, res) {
 
       if (action === 'add_item') {
         const { space, arrayKey, item } = req.body;
+        if (readOnlyRefusal(res, space)) return;
         if (!space || !SPACES[space]) return res.status(400).json({ error: `Unknown space` });
         if (!arrayKey || !item) return res.status(400).json({ error: 'arrayKey and item required' });
         const data = await kvGet(SPACES[space].key) || { ...SPACES[space].default };
@@ -80,6 +93,7 @@ module.exports = async function handler(req, res) {
 
       if (action === 'update_item') {
         const { space, arrayKey, id, updates } = req.body;
+        if (readOnlyRefusal(res, space)) return;
         if (!space || !SPACES[space]) return res.status(400).json({ error: `Unknown space` });
         if (!arrayKey || !id || !updates) return res.status(400).json({ error: 'arrayKey, id, and updates required' });
         const data = await kvGet(SPACES[space].key) || { ...SPACES[space].default };
@@ -95,6 +109,7 @@ module.exports = async function handler(req, res) {
 
       if (action === 'delete_item') {
         const { space, arrayKey, id } = req.body;
+        if (readOnlyRefusal(res, space)) return;
         if (!space || !SPACES[space]) return res.status(400).json({ error: `Unknown space` });
         if (!arrayKey || !id) return res.status(400).json({ error: 'arrayKey and id required' });
         const data = await kvGet(SPACES[space].key) || { ...SPACES[space].default };
@@ -168,6 +183,18 @@ module.exports = async function handler(req, res) {
         return res.status(200).json({ entries, meta, daysReturned: dates.length });
       }
 
+      // ── Daily log: read-only summary for bots (time blocking patterns) ──
+
+      if (action === 'get_daily_log') {
+        const { summarise, brisbaneDate } = require('../lib/daily-log');
+        const data = await kvGet(SPACES.daily_log.key) || { entries: [] };
+        const days = Math.min(Math.max(parseInt(req.body.days, 10) || 30, 1), 365);
+        const today = brisbaneDate();
+        const s2 = summarise(data.entries, days, today);
+        const entries = (data.entries || []).filter(e => e.date >= s2.from && e.date <= today);
+        return res.status(200).json({ space: 'daily_log', readOnly: true, summary: s2, entries });
+      }
+
       // ── PocketSmith: read-only ──
 
       if (action === 'get_banking') {
@@ -177,7 +204,7 @@ module.exports = async function handler(req, res) {
         return res.status(200).json(data);
       }
 
-      return res.status(400).json({ error: 'Unknown action. Available: ping, list_spaces, get_space, set_space, add_item, update_item, delete_item, test_webhook, log_calories, log_weight, log_training, get_whoop, get_banking' });
+      return res.status(400).json({ error: 'Unknown action. Available: ping, list_spaces, get_space, set_space, add_item, update_item, delete_item, test_webhook, log_calories, log_weight, log_training, get_whoop, get_banking, get_daily_log' });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
