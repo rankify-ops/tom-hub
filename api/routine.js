@@ -13,6 +13,9 @@ const SPACES = {
   licenses:   { key: 'tom_licenses',      default: { licenses: [] } },
   properties: { key: 'tom_properties',    default: { properties: [], valueLog: [] } },
   todos:      { key: 'tom_todos',         default: { todos: [] } },
+  // Personal projects only (stage/next/implementNext). Rankify, Hiatus and ITM
+  // projects are read live from their own hubs by /api/life-projects, never stored here.
+  projects:   { key: 'tom_projects',      default: { projects: [] } },
   brain:      { key: 'tom_brain',         default: { sops: [], flows: [], runs: [], queue: [], shared: [] } },
 };
 
