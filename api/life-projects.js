@@ -71,9 +71,11 @@ async function rankifyLane(now) {
 async function hiatusLane(now) {
   const key = process.env.HIATUS_HUB_READ_KEY;
   if (!key) throw new LaneError('needs_key', 'Add HIATUS_HUB_READ_KEY to Tom Hub env');
-  const d = await getJSON(HIATUS_BASE + '/api/agent?sections=tasks,projects&period=all', key);
-  const cards = LP.hiatusCards({ tasks: d.tasks || [], projects: d.projects || [] }, now);
-  const note = Array.isArray(d.projects) ? '' : 'Hiatus Hub has no projects section yet, so only Hub tasks show here.';
+  // Read-only GET. Only the projects section is asked for: Hub tasks are a
+  // to-do list and stay in Hiatus Hub.
+  const d = await getJSON(HIATUS_BASE + '/api/agent?sections=projects&period=all', key);
+  const cards = LP.hiatusCards({ projects: d.projects || [] }, now);
+  const note = Array.isArray(d.projects) ? '' : 'No Hiatus projects yet. Hub tasks stay in Hiatus Hub as to-dos.';
   return { cards, note };
 }
 
@@ -86,13 +88,10 @@ async function itmLane(now) {
 }
 
 async function personalLane(now) {
-  const [todos, brain, goals, projects] = await Promise.all([
-    kvGet('tom_todos'), kvGet('tom_brain'), kvGet('tom_goals'), kvGet('tom_projects'),
-  ]);
-  return LP.personalCards({
-    todos: (todos && todos.todos) || [], brain: brain || {}, goals: goals || {},
-    projects: (projects && projects.projects) || [],
-  }, now);
+  // Only real projects. To-dos stay on the Tom Hub to-do list.
+  const projects = await kvGet('tom_projects');
+  const cards = LP.personalCards({ projects: (projects && projects.projects) || [] }, now);
+  return { cards, note: cards.length ? '' : 'No personal projects yet. To-dos live on your to-do list.' };
 }
 
 async function runLane(area, fn, now) {

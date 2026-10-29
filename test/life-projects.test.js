@@ -40,18 +40,17 @@ test('itm: one card per business, highest-urgency item next, empty businesses sk
   assert.equal(cards[0].status, 'late');
 });
 
-test('personal: groups to-dos, surfaces approval queue as blocked', () => {
+test('personal: only real projects; to-dos, approval queue and goals stay off the board', () => {
   const cards = LP.personalCards({
-    todos: [{ text: 'Update address with Medicare', due: '2026-11-04' }, { text: 'Lodge FY tax return', due: '2026-10-31' }, { text: 'Buy milk', done: true }],
-    brain: { queue: [{ title: 'Decide X', status: 'pending' }, { title: 'Old', status: 'approved' }] }, goals: {},
+    todos: [{ text: 'Update address with Medicare', due: '2026-11-04' }],
+    brain: { queue: [{ title: 'Decide X', status: 'pending' }] }, goals: { statuses_2026: { a: 'open' } },
+    projects: [{ id: 'p1', name: 'Move house', due: '2026-12-01' }, { id: 'p2', name: 'Old', done: true }],
   }, NOW);
-  const names = cards.map(c => c.name).sort();
-  assert.deepEqual(names, ['Change of address', 'Decisions waiting on you', 'Tax return']);
-  assert.equal(cards.find(c => c.name === 'Decisions waiting on you').status, 'blocked');
+  assert.deepEqual(cards.map(c => c.name), ['Move house']);
 });
 
-test('hiatus: open tasks only', () => {
-  const cards = LP.hiatusCards({ tasks: [{ id: '1', name: 'Open', done: false, dueDate: '2026-09-30', priority: 'critical' }, { id: '2', name: 'Done', done: true }] }, NOW);
-  assert.equal(cards.length, 1);
-  assert.equal(cards[0].status, 'late');
+test('hiatus: Hub tasks never become project cards, real projects do', () => {
+  const cards = LP.hiatusCards({ tasks: [{ id: '1', name: 'Open', done: false, dueDate: '2026-09-30' }], projects: [{ id: 'h1', name: 'Launch pendants', due: '2026-12-01' }] }, NOW);
+  assert.deepEqual(cards.map(c => c.name), ['Launch pendants']);
+  assert.equal(LP.hiatusCards({ tasks: [{ id: '1', name: 'Open' }] }, NOW).length, 0);
 });

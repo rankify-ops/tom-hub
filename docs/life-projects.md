@@ -19,7 +19,7 @@ never written to KV. Nothing is written back to any hub.
 | Var | Lane | Notes |
 |---|---|---|
 | `RANKIFY_CRM_READ_KEY` | Rankify | Preferred. A read-only CRM key. Falls back to the existing `CRM_ADMIN_API_KEY`, which works for `/api/projects` but is rejected (401) by `/api/routine`, so clients, to-dos and the projects space need this key. |
-| `HIATUS_HUB_READ_KEY` | Hiatus | A read-only bearer for `GET /api/agent?sections=tasks,projects`. |
+| `HIATUS_HUB_READ_KEY` | Hiatus | Bearer for `GET /api/agent?sections=projects`. Currently Hiatus Hub's full-access `AGENT_SECRET` (shared with James's bots, OK'd by Thomas 29 Oct 2026); Tom Hub only ever sends GET with it. |
 | `ITM_COMMAND_CENTRE_KEY` | ITM | A bearer for `POST /api/bot {action:"list_businesses"}`, ideally a read-only bot key. |
 | `RANKIFY_CRM_URL`, `HIATUS_HUB_URL`, `ITM_COMMAND_CENTRE_URL` | all | Optional URL overrides. |
 
@@ -28,13 +28,9 @@ never written to KV. Nothing is written back to any hub.
 - **Rankify CRM:**
   - `GET /api/projects` returns the client builds with their stage timeline, "you are here" and open to-dos.
   - `POST /api/routine` is called with `list_clients` (active clients that have no project card), `list_space todos` and `list_space projects` (products and internal work).
-- **Hiatus Hub:** `GET /api/agent?sections=tasks,projects&period=all`. There is no `projects` section yet, so only open Hub tasks show.
+- **Hiatus Hub:** `GET /api/agent?sections=projects` (read-only). Hub tasks are a to-do list and are never shown as projects; the lane stays empty until Hiatus Hub has a `projects` section.
 - **ITM Command Centre:** `POST /api/bot list_businesses`. Each workspace becomes one card, and its next step is the most urgent open item.
-- **Personal (Tom Hub KV):**
-  - `tom_todos`, grouped into projects
-  - the `tom_brain` approval queue
-  - `tom_goals`
-  - the new personal-only `projects` space (`tom_projects`), writable via `/api/routine`
+- **Personal (Tom Hub KV):** only the personal `projects` space (`tom_projects`), writable via `/api/routine`. To-dos (`tom_todos`), the Brain approval queue and goals are not projects and stay off the board (Thomas, 29 Oct 2026).
 
 ## Proposed upstream shape (not built; each hub needs its own approval)
 
