@@ -53,16 +53,19 @@ async function rankifyLane(now) {
   const key = process.env.RANKIFY_CRM_READ_KEY || process.env.CRM_ADMIN_API_KEY;
   if (!key) throw new LaneError('needs_key', 'Add RANKIFY_CRM_READ_KEY to Tom Hub env');
   const routine = RANKIFY_BASE + '/api/routine';
+  const missed = [];
+  const soft = (label, p, empty) => p.catch(e => { missed.push(`${label} (${e.message})`); return empty; });
   const [proj, clients, todos, space] = await Promise.all([
     getJSON(RANKIFY_BASE + '/api/projects', key),
-    getJSON(routine, key, { action: 'list_clients', limit: 200 }).catch(() => ({ clients: [] })),
-    getJSON(routine, key, { action: 'list_space', space: 'todos' }).catch(() => ({ items: [] })),
-    getJSON(routine, key, { action: 'list_space', space: 'projects' }).catch(() => ({ items: [] })),
+    soft('clients', getJSON(routine, key, { action: 'list_clients', limit: 200 }), { clients: [] }),
+    soft('to-dos', getJSON(routine, key, { action: 'list_space', space: 'todos' }), { items: [] }),
+    soft('projects space', getJSON(routine, key, { action: 'list_space', space: 'projects' }), { items: [] }),
   ]);
-  return LP.rankifyCards({
+  const cards = LP.rankifyCards({
     projects: proj.projects || [], clients: clients.clients || [],
     todos: todos.items || [], spaceItems: space.items || [],
   }, now);
+  return { cards, note: missed.length ? 'Showing client builds only. Not loaded: ' + missed.join(', ') + '.' : '' };
 }
 
 async function hiatusLane(now) {

@@ -18,7 +18,7 @@ never written to KV. Nothing is written back to any hub.
 
 | Var | Lane | Notes |
 |---|---|---|
-| `RANKIFY_CRM_READ_KEY` | Rankify | Preferred. A read-only CRM key. Falls back to the existing `CRM_ADMIN_API_KEY` (admin scope) until a read-only key exists. |
+| `RANKIFY_CRM_READ_KEY` | Rankify | Preferred. A read-only CRM key. Falls back to the existing `CRM_ADMIN_API_KEY`, which works for `/api/projects` but is rejected (401) by `/api/routine`, so clients, to-dos and the projects space need this key. |
 | `HIATUS_HUB_READ_KEY` | Hiatus | A read-only bearer for `GET /api/agent?sections=tasks,projects`. |
 | `ITM_COMMAND_CENTRE_KEY` | ITM | A bearer for `POST /api/bot {action:"list_businesses"}`, ideally a read-only bot key. |
 | `RANKIFY_CRM_URL`, `HIATUS_HUB_URL`, `ITM_COMMAND_CENTRE_URL` | all | Optional URL overrides. |
