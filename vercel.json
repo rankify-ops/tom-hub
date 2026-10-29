@@ -31,6 +31,10 @@
       "destination": "/projects.html"
     },
     {
+      "source": "/daily-log",
+      "destination": "/daily-log.html"
+    },
+    {
       "source": "/login",
       "destination": "/login.html"
     }

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Daily log — Tom Hub</title>
+<link rel="icon" href="/favicon.ico">
+<link rel="apple-touch-icon" href="/icon-180.png">
+<meta name="theme-color" content="#000000">
+<meta name="robots" content="noindex,nofollow">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--text:#ececec;--muted:#a3a3a3;--faint:#777;--red:#f87171;--amber:#fbbf24;--green:#34d399;--blue:#60a5fa;--purple:#c084fc;--teal:#2dd4a8;--glass:rgba(255,255,255,.07);--border:rgba(255,255,255,.12);--border-s:rgba(255,255,255,.07);--font:'Inter',-apple-system,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);color:var(--text);-webkit-font-smoothing:antialiased;background:url('/wallpaper.jpg') center/cover fixed no-repeat #0a0a0a;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background:rgba(8,8,12,.88);z-index:0;pointer-events:none}
+body>*{position:relative;z-index:1}
+header{padding:14px 16px 10px;border-bottom:1px solid var(--border);background:rgba(12,12,20,.7);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);position:sticky;top:0;z-index:5}
+.crumb{font-size:.75rem;color:var(--muted)}.crumb a{color:var(--teal);text-decoration:none}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+h1{font-size:1.4rem;font-weight:800;color:#fff;margin-right:auto}
+.sub{font-size:.8rem;color:var(--muted);margin-top:2px}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.seg button{font-family:var(--font);font-size:.85rem;font-weight:600;padding:9px 14px;background:transparent;color:var(--muted);border:0;cursor:pointer}
+.seg button.on{background:rgba(255,255,255,.14);color:#fff}
+main{max-width:980px;margin:0 auto;padding:14px 14px 60px;display:grid;gap:14px}
+.panel{background:rgba(255,255,255,.035);border:1px solid var(--border-s);border-radius:16px;padding:14px}
+.panel h2{font-size:1rem;font-weight:800;color:#fff;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.field{margin-bottom:16px}
+.lab{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;display:flex;justify-content:space-between;gap:8px}
+.lab span{text-transform:none;letter-spacing:0;font-weight:600;color:var(--faint)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.c{font-family:var(--font);font-size:.9rem;font-weight:600;min-width:44px;min-height:44px;padding:0 12px;border-radius:12px;border:1px solid var(--border);background:var(--glass);color:var(--text);cursor:pointer}
+.c.on{background:#fff;color:#0b0b0b;border-color:#fff}
+.scale .c{min-width:0;flex:1;padding:0}
+.scale.mood .c.on{background:var(--green);border-color:var(--green)}
+.scale.stress .c.on{background:var(--amber);border-color:var(--amber)}
+.c.late.on{background:var(--red);border-color:var(--red)}
+input,textarea{font-family:var(--font);font-size:16px;color:var(--text);background:rgba(0,0,0,.35);border:1px solid var(--border);border-radius:12px;padding:10px 12px;width:100%}
+input[type=time],input[type=date],input[type=number]{width:auto;min-height:44px}
+textarea{min-height:70px;resize:vertical}
+.inline{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;font-size:.85rem;color:var(--muted)}
+.hours{font-size:1.6rem;font-weight:800;color:#fff}
+.save{font-family:var(--font);font-size:1.05rem;font-weight:800;width:100%;min-height:54px;border-radius:14px;border:0;background:var(--teal);color:#062b22;cursor:pointer}
+.save:disabled{opacity:.6}
+.msg{font-size:.85rem;margin-top:8px;min-height:1.2em;color:var(--muted)}
+.msg.ok{color:var(--green)}.msg.err{color:var(--red)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:12px}
+.stat{background:rgba(20,20,28,.75);border:1px solid var(--border);border-radius:12px;padding:10px}
+.stat .k{font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.stat .v{font-size:1.3rem;font-weight:800;color:#fff;margin-top:2px}
+.stat .v small{font-size:.75rem;color:var(--muted);font-weight:600}
+.chart{margin-bottom:14px}
+.chart .t{font-size:.75rem;font-weight:700;color:var(--muted);margin-bottom:4px}
+svg{width:100%;height:90px;display:block;background:rgba(0,0,0,.2);border-radius:10px}
+.legend{font-size:.7rem;color:var(--faint);margin-top:3px;display:flex;justify-content:space-between}
+.hist{display:grid;gap:6px}
+.h{background:rgba(20,20,28,.75);border:1px solid var(--border);border-radius:12px;padding:10px 12px;cursor:pointer;display:grid;grid-template-columns:92px 1fr;gap:8px;font-size:.85rem}
+.h:hover{border-color:rgba(255,255,255,.25)}
+.h .d{font-weight:800;color:#fff}
+.h .m{color:var(--muted);line-height:1.45}
+.h .m b{color:var(--text)}
+.pill{display:inline-block;font-size:.7rem;font-weight:700;padding:1px 7px;border-radius:6px;background:rgba(255,255,255,.08);margin:2px 3px 0 0}
+.pill.red{color:var(--red);background:rgba(248,113,113,.12)}.pill.green{color:var(--green);background:rgba(52,211,153,.12)}
+.empty{color:var(--faint);font-size:.85rem}
+.del{font-family:var(--font);font-size:.8rem;background:none;border:0;color:var(--faint);text-decoration:underline;cursor:pointer;margin-top:10px}
+@media(min-width:900px){main{grid-template-columns:1fr 1fr;align-items:start;max-width:1200px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="crumb"><a href="/">Tom Hub</a> / Daily log</div>
+  <div class="row">
+    <h1>Daily log</h1>
+  </div>
+  <div class="sub">Just for you. Log it when you feel like it. Nothing here will ever remind you.</div>
+</header>
+<main>
+  <section class="panel" id="form">
+    <h2>Log a day</h2>
+    <div class="field">
+      <div class="lab">Date</div>
+      <div class="row"><input type="date" id="date"><button class="c" id="today" type="button">Today</button><button class="c" id="yday" type="button">Yesterday</button></div>
+    </div>
+
+    <div class="field">
+      <div class="lab">Started work</div>
+      <div class="chips" id="start"></div>
+      <div class="inline">Other: <input type="time" id="startT"></div>
+    </div>
+
+    <div class="field">
+      <div class="lab">Stopped work <span>6pm is your hard stop</span></div>
+      <div class="chips" id="stop"></div>
+      <div class="inline">Other: <input type="time" id="stopT"></div>
+    </div>
+
+    <div class="field">
+      <div class="lab">Hours worked <span>worked out from start and stop, or set your own</span></div>
+      <div class="row"><span class="hours" id="hoursShow">–</span>
+        <input type="number" id="hours" min="0" max="24" step="0.25" placeholder="override" style="width:120px"></div>
+    </div>
+
+    <div class="field">
+      <div class="lab">How I feel <span>1 = flat, 10 = great</span></div>
+      <div class="chips scale mood" id="mood"></div>
+      <input id="moodNote" placeholder="A few words (optional)" maxlength="500" style="margin-top:8px">
+    </div>
+
+    <div class="field">
+      <div class="lab">Stress <span>1 = calm, 10 = maxed</span></div>
+      <div class="chips scale stress" id="stress"></div>
+    </div>
+
+    <div class="field">
+      <div class="lab">Exercise</div>
+      <div class="chips" id="exType"></div>
+      <div class="chips" id="exMin" style="margin-top:6px"></div>
+      <div class="inline">Minutes: <input type="number" id="exMinT" min="0" max="600" style="width:100px"> Other type: <input id="exTypeT" maxlength="40" style="width:150px"></div>
+    </div>
+
+    <div class="field">
+      <div class="lab">Healing / relaxing <span>tap any you did</span></div>
+      <div class="chips" id="heal"></div>
+    </div>
+
+    <div class="field">
+      <div class="lab">Note <span>optional</span></div>
+      <textarea id="note" maxlength="2000" placeholder="Anything else about today"></textarea>
+    </div>
+
+    <button class="save" id="save" type="button">Save</button>
+    <div class="msg" id="msg"></div>
+    <button class="del" id="del" type="button" hidden>Delete this day</button>
+  </section>
+
+  <section class="panel">
+    <h2>Trends <span style="margin-left:auto" class="seg" id="range"><button data-d="14" class="on">14 days</button><button data-d="30">30 days</button></span></h2>
+    <div class="stats" id="stats"></div>
+    <div id="charts"></div>
+    <h2 style="margin-top:6px">History</h2>
+    <div class="hist" id="hist"><div class="empty">Loading…</div></div>
+  </section>
+</main>
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const START=['06:00','07:00','08:00','09:00','10:00'];
+const STOP=['15:00','16:00','17:00','17:30','18:00','19:00','20:00','21:00'];
+const EX=['None','Gym','Walk','Run','Swim','Surf','Yoga','Other'];
+const EXMIN=[15,30,45,60,90];
+let HEAL=['Slow breathing','Walk outside','Beach / ocean','Sauna / cold','Stretch / yoga','Reading','Nap / rest','Friends / family','Nature','Music','No screens'];
+let state={}, entries=[], today='', range=14;
+
+function fmt12(t){if(!t)return '';const[h,m]=t.split(':').map(Number);const ap=h>=12?'pm':'am';const hh=h%12||12;return hh+(m?':'+String(m).padStart(2,'0'):'')+ap}
+function toMin(t){if(!t||!/^\d{2}:\d{2}$/.test(t))return null;const[h,m]=t.split(':').map(Number);return h*60+m}
+function calcHours(){if(state.hoursOverride!==''&&state.hoursOverride!=null)return Number(state.hoursOverride);const a=toMin(state.start),b=toMin(state.stop);if(a==null||b==null)return null;let d=b-a;if(d<0)d+=1440;return Math.round(d/60*100)/100}
+function brisToday(){return new Intl.DateTimeFormat('en-CA',{timeZone:'Australia/Brisbane',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())}
+function shift(date,n){const d=new Date(date+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)}
+function niceDate(d){const x=new Date(d+'T00:00:00Z');return x.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',timeZone:'UTC'})}
+
+function chips(el,vals,key,label,cls){
+  $(el).innerHTML=vals.map(v=>`<button type="button" class="c ${cls?cls(v):''}" data-v="${esc(v)}">${esc(label?label(v):v)}</button>`).join('');
+  $(el).onclick=e=>{const b=e.target.closest('button');if(!b)return;let v=b.dataset.v;if(typeof vals[0]==='number')v=Number(v);state[key]=state[key]===v?(typeof v==='number'?null:''):v;sync()};
+}
+function render(){
+  chips('start',START,'start',fmt12);
+  chips('stop',STOP,'stop',fmt12,v=>toMin(v)>1080?'late':'');
+  chips('mood',[1,2,3,4,5,6,7,8,9,10],'mood');
+  chips('stress',[1,2,3,4,5,6,7,8,9,10],'stress');
+  chips('exType',EX,'exerciseType');
+  chips('exMin',EXMIN,'exerciseMinutes',v=>v+' min');
+  $('heal').innerHTML=HEAL.map(v=>`<button type="button" class="c" data-v="${esc(v)}">${esc(v)}</button>`).join('');
+  $('heal').onclick=e=>{const b=e.target.closest('button');if(!b)return;const v=b.dataset.v;const s=new Set(state.healing);s.has(v)?s.delete(v):s.add(v);state.healing=[...s];sync()};
+}
+function mark(el,val){[...$(el).children].forEach(b=>{const v=typeof val==='number'?Number(b.dataset.v):b.dataset.v;b.classList.toggle('on',Array.isArray(val)?val.includes(b.dataset.v):v===val)})}
+function sync(){
+  mark('start',state.start);mark('stop',state.stop);mark('mood',state.mood);mark('stress',state.stress);
+  mark('exType',EX.includes(state.exerciseType)?state.exerciseType:(state.exerciseType?'Other':''));
+  mark('exMin',state.exerciseMinutes);mark('heal',state.healing);
+  $('startT').value=state.start||'';$('stopT').value=state.stop||'';
+  $('exMinT').value=state.exerciseMinutes==null?'':state.exerciseMinutes;
+  if(document.activeElement!==$('exTypeT'))$('exTypeT').value=EX.includes(state.exerciseType)?'':(state.exerciseType||'');
+  const h=calcHours();$('hoursShow').textContent=h==null?'–':(Math.round(h*100)/100)+' h';
+}
+function blank(date){return{date,start:'',stop:'',hoursOverride:'',mood:null,moodNote:'',stress:null,exerciseType:'',exerciseMinutes:null,healing:[],note:''}}
+function load(date){
+  const e=entries.find(x=>x.date===date);
+  state=blank(date);
+  if(e){Object.assign(state,{start:e.start||'',stop:e.stop||'',mood:e.mood??null,moodNote:e.moodNote||'',stress:e.stress??null,exerciseType:e.exerciseType||'',exerciseMinutes:e.exerciseMinutes??null,healing:e.healing||[],note:e.note||''});
+    const auto=(()=>{const a=toMin(e.start),b=toMin(e.stop);if(a==null||b==null)return null;let d=b-a;if(d<0)d+=1440;return Math.round(d/60*100)/100})();
+    state.hoursOverride=(e.hours!=null&&e.hours!==auto)?e.hours:'';}
+  $('date').value=date;$('moodNote').value=state.moodNote;$('note').value=state.note;$('hours').value=state.hoursOverride;
+  $('del').hidden=!e;$('msg').textContent=e?'Editing the saved entry for '+niceDate(date)+'.':'';$('msg').className='msg';
+  sync();
+}
+
+$('date').onchange=()=>load($('date').value||today);
+$('today').onclick=()=>load(today);
+$('yday').onclick=()=>load(shift(today,-1));
+$('startT').onchange=()=>{state.start=$('startT').value;sync()};
+$('stopT').onchange=()=>{state.stop=$('stopT').value;sync()};
+$('hours').oninput=()=>{state.hoursOverride=$('hours').value;sync()};
+$('exMinT').oninput=()=>{const v=$('exMinT').value;state.exerciseMinutes=v===''?null:Number(v);mark('exMin',state.exerciseMinutes)};
+$('exTypeT').oninput=()=>{state.exerciseType=$('exTypeT').value;mark('exType',state.exerciseType?'Other':'')};
+$('moodNote').oninput=()=>state.moodNote=$('moodNote').value;
+$('note').oninput=()=>state.note=$('note').value;
+
+async function api(method,body){
+  const r=await fetch('/api/daily-log',{method,credentials:'same-origin',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined});
+  if(r.status===401){location.href='/login?next=/daily-log';throw new Error('login')}
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(j.error||('HTTP '+r.status));
+  return j;
+}
+$('save').onclick=async()=>{
+  const b=$('save');b.disabled=true;$('msg').textContent='Saving…';$('msg').className='msg';
+  try{
+    const entry={date:state.date,start:state.start,stop:state.stop,hours:state.hoursOverride===''?null:Number(state.hoursOverride),mood:state.mood,moodNote:state.moodNote,stress:state.stress,exerciseType:state.exerciseType==='Other'?'':state.exerciseType,exerciseMinutes:state.exerciseMinutes,healing:state.healing,note:state.note};
+    await api('POST',{action:'save',entry});
+    await refresh(state.date);
+    $('msg').textContent='Saved '+niceDate(state.date)+'.';$('msg').className='msg ok';
+  }catch(e){if(e.message!=='login'){$('msg').textContent='Could not save: '+e.message;$('msg').className='msg err'}}
+  b.disabled=false;
+};
+$('del').onclick=async()=>{
+  if(!confirm('Delete the log for '+niceDate(state.date)+'?'))return;
+  try{await api('POST',{action:'delete',date:state.date});await refresh(state.date);$('msg').textContent='Deleted.';$('msg').className='msg ok'}catch(e){$('msg').textContent='Could not delete: '+e.message;$('msg').className='msg err'}
+};
+$('range').onclick=e=>{const b=e.target.closest('button');if(!b)return;range=Number(b.dataset.d);[...$('range').children].forEach(x=>x.classList.toggle('on',x===b));trends()};
+
+let summary={};
+function trends(){
+  const s=summary['d'+range]||{};
+  const stat=(k,v,sm)=>`<div class="stat"><div class="k">${k}</div><div class="v">${v==null?'–':v}${sm?` <small>${sm}</small>`:''}</div></div>`;
+  $('stats').innerHTML=[
+    stat('Days logged',s.daysLogged,'of '+range),
+    stat('Avg hours',s.avgHours,'h/day'),
+    stat('Avg stop',s.avgStop?fmt12(s.avgStop):null),
+    stat('Stopped by 6pm',s.daysWithStopTime?s.stoppedBy6pm:null,s.daysWithStopTime?'of '+s.daysWithStopTime:''),
+    stat('Avg mood',s.avgMood,'/10'),
+    stat('Avg stress',s.avgStress,'/10'),
+    stat('Exercise days',s.exerciseDays,(s.exerciseMinutes||0)+' min'),
+    stat('Breathing days',s.breathingDays),
+  ].join('');
+  const days=[];for(let i=range-1;i>=0;i--)days.push(shift(today,-i));
+  const by=Object.fromEntries(entries.map(e=>[e.date,e]));
+  const W=600,H=90,P=6,bw=(W-P*2)/days.length;
+  const x=i=>P+i*bw+bw/2;
+  function bars(get,max,color,refLine){
+    let s=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">`;
+    if(refLine!=null){const y=H-P-(refLine/max)*(H-P*2);s+=`<line x1="0" x2="${W}" y1="${y}" y2="${y}" stroke="rgba(248,113,113,.6)" stroke-dasharray="4 4"/>`}
+    days.forEach((d,i)=>{const v=by[d]?get(by[d]):null;if(v==null)return;const h=Math.max(2,(Math.min(v,max)/max)*(H-P*2));const c=typeof color==='function'?color(v):color;s+=`<rect x="${x(i)-bw*0.35}" y="${H-P-h}" width="${bw*0.7}" height="${h}" rx="2" fill="${c}"><title>${d}: ${v}</title></rect>`});
+    return s+'</svg>';
+  }
+  function lines(series){
+    let s=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">`;
+    series.forEach(([get,color])=>{const pts=[];days.forEach((d,i)=>{const v=by[d]?get(by[d]):null;if(v==null)return;pts.push([x(i),H-P-((v-1)/9)*(H-P*2)])});
+      if(pts.length>1)s+=`<polyline fill="none" stroke="${color}" stroke-width="2.5" points="${pts.map(p=>p.join(',')).join(' ')}"/>`;
+      pts.forEach(p=>s+=`<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="${color}"/>`)});
+    return s+'</svg>';
+  }
+  const legend=`<div class="legend"><span>${niceDate(days[0])}</span><span>${niceDate(days[days.length-1])}</span></div>`;
+  // stop time chart: height = time from 12pm to 12am, red line at 6pm
+  const stopV=e=>{const m=toMin(e.stop);if(m==null)return null;return Math.max(0.1,(m-720)/60)};
+  $('charts').innerHTML=
+    `<div class="chart"><div class="t">Hours worked</div>${bars(e=>e.hours,14,'#60a5fa')}${legend}</div>`+
+    `<div class="chart"><div class="t">Stop time (noon → midnight, dashed line = 6pm)</div>${bars(stopV,12,v=>v>6?'#f87171':'#34d399',6)}${legend}</div>`+
+    `<div class="chart"><div class="t"><span style="color:#34d399">● Mood</span> &nbsp; <span style="color:#fbbf24">● Stress</span> (1–10)</div>${lines([[e=>e.mood,'#34d399'],[e=>e.stress,'#fbbf24']])}${legend}</div>`+
+    `<div class="chart"><div class="t">Exercise minutes</div>${bars(e=>e.exerciseMinutes||null,120,'#c084fc')}${legend}</div>`;
+}
+function history(){
+  if(!entries.length){$('hist').innerHTML='<div class="empty">Nothing logged yet.</div>';return}
+  $('hist').innerHTML=entries.slice(0,60).map(e=>{
+    const late=toMin(e.stop)!=null&&toMin(e.stop)>1080;
+    const bits=[];
+    if(e.start||e.stop)bits.push(`<b>${esc(fmt12(e.start)||'?')} – ${esc(fmt12(e.stop)||'?')}</b>`);
+    if(e.hours!=null)bits.push(`${e.hours} h`);
+    if(e.mood!=null)bits.push(`mood <b>${e.mood}</b>`);
+    if(e.stress!=null)bits.push(`stress <b>${e.stress}</b>`);
+    if(e.exerciseType||e.exerciseMinutes)bits.push(esc([e.exerciseType,e.exerciseMinutes?e.exerciseMinutes+' min':''].filter(Boolean).join(' ')));
+    const pills=(e.stop?`<span class="pill ${late?'red':'green'}">${late?'after 6pm':'off by 6pm'}</span>`:'')+(e.healing||[]).map(h=>`<span class="pill">${esc(h)}</span>`).join('');
+    const notes=[e.moodNote,e.note].filter(Boolean).map(esc).join(' · ');
+    return `<div class="h" data-d="${esc(e.date)}"><div class="d">${esc(niceDate(e.date))}</div><div class="m">${bits.join(' · ')||'—'}<div>${pills}</div>${notes?`<div>${notes}</div>`:''}</div></div>`;
+  }).join('');
+}
+$('hist').onclick=e=>{const r=e.target.closest('.h');if(!r)return;load(r.dataset.d);window.scrollTo({top:0,behavior:'smooth'})};
+
+async function refresh(keepDate){
+  const j=await api('GET');
+  entries=j.entries||[];today=j.today||brisToday();summary=j.summary||{};
+  if(Array.isArray(j.healingOptions)&&j.healingOptions.length&&j.healingOptions.join()!==HEAL.join()){HEAL=j.healingOptions;render()}
+  trends();history();
+  load(keepDate||today);
+}
+today=brisToday();render();load(today);
+refresh().catch(e=>{if(e.message!=='login')$('hist').innerHTML='<div class="empty">Could not load: '+esc(e.message)+'</div>'});
+})();
+</script>
+</body>
+</html>
