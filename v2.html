@@ -551,6 +551,28 @@ select.form-input{cursor:pointer;background:#1a1a1a}
   </div>
 </div>
 
+<!-- ═══ PDF VIEWER MODAL ═══ -->
+<div id="pdf-viewer-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:1100;align-items:center;justify-content:center;flex-direction:column" onclick="if(event.target===this)closePdfViewer()">
+  <div style="position:absolute;top:14px;right:14px;display:flex;gap:8px;z-index:1101">
+    <a id="pdf-download-btn" href="#" download style="padding:8px 16px;border-radius:8px;background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:0.75rem;text-decoration:none;cursor:pointer">Download</a>
+    <button onclick="closePdfViewer()" style="padding:8px 16px;border-radius:8px;background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:0.75rem;cursor:pointer">Close</button>
+  </div>
+  <div id="pdf-viewer-title" style="color:#fff;font-size:0.85rem;font-weight:600;margin-bottom:10px;margin-top:50px"></div>
+  <iframe id="pdf-viewer-frame" style="width:90vw;height:calc(100vh - 100px);max-width:1000px;border:none;border-radius:12px;background:#fff"></iframe>
+</div>
+
+<!-- ═══ IMAGE VIEWER MODAL ═══ -->
+<div id="image-viewer-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:1100;align-items:center;justify-content:center" onclick="if(event.target===this)closeImageViewer()">
+  <div style="position:absolute;top:14px;right:14px;display:flex;gap:8px;z-index:1101">
+    <a id="img-download-btn" href="#" download style="padding:8px 16px;border-radius:8px;background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:0.75rem;text-decoration:none;cursor:pointer">Download</a>
+    <button onclick="closeImageViewer()" style="padding:8px 16px;border-radius:8px;background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.15);color:#fff;font-size:0.75rem;cursor:pointer">Close</button>
+  </div>
+  <img id="image-viewer-img" style="max-width:90vw;max-height:85vh;border-radius:12px;object-fit:contain">
+</div>
+
+<!-- hidden file input for uploads -->
+<input type="file" id="file-upload-input" style="display:none" accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.svg,.doc,.docx,.xls,.xlsx" onchange="handleFileUpload(this)">
+
 <!-- ═══ CALORIE LOG MODAL ═══ -->
 <div id="workout-picker-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center" onclick="if(event.target===this)closeWorkoutPicker()">
   <div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:24px;width:92%;max-width:400px">
@@ -4386,9 +4408,13 @@ function renderProperties(){
       html+='<div style="font-size:0.68rem;color:var(--text-muted);padding:6px 0;border-top:1px solid rgba(255,255,255,0.04)">'+p.notes+'</div>';
     }
 
-    html+='<div style="display:flex;gap:8px;margin-top:8px">';
+    html+=renderAttachments(p.attachments,'properties',p.id);
+
+    html+='<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">';
     html+='<button class="btn btn-ghost" onclick="showPropertyModal(\''+p.id+'\')" style="font-size:0.65rem;flex:1">Edit</button>';
     if(p.url)html+='<a href="'+p.url+'" target="_blank" class="btn btn-ghost" style="font-size:0.65rem;text-decoration:none;text-align:center">🔗 Listing</a>';
+    html+='<button class="btn btn-ghost" data-upload-btn="'+p.id+'" onclick="triggerUpload(\'properties\',\''+p.id+'\')" style="font-size:0.65rem">📎 Upload</button>';
+    html+='<button class="btn btn-ghost" onclick="addDriveLink(\'properties\',\''+p.id+'\')" style="font-size:0.65rem">🔗 Link</button>';
     html+='<button class="btn btn-ghost" onclick="deleteProperty(\''+p.id+'\')" style="font-size:0.65rem;color:var(--red-soft)">Delete</button>';
     html+='</div>';
     html+='</div>';
@@ -4733,9 +4759,13 @@ function renderLicenses(){
         html+='<div style="font-size:0.68rem;color:var(--text-muted);padding:6px 0;border-top:1px solid rgba(255,255,255,0.04)">'+l.notes+'</div>';
       }
 
-      html+='<div style="display:flex;gap:8px;margin-top:8px">';
+      html+=renderAttachments(l.attachments,'licenses',l.id);
+
+      html+='<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">';
       html+='<button class="btn btn-ghost" onclick="showLicenseModal(\''+l.id+'\')" style="font-size:0.65rem;flex:1">Edit</button>';
       if(l.url)html+='<a href="'+l.url+'" target="_blank" class="btn btn-ghost" style="font-size:0.65rem;text-decoration:none;text-align:center">🔗 Portal</a>';
+      html+='<button class="btn btn-ghost" data-upload-btn="'+l.id+'" onclick="triggerUpload(\'licenses\',\''+l.id+'\')" style="font-size:0.65rem">📎 Upload</button>';
+      html+='<button class="btn btn-ghost" onclick="addDriveLink(\'licenses\',\''+l.id+'\')" style="font-size:0.65rem">🔗 Link</button>';
       html+='<button class="btn btn-ghost" onclick="deleteLicense(\''+l.id+'\')" style="font-size:0.65rem;color:var(--red-soft)">Delete</button>';
       html+='</div>';
       html+='</div>';
@@ -4744,6 +4774,153 @@ function renderLicenses(){
   });
 
   el.innerHTML=html;
+}
+
+// ═══ FILE ATTACHMENTS ═══
+let _uploadTarget=null; // {itemType, itemId}
+
+function openPdfViewer(url, title){
+  const m=document.getElementById('pdf-viewer-modal');
+  m.style.display='flex';
+  document.getElementById('pdf-viewer-title').textContent=title||'';
+  document.getElementById('pdf-viewer-frame').src=url;
+  document.getElementById('pdf-download-btn').href=url;
+}
+function closePdfViewer(){
+  document.getElementById('pdf-viewer-modal').style.display='none';
+  document.getElementById('pdf-viewer-frame').src='';
+}
+function openImageViewer(url, title){
+  const m=document.getElementById('image-viewer-modal');
+  m.style.display='flex';
+  document.getElementById('image-viewer-img').src=url;
+  document.getElementById('image-viewer-img').alt=title||'';
+  document.getElementById('img-download-btn').href=url;
+}
+function closeImageViewer(){
+  document.getElementById('image-viewer-modal').style.display='none';
+  document.getElementById('image-viewer-img').src='';
+}
+
+function viewAttachment(att){
+  if(att.type==='link'){window.open(att.url,'_blank');return}
+  const isPdf=/\.pdf$/i.test(att.filename)||(att.contentType||'').includes('pdf');
+  const isImage=/\.(jpg|jpeg|png|gif|webp|svg)$/i.test(att.filename)||(att.contentType||'').startsWith('image/');
+  if(isPdf) openPdfViewer(att.url, att.filename);
+  else if(isImage) openImageViewer(att.url, att.filename);
+  else window.open(att.url,'_blank');
+}
+
+function triggerUpload(itemType, itemId){
+  _uploadTarget={itemType, itemId};
+  document.getElementById('file-upload-input').click();
+}
+
+async function handleFileUpload(input){
+  if(!input.files.length||!_uploadTarget)return;
+  const file=input.files[0];
+  const {itemType, itemId}=_uploadTarget;
+  _uploadTarget=null;
+  input.value='';
+
+  const btn=document.querySelector('[data-upload-btn="'+itemId+'"]');
+  if(btn){btn.textContent='Uploading...';btn.disabled=true}
+
+  try{
+    const res=await fetch('/api/upload',{
+      method:'POST',
+      headers:{
+        'Content-Type':file.type||'application/octet-stream',
+        'x-filename':file.name,
+        'x-item-type':itemType,
+        'x-item-id':itemId,
+      },
+      body:file,
+    });
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.error||'Upload failed');
+
+    const items=itemType==='licenses'?_licenses:itemType==='properties'?_properties:[];
+    const item=items.find(i=>i.id===itemId);
+    if(item){
+      if(!item.attachments)item.attachments=[];
+      item.attachments.push(data.attachment);
+    }
+    if(itemType==='licenses')renderLicenses();
+    else if(itemType==='properties')renderProperties();
+  }catch(e){
+    alert('Upload failed: '+e.message);
+  }finally{
+    if(btn){btn.textContent='📎 Upload';btn.disabled=false}
+  }
+}
+
+async function addDriveLink(itemType, itemId){
+  const url=prompt('Paste Google Drive or external link:');
+  if(!url||!url.trim())return;
+  const label=prompt('Label (optional):','');
+
+  try{
+    const res=await fetch('/api/files?type='+itemType+'&itemId='+itemId,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'add_link',type:itemType,itemId,url:url.trim(),label:label||url.trim()}),
+    });
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.error||'Failed');
+
+    const items=itemType==='licenses'?_licenses:itemType==='properties'?_properties:[];
+    const item=items.find(i=>i.id===itemId);
+    if(item){
+      if(!item.attachments)item.attachments=[];
+      item.attachments.push(data.attachment);
+    }
+    if(itemType==='licenses')renderLicenses();
+    else if(itemType==='properties')renderProperties();
+  }catch(e){alert('Failed: '+e.message)}
+}
+
+async function deleteAttachment(itemType, itemId, attachmentId){
+  if(!confirm('Remove this attachment?'))return;
+  try{
+    const res=await fetch('/api/files?type='+itemType+'&itemId='+itemId,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'delete',type:itemType,itemId,attachmentId}),
+    });
+    if(!res.ok){const d=await res.json();throw new Error(d.error||'Failed')}
+
+    const items=itemType==='licenses'?_licenses:itemType==='properties'?_properties:[];
+    const item=items.find(i=>i.id===itemId);
+    if(item&&item.attachments)item.attachments=item.attachments.filter(a=>a.id!==attachmentId);
+    if(itemType==='licenses')renderLicenses();
+    else if(itemType==='properties')renderProperties();
+  }catch(e){alert('Delete failed: '+e.message)}
+}
+
+function renderAttachments(attachments, itemType, itemId){
+  if(!attachments||!attachments.length)return '';
+  let html='<div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.06)">';
+  html+='<div style="font-size:0.6rem;color:var(--text-faint);margin-bottom:6px;font-weight:600">ATTACHMENTS ('+attachments.length+')</div>';
+  attachments.forEach(a=>{
+    const isFile=a.type==='file';
+    const isPdf=isFile&&(/\.pdf$/i.test(a.filename)||(a.contentType||'').includes('pdf'));
+    const isImg=isFile&&(/\.(jpg|jpeg|png|gif|webp|svg)$/i.test(a.filename)||(a.contentType||'').startsWith('image/'));
+    const icon=isPdf?'📄':isImg?'🖼️':isFile?'📁':'🔗';
+    const label=isFile?a.filename:(a.label||a.url);
+    const size=a.size?(' · '+(a.size>1048576?(a.size/1048576).toFixed(1)+'MB':(a.size/1024).toFixed(0)+'KB')):'';
+
+    html+='<div style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:0.68rem">';
+    html+='<span>'+icon+'</span>';
+    html+='<span style="color:#fff;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;text-decoration:underline;text-decoration-color:rgba(255,255,255,0.2)" ';
+    html+='onclick="viewAttachment('+JSON.stringify(a).replace(/"/g,'&quot;')+')" title="'+label+'">'+label+'</span>';
+    if(size)html+='<span style="color:var(--text-faint);font-size:0.55rem;flex-shrink:0">'+size+'</span>';
+    if(isFile)html+='<a href="'+a.url+'" download style="color:var(--text-faint);font-size:0.6rem;text-decoration:none" title="Download">⬇</a>';
+    html+='<button onclick="deleteAttachment(\''+itemType+"','"+itemId+"','"+a.id+'\')" style="background:none;border:none;color:var(--red-soft);font-size:0.6rem;cursor:pointer;padding:0" title="Remove">✕</button>';
+    html+='</div>';
+  });
+  html+='</div>';
+  return html;
 }
 
 function renderOverview(){
