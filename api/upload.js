@@ -25,7 +25,7 @@ module.exports = async function handler(req, res) {
 
   try {
     const blob = await put(`tom-hub/${itemType}/${itemId}/${filename}`, req, {
-      access: 'public',
+      access: 'private',
       addRandomSuffix: true,
     });
 
