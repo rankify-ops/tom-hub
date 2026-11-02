@@ -4746,13 +4746,15 @@ function closeImageViewer(){
   document.getElementById('image-viewer-img').src='';
 }
 
+function proxyUrl(blobUrl){return '/api/files?action=download&url='+encodeURIComponent(blobUrl)}
 function viewAttachment(att){
   if(att.type==='link'){window.open(att.url,'_blank');return}
+  const url=proxyUrl(att.url);
   const isPdf=/\.pdf$/i.test(att.filename)||(att.contentType||'').includes('pdf');
   const isImage=/\.(jpg|jpeg|png|gif|webp|svg)$/i.test(att.filename)||(att.contentType||'').startsWith('image/');
-  if(isPdf) openPdfViewer(att.url, att.filename);
-  else if(isImage) openImageViewer(att.url, att.filename);
-  else window.open(att.url,'_blank');
+  if(isPdf) openPdfViewer(url, att.filename);
+  else if(isImage) openImageViewer(url, att.filename);
+  else window.open(url,'_blank');
 }
 
 function triggerUpload(itemType, itemId){
