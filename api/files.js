@@ -28,7 +28,8 @@ module.exports = async function handler(req, res) {
       const blobUrl = req.query.url;
       if (!blobUrl) return res.status(400).json({ error: 'url param required' });
       try {
-        const proxyRes = await fetch(blobUrl);
+        const token = process.env.BLOB_READ_WRITE_TOKEN;
+        const proxyRes = await fetch(blobUrl, token ? { headers: { Authorization: `Bearer ${token}` } } : {});
         if (!proxyRes.ok) return res.status(proxyRes.status).json({ error: 'Fetch failed' });
         const ct = proxyRes.headers.get('content-type') || 'application/octet-stream';
         const fname = decodeURIComponent(blobUrl.split('/').pop().split('?')[0] || 'download');
