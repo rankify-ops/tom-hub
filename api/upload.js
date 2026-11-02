@@ -8,6 +8,7 @@ const TYPE_KEYS = {
   checklists: 'tom_checklists',
   notes: 'tom_notes',
   goals: 'tom_goals',
+  compliance: 'tom_compliance_weapons',
 };
 
 module.exports = async function handler(req, res) {
@@ -42,15 +43,23 @@ module.exports = async function handler(req, res) {
     const data = await kvGet(kvKey);
     if (!data) return res.status(404).json({ error: 'Item collection not found' });
 
-    const collectionKey = itemType === 'licenses' ? 'licenses' : itemType;
-    const items = data[collectionKey] || data.items || [];
-    const item = items.find(i => i.id === itemId);
-    if (!item) return res.status(404).json({ error: 'Item not found: ' + itemId });
+    if (itemType === 'compliance') {
+      attachment.section = req.headers['x-section'] || 'general';
+      if (!data.attachments) data.attachments = [];
+      data.attachments.push(attachment);
+      data.updated = new Date().toISOString();
+      await kvSet(kvKey, data);
+    } else {
+      const collectionKey = itemType === 'licenses' ? 'licenses' : itemType;
+      const items = data[collectionKey] || data.items || [];
+      const item = items.find(i => i.id === itemId);
+      if (!item) return res.status(404).json({ error: 'Item not found: ' + itemId });
 
-    if (!item.attachments) item.attachments = [];
-    item.attachments.push(attachment);
-    data.updated = new Date().toISOString();
-    await kvSet(kvKey, data);
+      if (!item.attachments) item.attachments = [];
+      item.attachments.push(attachment);
+      data.updated = new Date().toISOString();
+      await kvSet(kvKey, data);
+    }
 
     return res.status(200).json({ success: true, attachment });
   } catch (err) {

@@ -8,6 +8,7 @@ const TYPE_KEYS = {
   checklists: 'tom_checklists',
   notes: 'tom_notes',
   goals: 'tom_goals',
+  compliance: 'tom_compliance_weapons',
 };
 
 function getItems(data, itemType) {
@@ -49,6 +50,11 @@ module.exports = async function handler(req, res) {
 
     const data = await kvGet(kvKey);
     if (!data) return res.status(200).json({ attachments: [] });
+    if (itemType === 'compliance') {
+      const section = req.query.section;
+      const all = data.attachments || [];
+      return res.status(200).json({ attachments: section ? all.filter(a => a.section === section) : all });
+    }
     const items = getItems(data, itemType);
     const item = items.find(i => i.id === itemId);
     return res.status(200).json({ attachments: item?.attachments || [] });
@@ -65,15 +71,28 @@ module.exports = async function handler(req, res) {
 
       const data = await kvGet(kvKey);
       if (!data) return res.status(404).json({ error: 'Not found' });
-      const items = getItems(data, itemType);
-      const item = items.find(i => i.id === itemId);
-      if (!item || !item.attachments) return res.status(404).json({ error: 'Item not found' });
 
-      const att = item.attachments.find(a => a.id === attachmentId);
+      let attList;
+      if (itemType === 'compliance') {
+        attList = data.attachments || [];
+      } else {
+        const items = getItems(data, itemType);
+        const item = items.find(i => i.id === itemId);
+        if (!item || !item.attachments) return res.status(404).json({ error: 'Item not found' });
+        attList = item.attachments;
+      }
+
+      const att = attList.find(a => a.id === attachmentId);
       if (att && att.type === 'file' && att.url) {
         try { await del(att.url); } catch (_) {}
       }
-      item.attachments = item.attachments.filter(a => a.id !== attachmentId);
+      if (itemType === 'compliance') {
+        data.attachments = (data.attachments || []).filter(a => a.id !== attachmentId);
+      } else {
+        const items = getItems(data, itemType);
+        const item = items.find(i => i.id === itemId);
+        item.attachments = item.attachments.filter(a => a.id !== attachmentId);
+      }
       data.updated = new Date().toISOString();
       await kvSet(kvKey, data);
       return res.status(200).json({ success: true });
@@ -87,11 +106,7 @@ module.exports = async function handler(req, res) {
 
       const data = await kvGet(kvKey);
       if (!data) return res.status(404).json({ error: 'Not found' });
-      const items = getItems(data, itemType);
-      const item = items.find(i => i.id === itemId);
-      if (!item) return res.status(404).json({ error: 'Item not found' });
 
-      if (!item.attachments) item.attachments = [];
       const link = {
         id: 'att_' + Date.now(),
         type: 'link',
@@ -99,7 +114,17 @@ module.exports = async function handler(req, res) {
         url,
         addedAt: new Date().toISOString(),
       };
-      item.attachments.push(link);
+      if (itemType === 'compliance') {
+        link.section = req.body.section || 'general';
+        if (!data.attachments) data.attachments = [];
+        data.attachments.push(link);
+      } else {
+        const items = getItems(data, itemType);
+        const item = items.find(i => i.id === itemId);
+        if (!item) return res.status(404).json({ error: 'Item not found' });
+        if (!item.attachments) item.attachments = [];
+        item.attachments.push(link);
+      }
       data.updated = new Date().toISOString();
       await kvSet(kvKey, data);
       return res.status(200).json({ success: true, attachment: link });

@@ -1,0 +1,137 @@
+{
+  "id": "weapons",
+  "licence": {
+    "number": "",
+    "categories": ["A", "B"],
+    "conditions": ["RE1", "SC1", "SC2"],
+    "issueDate": "",
+    "expiryDate": "2028-07-17",
+    "renewalWindowStart": "2028-04-17",
+    "renewalWindowEnd": "2028-07-16"
+  },
+  "permissions": [
+    {
+      "code": "RE1",
+      "name": "Recreational Hunting — Rural Land",
+      "description": "Shoot on rural land with written landowner permission",
+      "appliesTo": "QLD rural properties",
+      "requirements": "Current Shooters Union membership, written landowner permission letter for each property",
+      "status": "green",
+      "mapColor": "#4caf50"
+    },
+    {
+      "code": "SC1",
+      "name": "Sport / Target Shooting — Approved Range",
+      "description": "Shoot at an approved shooting range under club rules",
+      "appliesTo": "Approved ranges in QLD",
+      "requirements": "Current club membership, range booking or club shoot day",
+      "status": "green",
+      "mapColor": "#2196f3"
+    },
+    {
+      "code": "SC2",
+      "name": "Sport / Target Shooting — Approved Events",
+      "description": "Compete at approved shooting competitions and events",
+      "appliesTo": "Approved competition venues",
+      "requirements": "Current club membership, event registration",
+      "status": "green",
+      "mapColor": "#9c27b0"
+    }
+  ],
+  "missingLicences": [
+    {
+      "id": "nsw_r_licence",
+      "name": "NSW R-Licence (Game and Feral Animal Control)",
+      "authority": "NSW DPI",
+      "purpose": "Hunting in NSW state forests and crown land",
+      "status": "not_held",
+      "courseDone": true,
+      "accreditation": "245164",
+      "applyUrl": "https://www.service.nsw.gov.au/transaction/apply-game-hunting-licence",
+      "checklist": [
+        {"item": "Firearms safety course completed", "done": true},
+        {"item": "DPI accreditation obtained (245164)", "done": true},
+        {"item": "NSW R-Licence application submitted", "done": false},
+        {"item": "Licence received", "done": false}
+      ]
+    }
+  ],
+  "genuineReason": {
+    "club": "Shooters Union",
+    "memberNumber": "",
+    "expiryDate": "",
+    "reminderDays": 30,
+    "insurance": "Standard Public Liability + Hunting Insurance Cover",
+    "isGenuineReason": true,
+    "interestGroups": ["Clay", "Competitive Sports Shooting", "Hunting", "Large Calibre", "Pest Management", "Pistol", "Target Shooting"]
+  },
+  "storage": {
+    "address": "1 Wagtail Court, Burleigh Waters QLD 4220",
+    "owner": "Drew/Andrew Dunscombe",
+    "safeType": "Locked steel safe",
+    "boltedDown": true,
+    "safePhotoDate": "",
+    "form4aLodgedDate": "2026-11-03",
+    "form4aConfirmation": "",
+    "lat": -28.093,
+    "lng": 153.432
+  },
+  "mapPins": [
+    {"id": "pin_storage", "lat": -28.093, "lng": 153.432, "label": "Storage — 1 Wagtail Ct, Burleigh Waters", "type": "storage", "icon": "storage"}
+  ],
+  "landownerPermissions": [],
+  "firearms": [],
+  "training": [],
+  "transportRules": [
+    {"id": "tr_1", "rule": "Unloaded at all times while transported", "source": "Weapons Regulation 2016 / QPS", "sourceUrl": "", "verified": false},
+    {"id": "tr_2", "rule": "Not visible from outside the vehicle (in a case or bag)", "source": "Weapons Regulation 2016 / QPS", "sourceUrl": "", "verified": false},
+    {"id": "tr_3", "rule": "Kept secure: a locked container or a locked part of the vehicle where practicable", "source": "Weapons Regulation 2016 / QPS", "sourceUrl": "", "verified": false},
+    {"id": "tr_4", "rule": "Ammunition stored separately from the firearm where practicable", "source": "Weapons Regulation 2016 / QPS", "sourceUrl": "", "verified": false},
+    {"id": "tr_5", "rule": "The bolt or firing mechanism removed and kept apart where practicable", "source": "Weapons Regulation 2016 / QPS", "sourceUrl": "", "verified": false},
+    {"id": "tr_6", "rule": "Never left unattended in a vehicle unless reasonable precautions are taken (locked and out of sight)", "source": "Weapons Regulation 2016 / QPS", "sourceUrl": "", "verified": false},
+    {"id": "tr_7", "rule": "Licence carried whenever you're in possession of the firearm", "source": "Weapons Regulation 2016 / QPS", "sourceUrl": "", "verified": false},
+    {"id": "tr_8", "rule": "Only travel for a lawful purpose under your genuine reason (range, permitted property, gunsmith, storage)", "source": "Weapons Regulation 2016 / QPS", "sourceUrl": "", "verified": false}
+  ],
+  "beforeILeave": [
+    {"id": "bil_1", "item": "Firearm unloaded and action open"},
+    {"id": "bil_2", "item": "Firearm in locked case or bag"},
+    {"id": "bil_3", "item": "Ammunition in separate container"},
+    {"id": "bil_4", "item": "Bolt / firing mechanism removed (if practicable)"},
+    {"id": "bil_5", "item": "Case not visible from outside vehicle"},
+    {"id": "bil_6", "item": "Vehicle locked when unattended"},
+    {"id": "bil_7", "item": "Licence on person"},
+    {"id": "bil_8", "item": "Travelling for a lawful purpose"}
+  ],
+  "interstateNotes": "NSW: NSW Firearms Act 1996 applies. QLD licence is recognised but you must comply with NSW transport and storage rules. Category A/B firearms may be used for hunting on private land with landowner permission. Hunting in NSW state forests requires an R-Licence from NSW DPI (Game and Feral Animal Control).",
+  "complianceLog": [
+    {
+      "id": "cl_1",
+      "date": "2026-11-03",
+      "entry": "Form 4A lodged online with QPS. Storage address updated to Drew's new address at 1 Wagtail Court, Burleigh Waters.",
+      "type": "form_lodged"
+    },
+    {
+      "id": "cl_2",
+      "date": "2026-10-28",
+      "entry": "ID photo taken for licence records.",
+      "type": "admin"
+    }
+  ],
+  "contacts": [
+    {"name": "QPS Weapons Licensing", "phone": "(07) 3015 7777"},
+    {"name": "Shooters Union Australia", "phone": "1300 486 446"}
+  ],
+  "attachments": [
+    {
+      "id": "att_1793661210972",
+      "type": "file",
+      "filename": "Drew Dunscombe Weapon Storage Permissions.pdf",
+      "url": "https://u3ftaer3qylilcwv.private.blob.vercel-storage.com/tom-hub/licenses/1790079221948/Drew%20Dunscombe%20Weapon%20Storage%20Permissions-jnmSZTGvX6nfFOWinm4t3MlNtAodAE.pdf",
+      "contentType": "application/pdf",
+      "size": 46705,
+      "uploadedAt": "2026-11-02T23:13:30.972Z",
+      "section": "storage"
+    }
+  ],
+  "updated": "2026-11-03T00:00:00.000Z"
+}
