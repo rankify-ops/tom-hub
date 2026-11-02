@@ -5408,7 +5408,7 @@ function renderComplianceDetail(){
   html+=`<div class="comp-section"><div class="comp-section-head"><div class="comp-section-title">🚗 Transport & Handling Rules</div>${sectionBadge(compSectionStatus('transport',d))}</div>`;
   (d.transportRules||[]).forEach(r=>{
     html+=`<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.78rem">
-      <span style="color:${r.verified?'#2dd4a8':'var(--text-muted)');font-size:0.9rem">${r.verified?'✓':'○'}</span>
+      <span style="color:${r.verified?'#2dd4a8':'var(--text-muted)'};font-size:0.9rem">${r.verified?'✓':'○'}</span>
       <div style="flex:1"><span style="color:rgba(255,255,255,0.8)">${r.rule}</span>
         ${r.source?'<div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px">Source: '+r.source+'</div>':''}
         ${r.sourceUrl?'<a href="'+r.sourceUrl+'" target="_blank" style="font-size:0.68rem;color:var(--teal)">View source →</a>':''}
