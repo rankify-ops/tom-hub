@@ -5487,27 +5487,25 @@ function renderComplianceDetail(){
   html+='</div></div>';
 
   // Trip Log
-  html+=`<div class="card comp-section">${sh('✈','Trip Log & Checklist','<span class="comp-badge green">'+(d.trips||[]).length+' trips</span>')}
+  const purposes={range:'Range',hunt:'Hunting',competition:'Competition',gunsmith:'Gunsmith',storage:'Storage Transfer',other:'Other'};
+  html+=`<div class="card comp-section">${sh('✈','Trip Log','<span class="comp-badge green">'+(d.trips||[]).length+' trips</span>')}
     <div class="comp-section-body">
-      <div class="comp-sub" style="margin-top:0">Before I Leave</div>`;
-  (d.beforeILeave||[]).forEach((b,i)=>{
-    html+=`<div class="comp-checklist-item" onclick="this.classList.toggle('checked');const cb=this.querySelector('input');cb.checked=!cb.checked">
-      <input type="checkbox" id="bil_${i}" onclick="event.stopPropagation()">
-      <label for="bil_${i}">${b.item}</label>
-    </div>`;
-  });
-  html+=`<div style="margin-top:16px"><button class="btn" onclick="openTripModal()">Log This Trip</button></div>`;
+      <button class="btn" onclick="openTripModal()">Log a Trip</button>`;
   if((d.trips||[]).length){
     html+='<div class="comp-sub">Previous Trips</div>';
-    const purposes={range:'Range',hunt:'Hunting',competition:'Competition',gunsmith:'Gunsmith',storage:'Storage Transfer',other:'Other'};
     (d.trips||[]).slice(0,20).forEach(t=>{
       const td=new Date(t.date);
+      const allChecked=(t.checklist||[]).every(c=>c.checked);
+      const checkCount=(t.checklist||[]).filter(c=>c.checked).length;
+      const totalChecks=(t.checklist||[]).length;
       html+=`<div class="comp-trip">
-        <div class="comp-trip-head"><span class="comp-trip-date">${td.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})} ${td.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'})}</span><span class="comp-badge green">${purposes[t.purpose]||t.purpose||'—'}</span></div>
-        ${t.destination?'<div class="comp-trip-dest">'+t.destination+'</div>':''}
-        <div class="comp-trip-checks">${(t.checklist||[]).map(c=>'<span class="comp-trip-check '+(c.checked?'ok':'missed')+'">'+c.item+'</span>').join('')}</div>
+        <div class="comp-trip-head"><span class="comp-trip-date">${td.toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})} ${td.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'})}</span><span class="comp-badge ${allChecked?'green':'amber'}">${purposes[t.purpose]||t.purpose||'—'}</span></div>
+        ${t.destination?'<div class="comp-trip-dest">📍 '+t.destination+'</div>':''}
+        <div style="font-size:0.72rem;color:${allChecked?'var(--teal)':'var(--amber)'};margin-top:4px">${allChecked?'✓ All checks passed':'⚠ '+checkCount+'/'+totalChecks+' checks passed'}</div>
       </div>`;
     });
+  }else{
+    html+='<div style="font-size:0.78rem;color:var(--text-muted);padding:12px 14px;margin-top:12px;background:rgba(255,255,255,0.03);border-radius:var(--radius-sm)">No trips logged yet. Log your first trip above.</div>';
   }
   html+='</div></div>';
 
@@ -5537,19 +5535,22 @@ function renderComplianceDetail(){
 }
 
 function openTripModal(){
-  const checks=[];
-  document.querySelectorAll('.comp-checklist-item input[type="checkbox"]').forEach(cb=>{
-    checks.push({item:cb.parentElement.querySelector('label').textContent,checked:cb.checked});
-  });
-  window._tripChecks=checks;
-  const overlay=document.getElementById('trip-modal');
-  if(overlay){overlay.classList.add('open');return}
+  const d=_compData;
+  const items=(d&&d.beforeILeave)||[];
+  const now=new Date();
+  const dateStr=now.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+  const timeStr=now.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'});
+
+  let old=document.getElementById('trip-modal');
+  if(old)old.remove();
+
   const div=document.createElement('div');
   div.id='trip-modal';
   div.className='modal-overlay open';
   div.innerHTML=`<div class="modal-backdrop" onclick="closeTripModal()"></div>
     <div class="modal-card">
       <div class="modal-title">Log Trip</div>
+      <div style="font-size:0.78rem;color:var(--text-muted);margin:-8px 0 16px">📅 ${dateStr} — ${timeStr}</div>
       <div class="form-group">
         <label class="form-label">Destination</label>
         <input id="trip-dest" class="form-input" placeholder="e.g. Belmont Range, Drew's property">
@@ -5566,10 +5567,13 @@ function openTripModal(){
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label">Checklist Items Completed</label>
-        <div style="font-size:0.78rem;color:var(--text-muted);line-height:1.8">${checks.map((c,i)=>'<div style="color:'+(c.checked?'var(--teal)':'var(--red-soft)')+'">'+( c.checked?'✓':'✗')+' '+c.item+'</div>').join('')}</div>
+        <label class="form-label">Before I Leave — Checklist</label>
+        <div id="trip-checklist" style="display:flex;flex-direction:column;gap:6px;margin-top:4px">
+          ${items.map((b,i)=>`<label style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:8px;cursor:pointer;font-size:0.8rem;color:rgba(255,255,255,0.8);transition:all 0.15s" onclick="this.classList.toggle('trip-checked');this.style.borderColor=this.classList.contains('trip-checked')?'var(--teal)':'rgba(255,255,255,0.06)';this.style.background=this.classList.contains('trip-checked')?'rgba(45,212,168,0.08)':'rgba(255,255,255,0.04)'"><input type="checkbox" data-item="${b.item.replace(/"/g,'&quot;')}" style="accent-color:var(--teal);width:16px;height:16px;cursor:pointer" onclick="event.stopPropagation();const p=this.parentElement;if(this.checked){p.classList.add('trip-checked');p.style.borderColor='var(--teal)';p.style.background='rgba(45,212,168,0.08)'}else{p.classList.remove('trip-checked');p.style.borderColor='rgba(255,255,255,0.06)';p.style.background='rgba(255,255,255,0.04)'}"><span>${b.item}</span></label>`).join('')}
+        </div>
+        <div style="margin-top:8px;text-align:right"><button type="button" style="font-size:0.7rem;color:var(--teal);background:none;border:none;cursor:pointer;text-decoration:underline" onclick="document.querySelectorAll('#trip-checklist input[type=checkbox]').forEach(cb=>{cb.checked=true;const p=cb.parentElement;p.classList.add('trip-checked');p.style.borderColor='var(--teal)';p.style.background='rgba(45,212,168,0.08)'})">Check All</button></div>
       </div>
-      <div style="display:flex;gap:8px;margin-top:8px">
+      <div style="display:flex;gap:8px;margin-top:12px">
         <button class="btn" onclick="saveCompTrip()">Save Trip</button>
         <button class="btn-ghost btn" onclick="closeTripModal()">Cancel</button>
       </div>
@@ -5579,15 +5583,19 @@ function openTripModal(){
 
 function closeTripModal(){
   const m=document.getElementById('trip-modal');
-  if(m)m.classList.remove('open');
+  if(m)m.remove();
 }
 
 async function saveCompTrip(){
   const dest=document.getElementById('trip-dest').value;
   const purpose=document.getElementById('trip-purpose').value;
+  const checks=[];
+  document.querySelectorAll('#trip-checklist input[type="checkbox"]').forEach(cb=>{
+    checks.push({item:cb.getAttribute('data-item'),checked:cb.checked});
+  });
   closeTripModal();
   try{
-    await fetch('/api/compliance',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add_trip',trip:{destination:dest,purpose:purpose,checklist:window._tripChecks||[]}})});
+    await fetch('/api/compliance',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'add_trip',trip:{destination:dest,purpose:purpose,checklist:checks}})});
     await loadCompliance();
     _compView='detail';
     renderComplianceView();
