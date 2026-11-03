@@ -252,6 +252,12 @@ select.form-input{cursor:pointer;background:#1a1a1a}
 .comp-hero .ring-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:700;color:#fff}
 .comp-hero-info h3{font-size:1.05rem;font-weight:600;color:#fff;margin-bottom:2px}
 .comp-hero-info p{font-size:0.78rem;color:var(--text-muted)}
+.comp-tabs-bar{display:flex;gap:4px;overflow-x:auto;padding:4px 0 12px;margin-bottom:8px;scrollbar-width:none;-ms-overflow-style:none}
+.comp-tabs-bar::-webkit-scrollbar{display:none}
+.comp-tab-btn{flex-shrink:0;padding:7px 14px;border-radius:20px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:var(--text-muted);font-size:0.72rem;font-weight:500;cursor:pointer;transition:all 0.15s;white-space:nowrap}
+.comp-tab-btn:hover{background:rgba(255,255,255,0.06);color:#fff}
+.comp-tab-btn.active{background:rgba(45,212,168,0.12);color:var(--teal);border-color:rgba(45,212,168,0.3)}
+.comp-tab-pane{min-height:200px}
 .comp-card{padding:18px 20px;cursor:pointer;transition:all var(--transition)}
 .comp-card:hover{border-color:rgba(45,212,168,0.25)}
 .comp-card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
@@ -5321,6 +5327,15 @@ function compSectionStatus(section,d){
 
 function toggleCompSection(el){el.closest('.comp-section').classList.toggle('collapsed')}
 
+let _compTab='licence';
+
+function switchCompTab(tab){
+  _compTab=tab;
+  document.querySelectorAll('.comp-tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  document.querySelectorAll('.comp-tab-pane').forEach(p=>p.style.display=p.dataset.tab===tab?'':'none');
+  if(tab==='map')setTimeout(initCompMap,50);
+}
+
 function renderComplianceDetail(){
   const d=_compData;
   if(!d)return;
@@ -5336,18 +5351,37 @@ function renderComplianceDetail(){
     return '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:12px">'+atts.map(a=>`<span class="comp-att" onclick="viewAttachment(${JSON.stringify(a).replace(/"/g,'&quot;')})">${a.type==='file'?'📄':'🔗'} ${a.filename||a.label}</span>`).join('')+'</div>';
   };
   const gi=(label,value,full)=>`<div class="comp-grid-item${full?' full':''}"><div class="comp-grid-label">${label}</div><div class="comp-grid-value">${value}</div></div>`;
-  const sh=(icon,title,badge)=>`<div class="comp-section-head" onclick="toggleCompSection(this)"><div class="comp-section-title"><span class="comp-section-chevron">▼</span> ${icon} ${title}</div>${badge}</div>`;
 
-  let html=`<div class="comp-detail-back" onclick="_compView='cards';renderComplianceView()">← Back to Compliance</div>`;
+  const tabs=[
+    {id:'licence',icon:'📋',label:'Licence'},
+    {id:'permissions',icon:'🔑',label:'Permissions'},
+    {id:'club',icon:'🎯',label:'Club'},
+    {id:'storage',icon:'🔒',label:'Storage'},
+    {id:'firearms',icon:'🔫',label:'Firearms'},
+    {id:'training',icon:'🎓',label:'Training'},
+    {id:'transport',icon:'🚗',label:'Transport'},
+    {id:'trips',icon:'✈',label:'Trips'},
+    {id:'log',icon:'📝',label:'Log'},
+    {id:'map',icon:'🗺',label:'Map'},
+    {id:'contacts',icon:'📞',label:'Contacts'},
+  ];
+
+  let html=`<div class="comp-detail-back" onclick="_compView='cards';renderComplianceView()">← Back</div>`;
   html+=renderScoreRing(pct);
 
-  // Licence
+  html+='<div class="comp-tabs-bar">';
+  tabs.forEach(t=>{
+    html+=`<button class="comp-tab-btn${_compTab===t.id?' active':''}" data-tab="${t.id}" onclick="switchCompTab('${t.id}')">${t.icon} ${t.label}</button>`;
+  });
+  html+='</div>';
+
+  // --- LICENCE ---
   const exp=daysUntil(d.licence.expiryDate);
   const expStr=d.licence.expiryDate?new Date(d.licence.expiryDate).toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'}):'—';
   const rStart=d.licence.renewalWindowStart?new Date(d.licence.renewalWindowStart).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}):'—';
   const rEnd=d.licence.renewalWindowEnd?new Date(d.licence.renewalWindowEnd).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}):'—';
-  html+=`<div class="card comp-section">${sh('📋','Licence',sectionBadge(compSectionStatus('licence',d)))}
-    <div class="comp-section-body">
+  html+=`<div class="comp-tab-pane" data-tab="licence" style="display:${_compTab==='licence'?'':'none'}">
+    <div class="card" style="padding:20px">
       <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:16px"><span class="comp-countdown ${exp&&exp>90?'':exp&&exp>30?'warn':'urgent'}">${exp!==null?exp:''}</span><span style="font-size:0.78rem;color:var(--text-muted)">days until expiry</span></div>
       <div class="comp-grid">
         ${gi('Licence No.',d.licence.number||'—')}
@@ -5359,9 +5393,8 @@ function renderComplianceDetail(){
       </div>
     </div></div>`;
 
-  // Permissions
-  html+=`<div class="card comp-section">${sh('🔑','Permissions & Licences',sectionBadge(compSectionStatus('permissions',d)))}
-    <div class="comp-section-body">`;
+  // --- PERMISSIONS ---
+  html+=`<div class="comp-tab-pane" data-tab="permissions" style="display:${_compTab==='permissions'?'':'none'}">`;
   (d.permissions||[]).forEach(p=>{
     html+=`<div class="comp-inner">
       <div class="comp-inner-head"><span class="comp-inner-title">${p.code} — ${p.name}</span><span class="comp-badge ${p.status}">${p.status==='green'?'Active':'Inactive'}</span></div>
@@ -5376,11 +5409,7 @@ function renderComplianceDetail(){
       const badge=l.status==='held'?'green':l.courseDone?'amber':'red';
       html+=`<div class="comp-missing">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span style="font-size:0.85rem;font-weight:600;color:var(--amber)">${l.name}</span><span class="comp-badge ${badge}">${l.status==='held'?'Held':'Not held'}</span></div>
-        <div class="comp-grid" style="margin-bottom:10px">
-          ${gi('Authority',l.authority)}
-          ${gi('Purpose',l.purpose)}
-          ${l.accreditation?gi('Accreditation','<span style="color:var(--teal)">'+l.accreditation+'</span>'):''}
-        </div>`;
+        <div class="comp-grid" style="margin-bottom:10px">${gi('Authority',l.authority)}${gi('Purpose',l.purpose)}${l.accreditation?gi('Accreditation','<span style="color:var(--teal)">'+l.accreditation+'</span>'):''}</div>`;
       (l.checklist||[]).forEach(c=>{
         html+=`<div class="comp-check-step"><span style="color:${c.done?'var(--teal)':'var(--text-faint)'};font-size:0.85rem">${c.done?'✓':'○'}</span><span style="color:${c.done?'rgba(255,255,255,0.85)':'var(--text-muted)'}">${c.item}</span></div>`;
       });
@@ -5399,23 +5428,11 @@ function renderComplianceDetail(){
     });
     html+='</tbody></table></div>';
   }
-  html+='</div></div>';
+  html+='</div>';
 
-  // Map
-  html+=`<div class="card comp-section">${sh('🗺','Map','')}
-    <div class="comp-section-body">
-      <div id="comp-map" style="height:280px;border-radius:var(--radius-sm);overflow:hidden;border:1px solid rgba(255,255,255,0.06)"></div>
-      <div style="display:flex;gap:14px;margin-top:10px;font-size:0.68rem;flex-wrap:wrap">
-        <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:50%;background:#f44336"></span>Storage</span>
-        <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:50%;background:#2196f3"></span>Range</span>
-        <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:50%;background:#4caf50"></span>RE1 Property</span>
-        <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:50%;background:#9c27b0"></span>SC2 Event</span>
-      </div>
-    </div></div>`;
-
-  // Genuine Reason
-  html+=`<div class="card comp-section">${sh('🎯','Genuine Reason / Club',sectionBadge(compSectionStatus('genuineReason',d)))}
-    <div class="comp-section-body">
+  // --- CLUB ---
+  html+=`<div class="comp-tab-pane" data-tab="club" style="display:${_compTab==='club'?'':'none'}">
+    <div class="card" style="padding:20px">
       <div class="comp-grid">
         ${gi('Club',d.genuineReason.club||'—')}
         ${gi('Member No.',d.genuineReason.memberNumber||'—')}
@@ -5427,9 +5444,9 @@ function renderComplianceDetail(){
       ${renderAtts('genuineReason')}
     </div></div>`;
 
-  // Storage
-  html+=`<div class="card comp-section">${sh('🔒','Storage',sectionBadge(compSectionStatus('storage',d)))}
-    <div class="comp-section-body">
+  // --- STORAGE ---
+  html+=`<div class="comp-tab-pane" data-tab="storage" style="display:${_compTab==='storage'?'':'none'}">
+    <div class="card" style="padding:20px">
       <div class="comp-grid">
         ${gi('Address',d.storage.address||'—',true)}
         ${gi('Owner',d.storage.owner||'—')}
@@ -5442,9 +5459,8 @@ function renderComplianceDetail(){
       ${renderAtts('storage')}
     </div></div>`;
 
-  // Firearms
-  html+=`<div class="card comp-section">${sh('🔫','Firearms Register','<span class="comp-badge green">'+(d.firearms||[]).length+' registered</span>')}
-    <div class="comp-section-body">`;
+  // --- FIREARMS ---
+  html+=`<div class="comp-tab-pane" data-tab="firearms" style="display:${_compTab==='firearms'?'':'none'}">`;
   if(!(d.firearms||[]).length){
     html+='<div style="font-size:0.78rem;color:var(--text-muted);padding:12px 14px;background:rgba(255,255,255,0.03);border-radius:var(--radius-sm)">No firearms registered yet.</div>';
   }else{
@@ -5455,11 +5471,10 @@ function renderComplianceDetail(){
       </div>`;
     });
   }
-  html+='</div></div>';
+  html+='</div>';
 
-  // Training
-  html+=`<div class="card comp-section">${sh('🎓','Training & Accreditations','<span class="comp-badge green">'+(d.training||[]).length+' certificates</span>')}
-    <div class="comp-section-body">`;
+  // --- TRAINING ---
+  html+=`<div class="comp-tab-pane" data-tab="training" style="display:${_compTab==='training'?'':'none'}">`;
   if(!(d.training||[]).length){
     html+='<div style="font-size:0.78rem;color:var(--text-muted);padding:12px 14px;background:rgba(255,255,255,0.03);border-radius:var(--radius-sm)">No training certificates recorded yet.</div>';
   }else{
@@ -5470,11 +5485,10 @@ function renderComplianceDetail(){
       </div>`;
     });
   }
-  html+='</div></div>';
+  html+='</div>';
 
-  // Transport Rules
-  html+=`<div class="card comp-section">${sh('🚗','Transport Rules',sectionBadge(compSectionStatus('transport',d)))}
-    <div class="comp-section-body">`;
+  // --- TRANSPORT ---
+  html+=`<div class="comp-tab-pane" data-tab="transport" style="display:${_compTab==='transport'?'':'none'}">`;
   (d.transportRules||[]).forEach(r=>{
     html+=`<div class="comp-rule">
       <span class="comp-rule-icon" style="color:${r.verified?'var(--teal)':'var(--text-faint)'}">${r.verified?'✓':'○'}</span>
@@ -5484,13 +5498,12 @@ function renderComplianceDetail(){
   if(d.interstateNotes){
     html+=`<div class="comp-sub">Interstate Notes</div><div class="comp-interstate">${d.interstateNotes}</div>`;
   }
-  html+='</div></div>';
+  html+='</div>';
 
-  // Trip Log
+  // --- TRIPS ---
   const purposes={range:'Range',hunt:'Hunting',competition:'Competition',gunsmith:'Gunsmith',storage:'Storage Transfer',other:'Other'};
-  html+=`<div class="card comp-section">${sh('✈','Trip Log','<span class="comp-badge green">'+(d.trips||[]).length+' trips</span>')}
-    <div class="comp-section-body">
-      <button class="btn" onclick="openTripModal()">Log a Trip</button>`;
+  html+=`<div class="comp-tab-pane" data-tab="trips" style="display:${_compTab==='trips'?'':'none'}">
+    <button class="btn" onclick="openTripModal()">Log a Trip</button>`;
   if((d.trips||[]).length){
     html+='<div class="comp-sub">Previous Trips</div>';
     (d.trips||[]).slice(0,20).forEach(t=>{
@@ -5505,13 +5518,12 @@ function renderComplianceDetail(){
       </div>`;
     });
   }else{
-    html+='<div style="font-size:0.78rem;color:var(--text-muted);padding:12px 14px;margin-top:12px;background:rgba(255,255,255,0.03);border-radius:var(--radius-sm)">No trips logged yet. Log your first trip above.</div>';
+    html+='<div style="font-size:0.78rem;color:var(--text-muted);padding:12px 14px;margin-top:12px;background:rgba(255,255,255,0.03);border-radius:var(--radius-sm)">No trips logged yet.</div>';
   }
-  html+='</div></div>';
+  html+='</div>';
 
-  // Compliance Log
-  html+=`<div class="card comp-section">${sh('📝','Compliance Log','<span class="comp-badge green">'+(d.complianceLog||[]).length+' entries</span>')}
-    <div class="comp-section-body">`;
+  // --- LOG ---
+  html+=`<div class="comp-tab-pane" data-tab="log" style="display:${_compTab==='log'?'':'none'}">`;
   if(!(d.complianceLog||[]).length){
     html+='<div style="font-size:0.78rem;color:var(--text-muted);padding:12px 14px;background:rgba(255,255,255,0.03);border-radius:var(--radius-sm)">No log entries yet.</div>';
   }else{
@@ -5520,18 +5532,27 @@ function renderComplianceDetail(){
     });
   }
   html+=`<div style="margin-top:12px" class="comp-interstate">⚠ 14-day rule: any change of circumstances must be reported to QPS within 14 days.</div>`;
-  html+='</div></div>';
+  html+='</div>';
 
-  // Contacts
-  html+=`<div class="card comp-section">${sh('📞','Contacts','')}
-    <div class="comp-section-body">`;
+  // --- MAP ---
+  html+=`<div class="comp-tab-pane" data-tab="map" style="display:${_compTab==='map'?'':'none'}">
+    <div id="comp-map" style="height:400px;border-radius:var(--radius-sm);overflow:hidden;border:1px solid rgba(255,255,255,0.06)"></div>
+    <div style="display:flex;gap:14px;margin-top:10px;font-size:0.68rem;flex-wrap:wrap">
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:50%;background:#f44336"></span>Storage</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:50%;background:#2196f3"></span>Range</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:50%;background:#4caf50"></span>RE1 Property</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:50%;background:#9c27b0"></span>SC2 Event</span>
+    </div></div>`;
+
+  // --- CONTACTS ---
+  html+=`<div class="comp-tab-pane" data-tab="contacts" style="display:${_compTab==='contacts'?'':'none'}">`;
   (d.contacts||[]).forEach(c=>{
     html+=`<div class="comp-contact"><span class="comp-contact-name">${c.name||''}</span><a href="tel:${(c.phone||'').replace(/\s/g,'')}" class="comp-contact-phone">${c.phone||''}</a></div>`;
   });
-  html+='</div></div>';
+  html+='</div>';
 
   det.innerHTML=html;
-  setTimeout(initCompMap,100);
+  if(_compTab==='map')setTimeout(initCompMap,100);
 }
 
 function openTripModal(){
