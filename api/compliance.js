@@ -19,6 +19,7 @@ function blank() {
     },
     firearms: [],
     training: [],
+    trips: [],
     complianceLog: [],
     contacts: [{ name: 'QPS Weapons Licensing', phone: '(07) 3015 7777' }],
     attachments: [],
@@ -80,6 +81,15 @@ module.exports = async function handler(req, res) {
       data.complianceLog.unshift(entry);
     } else if (action === 'remove_log') {
       data.complianceLog = data.complianceLog.filter(e => e.id !== req.body.logId);
+    } else if (action === 'add_trip') {
+      if (!data.trips) data.trips = [];
+      const trip = req.body.trip || {};
+      trip.id = trip.id || 'trip_' + Date.now();
+      trip.date = trip.date || new Date().toISOString();
+      trip.checklist = trip.checklist || [];
+      data.trips.unshift(trip);
+    } else if (action === 'remove_trip') {
+      data.trips = (data.trips || []).filter(t => t.id !== req.body.tripId);
     } else if (action === 'add_contact') {
       data.contacts.push(req.body.contact || {});
     } else if (action === 'remove_contact') {
