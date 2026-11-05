@@ -92,7 +92,6 @@ test('Rankify-style names and a proposed list still normalize', () => {
     div7a: { incomeTax: 19.5, minimumYearly: 8, interest: 4.2 },
     companyTaxEstimate: 900,
     reconciled: { reconciled: false, headline: 'Off by $2.00', difference: -2 },
-    configVersion: 4,
   });
   assert.equal(normalized.booked, -50);
   assert.equal(normalized.withProposed, -12.5);
@@ -104,6 +103,55 @@ test('Rankify-style names and a proposed list still normalize', () => {
   assert.equal(normalized.reconciliation.reconciled, false);
   assert.equal(normalized.proposed.items.length, 2);
   assert.equal(normalized.proposed.items[0].label, 'Gear sale');
+});
+
+test('an unknown configVersion is refused and the two known versions are kept', () => {
+  assert.equal(normalizeDirectorLoan({ ...sample, configVersion: 'fy27-2099' }), null);
+  assert.equal(normalizeDirectorLoan({ ...sample, configVersion: 'fy27-1' }).booked, -10);
+  const nov = normalizeDirectorLoan({
+    asOf: '2026-11-05',
+    booked: 3195.25,
+    withProposed: 3400,
+    costsTomPaid: 11000,
+    netPaidToTom: 10679.75,
+    loanAdjustments: [{ description: 'Gear sale', amount: 2875, supersedes: 'gearSale' }],
+    held: [{ description: 'Unsigned row', amount: 400, note: 'Not in the booked loan.' }],
+    proposed: [
+      { description: 'Gear sale', amount: 2875 },
+      { description: 'Licence fee', amount: 204.75 },
+    ],
+    div7a: {
+      booked: { personalTax: 0, annualInterest: 0, debit: 0, applies: false },
+      withProposed: { personalTax: 0, annualInterest: 0, debit: 0 },
+    },
+    configVersion: 'fy27-2026-11-05.1',
+  });
+  assert.equal(nov.booked, 3195.25);
+  assert.equal(nov.configVersion, 'fy27-2026-11-05.1');
+  assert.equal(nov.div7a.applies, false);
+  assert.equal(nov.div7a.tax, 0);
+  assert.equal(nov.adjustments.length, 1);
+  assert.equal(nov.adjustments[0].label, 'Gear sale');
+  assert.equal(nov.adjustments[0].amount, 2875);
+  assert.equal(nov.held.length, 1);
+  assert.equal(nov.held[0].amount, 400);
+  assert.equal(nov.proposed.items.length, 1);
+  assert.equal(nov.proposed.items[0].label, 'Licence fee');
+  assert.equal(nov.proposed.gearSale, null);
+  const summary = tax.buildSummary(config, assets);
+  const live = tax.applyRankifyLoan(summary, nov);
+  assert.equal(live.loanSync.live, true);
+  assert.equal(live.loanSync.matchesRankifyHub, true);
+  assert.equal(live.loanSync.configVersion, 'fy27-2026-11-05.1');
+  assert.equal(live.directorLoan.headline, 'Rankify owes Tom $3,195.25');
+  assert.equal(live.directorLoan.tomOwes, false);
+  assert.equal(live.directorLoan.bookedSigned, 3195.25);
+  assert.equal(live.div7a.applies, false);
+  assert.notEqual(live.directorLoan.bookedSigned, tax.round2(3195.25 + 400));
+  const stale = tax.applyRankifyLoan(summary, nov, { stale: true, syncedAt: '2026-11-05T01:00:00Z' });
+  assert.equal(stale.loanSync.live, false);
+  assert.equal(stale.loanSync.matchesRankifyHub, false);
+  assert.match(stale.loanSync.label, /^Not live: Rankify Hub did not answer/);
 });
 
 test('a feed without Div 7A or a date is rejected so local figures cannot mix in', () => {
@@ -296,6 +344,8 @@ test('browser files never mention the shared key or the Rankify loan URL', () =>
   assert.ok(labels.includes('Checklists') && labels.includes('Notes') && labels.includes('Goals'));
   assert.ok(labels.includes('Investment Properties') && labels.includes('Licenses & Certs'));
   assert.match(html, /Matches Rankify Hub/);
+  assert.match(html, /Held, not booked/);
+  assert.match(html, /Division 7A does not apply/);
   assert.match(html, /loan-sync/);
   assert.match(html, /Hiatus and ITM stay separate/);
 });
@@ -310,6 +360,8 @@ const books = {
     },
     proposed: [{ date: '2026-10-20', description: 'Gear sale', amount: 2875 }],
     ledger: [{ description: 'Client Pty Ltd invoice', amount: 999 }],
+    loanAdjustments: [{ description: 'Gear sale', amount: 2875, supersedes: 'gearSale' }],
+    held: [{ description: 'Held cost', amount: 50, note: 'Not booked' }],
   },
   reconciliation: { status: 'reconciled', outBy: 0, accounts: [{ number: '3314' }] },
 };
@@ -328,6 +380,9 @@ test('Rankify Hub books are read with a bearer key and only the loan summary cro
   assert.equal(calls[0].url, BOOKS_URL);
   assert.equal(r.data.booked, -1881.42);
   assert.equal(r.data.withProposed, 1186.92);
+  assert.equal(r.data.adjustments[0].amount, 2875);
+  assert.equal(r.data.held[0].label, 'Held cost');
+  assert.equal(r.data.proposed.items.some(item => /gear sale/i.test(item.label)), false);
   assert.equal(r.data.costsTomPaid, 12502.85);
   assert.equal(r.data.div7a.tax, 733.75);
   assert.equal(r.data.reconciliation.reconciled, true);
@@ -339,6 +394,48 @@ test('Rankify Hub books are read with a bearer key and only the loan summary cro
   const stale = tax.applyRankifyLoan(tax.buildSummary(config, assets), r.data, { syncedAt: '2026-10-28T07:00:00Z', stale: true });
   assert.equal(stale.loanSync.live, false);
   assert.equal(stale.loanSync.label, 'Not live: Rankify Hub did not answer. Showing the last sync from 28 Oct 2026, 5:00 pm AEST');
+});
+
+test('books after the 5 Nov feed still say Rankify owes Tom $3,195.25', async () => {
+  const novBooks = {
+    asOf: '2026-11-05',
+    configVersion: 'fy27-2026-11-05.1',
+    tax: {
+      loan: { booked: 3195.25, withProposed: 3400, expensesTomPaid: 11000, netPaidToTom: 10679.75, reverseReimbursements: 2447.73 },
+      div7a: {
+        booked: { debit: 0, personalTax: 0, annualInterest: 0, applies: false, personalRate: 0.39, benchmarkRate: 0.0877 },
+        withProposed: { debit: 0, personalTax: 0, annualInterest: 0, personalRate: 0.39, benchmarkRate: 0.0877 },
+      },
+      proposed: [{ description: 'Licence fee', amount: 204.75 }],
+      loanAdjustments: [{ description: 'Gear sale, booked 5 Nov', amount: 2875, supersedes: 'gearSale' }],
+      held: [{ description: 'Unsigned agreement', amount: 125, note: 'Held, not booked.' }],
+      ledger: [{ description: 'Client Pty Ltd invoice', amount: 999 }],
+    },
+    reconciliation: { status: 'reconciled', outBy: 0 },
+  };
+  const cache = { at: 0, key: '', data: null };
+  const r = await fetchDirectorLoan({
+    env: { RANKIFY_BOOKS_KEY: 'books-key' },
+    fetchImpl: async (url, opts) => {
+      assert.equal(url, BOOKS_URL);
+      assert.equal(opts.headers.authorization, 'Bearer books-key');
+      return { ok: true, status: 200, json: async () => novBooks };
+    },
+    cache,
+    now: () => 9000,
+  });
+  assert.equal(r.ok, true);
+  assert.equal(r.data.source, 'rankify-hub-books');
+  assert.equal(r.data.configVersion, 'fy27-2026-11-05.1');
+  const summary = tax.applyRankifyLoan(tax.buildSummary(config, assets), r.data, { syncedAt: r.syncedAt });
+  assert.equal(summary.loanSync.live, true);
+  assert.equal(summary.loanSync.matchesRankifyHub, true);
+  assert.match(summary.loanSync.label, /^Live from Rankify Hub/);
+  assert.equal(summary.directorLoan.headline, 'Rankify owes Tom $3,195.25');
+  assert.equal(summary.directorLoan.bookedSigned, 3195.25);
+  assert.equal(summary.div7a.applies, false);
+  assert.equal(JSON.stringify(summary).includes('Client Pty Ltd'), false);
+  assert.equal(JSON.stringify(r).includes('books-key'), false);
 });
 
 test('cache is never longer than 5 minutes', async () => {
