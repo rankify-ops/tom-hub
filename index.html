@@ -1561,12 +1561,18 @@ function renderTax(){
   if(loan.expensesTomPaid!=null) h+='<div class="books-row"><span>Rankify costs Tom paid on his cards</span><strong>'+taxMoney(loan.expensesTomPaid)+'</strong></div>';
   if(loan.netPaidToTom!=null) h+='<div class="books-row"><span>Net paid to Tom</span><strong>'+taxMoney(loan.netPaidToTom)+'</strong></div>';
   if(loan.reverseReimbursement!=null) h+='<div class="books-row"><span>Money Tom paid back</span><strong>'+taxMoney(loan.reverseReimbursement)+'</strong></div>';
+  const adjustments=loan.adjustments||[];
+  adjustments.forEach(function(item){
+    const credit=Number(item.amount)||0;
+    h+='<div class="books-row"><span>'+escTax(item.label)+' '+taxPill('Booked','booked')+'</span><strong style="color:var(--teal)">'+(credit<0?'−':'+')+taxMoney(Math.abs(credit))+'</strong></div>';
+  });
   h+='<div class="books-row books-total"><span>'+(owes?'Tom owes Rankify':loan.bookedSigned>0?'Rankify owes Tom':'Settled')+'</span><strong style="color:'+oweColor+'">'+taxMoney(loan.bookedAbs)+'</strong></div>';
-  if(loan.expensesTomPaid!=null&&loan.netPaidToTom!=null) h+='<div class="books-note">Reimbursements paid, minus the costs Tom paid, minus the money he paid back. Amex and NAB card 0779 only.</div>';
+  if(loan.expensesTomPaid!=null&&loan.netPaidToTom!=null) h+='<div class="books-note">'+(adjustments.length?'Net paid to Tom, minus the Rankify costs he paid, plus booked loan credits. Those credits are already in the balance above.':'Reimbursements paid, minus the costs Tom paid, minus the money he paid back. Amex and NAB card 0779 only.')+'</div>';
   h+='</div>';
   const p=loan.proposed||{};
+  const gearBooked=adjustments.some(function(item){return item.supersedes==='gearSale';});
   h+='<div class="card" style="margin-bottom:16px"><div class="books-label">Proposed, not booked</div>';
-  h+='<p class="books-note">Shown beside the booked balance. They are not in the '+taxMoney(loan.bookedAbs)+' figure above.</p>';
+  h+='<p class="books-note">'+(gearBooked?'The gear sale is booked above. These rows are still proposed. They are not in the '+taxMoney(loan.bookedAbs)+' figure.':'Shown beside the booked balance. They are not in the '+taxMoney(loan.bookedAbs)+' figure above.')+'</p>';
   if(p.items&&p.items.length){
     p.items.forEach(function(item){
       h+='<div class="books-row"><span>'+escTax(item.label)+'</span><strong>'+taxMoney(item.amount)+'</strong></div>';
@@ -1579,6 +1585,14 @@ function renderTax(){
     }
     if(p.phoneInternetPersonal!=null) h+='<div class="books-row"><div><div>10% of phone and internet</div><div class="books-note">Tom would owe Rankify this personal share.</div></div><strong>−'+taxMoney(p.phoneInternetPersonal)+'</strong></div>';
   }
+  const held=loan.held||[];
+  if(held.length){
+    h+='<div class="books-label" style="margin-top:12px">Held, not booked</div>';
+    h+='<p class="books-note">Not in the booked balance, and not in the proposed total.</p>';
+    held.forEach(function(item){
+      h+='<div class="books-row"><span>'+escTax(item.label)+(item.note?'<div class="books-note">'+escTax(item.note)+'</div>':'')+'</span><strong>'+taxMoney(item.amount)+'</strong></div>';
+    });
+  }
   h+='<div class="books-row books-total"><span>If these were booked too</span><strong style="color:'+(proposedOwes?'var(--red-soft)':'var(--teal)')+'">'+escTax(loan.proposedHeadline)+'</strong></div>';
   h+='</div>';
   if(s.companyTax&&s.companyTax.tax!=null){
@@ -1587,7 +1601,11 @@ function renderTax(){
     if(s.companyTax.explain) h+='<p>'+escTax(s.companyTax.explain)+'</p>';
     h+='</div>';
   }
-  h+='<div class="card" style="margin-bottom:16px"><div class="books-label">If you don\'t repay</div>'+taxPill('Estimate','estimate');
+  h+='<div class="card" style="margin-bottom:16px"><div class="books-label">If you don\'t repay</div>'+(d.applies===false?taxPill('Booked','booked'):taxPill('Estimate','estimate'));
+  if(d.applies===false){
+    h+='<div class="books-figure" style="color:var(--teal);margin-top:14px">Division 7A does not apply</div>';
+    h+='<div class="books-note">The loan runs the other way, so there is no debit balance to treat as a dividend.</div></div>';
+  }else{
   h+='<div class="books-split" style="margin-top:14px"><div><div class="books-label">Estimated tax if it becomes a dividend</div><div class="books-figure" style="color:var(--red-soft)">'+taxMoney(d.booked.tax)+'</div>';
   if(!sync.live||d.ratesFromFeed) h+='<div class="books-note">'+pct(d.incomeTax)+'% marginal + '+pct(d.medicare)+'% Medicare = '+pct(d.combined)+'%.'+(!sync.live?' ITM salary is about '+taxMoney(d.salaryApprox)+'.':'')+'</div>';
   else h+='<div class="books-note">Personal tax if that debit balance is treated as an unfranked Division 7A deemed dividend.</div>';
@@ -1609,6 +1627,7 @@ function renderTax(){
   if(!sync.live&&d.minimumYearly==null) h+='<div class="books-note">The minimum yearly repayment is for your tax agent to set.</div>';
   if(d.explain) h+='<div class="books-note">'+escTax(d.explain)+'</div>';
   h+='</div>';
+  }
   const fee=s.fy27.licence;
   const assets=s.assets||{};
   const est=taxPill('Estimate','estimate');
@@ -1634,7 +1653,10 @@ function renderTax(){
     const hold=Math.round((s.shareholderPct||0)*100);
     h+=taxRow('PAYG withheld (projected)', fe.paygProjected, est, taxMoney(fe.paygWeekly)+'/week from your ITM payslips × '+fe.paygWeeks+' weeks.');
     h+=taxRow('Tax + Medicare on salary', fe.liability, est, 'About '+taxMoney(s.div7a.salaryApprox)+' salary. '+escTax(fe.mlsNote)+'. HELP debt '+taxMoney(fe.helpDebt)+'.');
-    h+=taxRow(refundLabel, Math.abs(fe.resultSigned), est+' '+pend, 'Before Div 7A. If the booked loan is taxed as a deemed dividend: about '+taxMoney(Math.abs(fe.ifDeemedDividendSigned))+divEffect+'. You hold '+hold+'% of Rankify, so Div 7A applies.');
+    const divLine=d.applies===false
+      ? 'Division 7A does not apply to this booked balance, so this figure is unchanged. You hold '+hold+'% of Rankify.'
+      : 'Before Div 7A. If the booked loan is taxed as a deemed dividend: about '+taxMoney(Math.abs(fe.ifDeemedDividendSigned))+divEffect+'. You hold '+hold+'% of Rankify, so Div 7A applies.';
+    h+=taxRow(refundLabel, Math.abs(fe.resultSigned), est+' '+pend, divLine);
   }
   if(s.priorYearTaxDebt){
     const pd=s.priorYearTaxDebt;
