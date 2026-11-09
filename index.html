@@ -536,7 +536,7 @@ select.form-input{cursor:pointer;background:#1a1a1a}
 </div>
 
 <!-- ═══ PROPERTY MODAL ═══ -->
-<div id="property-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;display:none;align-items:center;justify-content:center">
+<div id="property-modal" class="modal-overlay">
   <div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:24px;width:90%;max-width:520px;max-height:85vh;overflow-y:auto">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <h3 style="margin:0;font-size:1rem;color:#fff" id="property-modal-title">Add Property</h3>
@@ -570,7 +570,7 @@ select.form-input{cursor:pointer;background:#1a1a1a}
 </div>
 
 <!-- ═══ LICENSE MODAL ═══ -->
-<div id="license-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center">
+<div id="license-modal" class="modal-overlay">
   <div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:24px;width:90%;max-width:520px;max-height:85vh;overflow-y:auto">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <h3 style="margin:0;font-size:1rem;color:#fff" id="license-modal-title">Add License / Cert</h3>
@@ -877,12 +877,14 @@ pinInputs.forEach((input,i)=>{
 
 // ─── Tab Navigation ───
 function switchTab(tab){
+  const panel=document.getElementById('tab-'+tab);
+  if(!panel){tab='dashboard'}
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
   const navItem=document.querySelector('.nav-item[data-tab="'+tab+'"]');
   if(navItem) navItem.classList.add('active');
-  const panel=document.getElementById('tab-'+tab);
-  if(panel) panel.classList.add('active');
+  const resolved=document.getElementById('tab-'+tab);
+  if(resolved) resolved.classList.add('active');
   document.querySelector('.sidebar').classList.remove('open');
   if(location.hash!=='#'+tab) history.replaceState(null,'','#'+tab);
   if(tab==='finances') renderFinancesShell();
@@ -2332,8 +2334,8 @@ function renderFinances(){
   h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">';
   h+='<span style="font-size:0.9rem;font-weight:700;color:#fff">Due in '+mNames[_finDueMonth]+'</span>';
   h+='<div style="display:flex;align-items:center;gap:8px">';
-  h+='<button onclick="_finDueMonth--;if(_finDueMonth<0){_finDueMonth=11;_finDueYear--;}renderFinances()" style="background:none;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:var(--text-secondary);padding:4px 10px;cursor:pointer;font-family:var(--font);font-size:0.7rem">←</button>';
-  h+='<button onclick="_finDueMonth++;if(_finDueMonth>11){_finDueMonth=0;_finDueYear++;}renderFinances()" style="background:none;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:var(--text-secondary);padding:4px 10px;cursor:pointer;font-family:var(--font);font-size:0.7rem">→</button>';
+  h+='<button onclick="_finDueMonth--;if(_finDueMonth<0){_finDueMonth=11;_finDueYear--;}_finWeekOffset=0;renderFinances()" style="background:none;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:var(--text-secondary);padding:4px 10px;cursor:pointer;font-family:var(--font);font-size:0.7rem">←</button>';
+  h+='<button onclick="_finDueMonth++;if(_finDueMonth>11){_finDueMonth=0;_finDueYear++;}_finWeekOffset=0;renderFinances()" style="background:none;border:1px solid rgba(255,255,255,0.1);border-radius:6px;color:var(--text-secondary);padding:4px 10px;cursor:pointer;font-family:var(--font);font-size:0.7rem">→</button>';
   h+='</div></div>';
   const _amexBal=_amex?(_amex.monthly||0):0;
   const _amexSM=_amex?(_amex.amexSpentMonth||0):0;
@@ -2555,19 +2557,26 @@ function renderFinances(){
 // ════════════════════════════════════════
 // BANKING (PocketSmith)
 // ════════════════════════════════════════
+let _bankingError=false;
 async function loadBanking(){
+  _bankingError=false;
   try{
     const res=await fetch('/api/pocketsmith/data?t='+Date.now());
-    if(res.ok){
-      _bankingData=await res.json();
-      if(_bankingData.updated)document.getElementById('banking-updated').textContent='Synced: '+fmt(_bankingData.updated);
-      renderBanking();
-    }
-  }catch(e){console.warn('Banking load failed',e)}
+    if(!res.ok)throw new Error(res.status);
+    _bankingData=await res.json();
+    const validAccts=(_bankingData.accounts||[]).map(a=>a.name||a.id);
+    if(_bankingFilter!=='all'&&!validAccts.includes(_bankingFilter))_bankingFilter='all';
+    if(_bankingData.updated)document.getElementById('banking-updated').textContent='Synced: '+fmt(_bankingData.updated);
+    renderBanking();
+  }catch(e){if(!_bankingData)_bankingError=true;console.warn('Banking load failed',e);renderBanking()}
 }
 
 function renderBanking(){
-  const el=document.getElementById('banking-content');if(!el||!_bankingData)return;
+  const el=document.getElementById('banking-content');if(!el)return;
+  if(!_bankingData){
+    if(_bankingError)el.innerHTML='<div class="empty-state"><div class="icon">⚠</div><h3>Failed to load banking data</h3><p style="color:var(--text-muted);margin:8px 0 16px">Check your connection and try again.</p><button class="btn" onclick="loadBanking()">Retry</button></div>';
+    return;
+  }
   const accts=_bankingData.accounts||[];
   const txns=_bankingData.transactions||[];
 
@@ -4330,7 +4339,7 @@ let _editingPropertyId=null;
 function showPropertyModal(id){
   _editingPropertyId=id||null;
   const m=document.getElementById('property-modal');
-  m.style.display='flex';
+  m.classList.add('open');
   document.getElementById('property-modal-title').textContent=id?'Edit Property':'Add Property';
   const p=id?_properties.find(x=>x.id===id):{};
   document.getElementById('prop-name').value=p.name||'';
@@ -4347,7 +4356,7 @@ function showPropertyModal(id){
   document.getElementById('prop-url').value=p.url||'';
   document.getElementById('prop-notes').value=p.notes||'';
 }
-function closePropertyModal(){document.getElementById('property-modal').style.display='none';_editingPropertyId=null}
+function closePropertyModal(){document.getElementById('property-modal').classList.remove('open');_editingPropertyId=null}
 function saveProperty(){
   const data={
     name:document.getElementById('prop-name').value.trim(),
@@ -4700,7 +4709,7 @@ let _editingLicenseId=null;
 function showLicenseModal(id){
   _editingLicenseId=id||null;
   const m=document.getElementById('license-modal');
-  m.style.display='flex';
+  m.classList.add('open');
   document.getElementById('license-modal-title').textContent=id?'Edit License / Cert':'Add License / Cert';
   const p=id?_licenses.find(x=>x.id===id):{};
   document.getElementById('lic-name').value=p.name||'';
@@ -4714,7 +4723,7 @@ function showLicenseModal(id){
   document.getElementById('lic-url').value=p.url||'';
   document.getElementById('lic-notes').value=p.notes||'';
 }
-function closeLicenseModal(){document.getElementById('license-modal').style.display='none';_editingLicenseId=null}
+function closeLicenseModal(){document.getElementById('license-modal').classList.remove('open');_editingLicenseId=null}
 function saveLicense(){
   const data={
     name:document.getElementById('lic-name').value.trim(),
@@ -5344,7 +5353,9 @@ function toggleCompSection(el){el.closest('.comp-section').classList.toggle('col
 
 let _compTab='licence';
 
+const _compTabIds=['licence','permissions','club','storage','firearms','training','transport','trips','log','map','contacts'];
 function switchCompTab(tab){
+  if(!_compTabIds.includes(tab))tab='licence';
   _compTab=tab;
   document.querySelectorAll('.comp-tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
   document.querySelectorAll('.comp-tab-pane').forEach(p=>p.style.display=p.dataset.tab===tab?'':'none');
