@@ -1505,12 +1505,15 @@ function acctBucket(a){
   return a.group||'personal';
 }
 let _taxSummary=null;
+let _taxError=false;
 async function loadTax(){
+  _taxError=false;
   if(typeof TomTax!=='undefined') _taxSummary=TomTax.buildSummary(TAX_CONFIG);
   try{
     const res=await fetch('/api/tax?t='+Date.now());
-    if(res.ok) _taxSummary=await res.json();
-  }catch(e){console.warn('Tax load failed',e)}
+    if(!res.ok)throw new Error(res.status);
+    _taxSummary=await res.json();
+  }catch(e){if(!_taxSummary)_taxError=true;console.warn('Tax load failed',e)}
   const panel=document.getElementById('tab-tax');
   if(panel&&panel.classList.contains('active')) renderTax();
 }
@@ -1527,7 +1530,7 @@ function taxMoney(n){
 function renderTax(){
   const el=document.getElementById('tax-content'); if(!el) return;
   const s=_taxSummary||(typeof TomTax!=='undefined'?TomTax.buildSummary(TAX_CONFIG):null);
-  if(!s){el.innerHTML='<div class="empty-state"><h3>Tax figures unavailable</h3></div>';return;}
+  if(!s){el.innerHTML=_taxError?'<div class="empty-state"><div class="icon">⚠</div><h3>Failed to load tax data</h3><p style="color:var(--text-muted);margin:8px 0 16px">Check your connection and try again.</p><button class="btn" onclick="loadTax()">Retry</button></div>':'<div class="empty-state"><h3>Tax figures unavailable</h3></div>';return;}
   const loan=s.directorLoan;
   const d=s.div7a;
   const sync=s.loanSync||{live:false,label:'Not live, last synced '+(typeof TomTax!=='undefined'?TomTax.formatIsoDate(loan.bookedAsOf):loan.bookedAsOf)};
@@ -3157,7 +3160,9 @@ function calcStreak(logs){
 // ════════════════════════════════════════
 let _whoopData=null;
 let _whoopHistory=null;
+let _whoopError=false;
 async function loadWhoop(){
+  _whoopError=false;
   try{
     const [dataRes,histRes]=await Promise.all([
       fetch('/api/whoop/data?t='+Date.now()),
@@ -3167,7 +3172,7 @@ async function loadWhoop(){
     if(histRes.ok){const h=await histRes.json();_whoopHistory=h.history||{};}
     renderWhoop();
     if(_whoopData&&_whoopData.connected)fetch('/api/whoop/sync').catch(()=>{});
-  }catch(e){console.warn('Whoop load failed',e)}
+  }catch(e){_whoopError=true;console.warn('Whoop load failed',e)}
 }
 function normSport(s){if(!s)return'';s=s.toLowerCase();if(s.includes('sauna'))return'sauna';if(s.includes('weight')||s.includes('back')||s.includes('chest')||s.includes('legs')||s.includes('bicep')||s.includes('tricep')||s.includes('shoulder')||s.includes('push')||s.includes('pull'))return'weightlifting';return s;}
 
@@ -3193,6 +3198,10 @@ function _filterByRange(items,range,getDate){
 
 function renderWhoop(){
   const el=document.getElementById('whoop-content');if(!el)return;
+  if(_whoopError&&!_whoopData){
+    el.innerHTML='<div class="empty-state"><div class="icon">⚠</div><h3>Failed to load WHOOP data</h3><p style="color:var(--text-muted);margin:8px 0 16px">Check your connection and try again.</p><button class="btn" onclick="loadWhoop()">Retry</button></div>';
+    return;
+  }
   if(_whoopData?.updated)document.getElementById('whoop-updated').textContent='Synced: '+fmt(_whoopData.updated);
 
   const whoopConnected=_whoopData&&_whoopData.connected;
@@ -4861,11 +4870,14 @@ function viewAttachment(att){
 
 function triggerUpload(itemType, itemId){
   _uploadTarget={itemType, itemId};
-  document.getElementById('file-upload-input').click();
+  const inp=document.getElementById('file-upload-input');
+  inp.value='';
+  inp.click();
 }
 
 async function handleFileUpload(input){
-  if(!input.files.length||!_uploadTarget)return;
+  if(!input.files.length){_uploadTarget=null;return}
+  if(!_uploadTarget)return;
   const file=input.files[0];
   const {itemType, itemId}=_uploadTarget;
   _uploadTarget=null;
@@ -5193,12 +5205,15 @@ function renderOverview(){
 let _compData=null;
 let _compMap=null;
 let _compView='cards';
+let _compError=false;
 
 async function loadCompliance(){
+  _compError=false;
   try{
     const r=await fetch('/api/compliance');
+    if(!r.ok)throw new Error(r.status);
     _compData=await r.json();
-  }catch(e){_compData=null}
+  }catch(e){_compData=null;_compError=true;console.warn('Compliance load failed',e)}
   renderComplianceView();
 }
 
@@ -5245,7 +5260,7 @@ function renderScoreRing(pct){
 function renderComplianceView(){
   if(_compView==='detail'){renderComplianceDetail();return}
   const d=_compData;
-  if(!d){document.getElementById('compliance-content').innerHTML='<p style="color:var(--text-muted)">Loading…</p>';return}
+  if(!d){document.getElementById('compliance-content').innerHTML=_compError?'<div class="empty-state"><div class="icon">⚠</div><h3>Failed to load compliance data</h3><p style="color:var(--text-muted);margin:8px 0 16px">Check your connection and try again.</p><button class="btn" onclick="loadCompliance()">Retry</button></div>':'<p style="color:var(--text-muted)">Loading…</p>';return}
   const pct=compScore(d);
   const exp=daysUntil(d.licence.expiryDate);
   const expStr=exp!==null?(exp>365?Math.floor(exp/365)+'y '+Math.floor((exp%365)/30)+'m':exp>30?Math.floor(exp/30)+' months':exp>0?exp+' days':'EXPIRED'):'—';
